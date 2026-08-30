@@ -132,7 +132,7 @@ export default function GirisPage() {
             <span style={sx("font-size:19px;font-weight:800;letter-spacing:-.01em")}>HAN</span>
             <span style={sx("font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-left:4px")}>Yönetim</span>
           </div>
-          <h1 style={sx("margin:36px 0 0;font-size:34px;line-height:1.2;font-weight:700;letter-spacing:-.02em;max-width:20ch;text-wrap:pretty")}>
+          <h1 style={sx("margin:36px 0 0;font-size:34px;line-height:1.2;font-weight:700;letter-spacing:-.02em;max-width:20ch;text-wrap:pretty;color:#fff")}>
             Tarihi Yarımada&apos;nın kayıt omurgası
           </h1>
           <p style={sx("margin:16px 0 0;font-size:14.5px;line-height:1.65;opacity:.78;max-width:44ch;text-wrap:pretty")}>
