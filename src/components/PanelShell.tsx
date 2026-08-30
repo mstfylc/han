@@ -7,18 +7,24 @@
 // honest. Different navigation, different density, and no language/currency
 // controls — operations runs in Turkish, on a desk, all day.
 //
-// Role (E5) is read from a stored selection for now. That is a stand-in, not a
-// security boundary: the plan calls for a phone-and-code session, which arrives
-// with the real backend. Until then the selector is labelled as a demo control
-// so nobody mistakes it for access control.
+// E5 · role comes from the SESSION, not from a picker. It used to be a stored
+// selection labelled "demo", because a control the user sets is not access
+// control. Now the server decides: /api/auth returns the signed-in user, the
+// role travels with them, and someone who is not signed in is sent to /giris.
+//
+// Worth being precise about what this does and does not buy. The navigation
+// hides what a role may not touch, and that is a usability decision, not a
+// security one — the real guarantee has to sit on the endpoints that write.
+// Today the write path is /api/state, which is not yet role-aware, so this is
+// honest UI on top of an open door. Closing it is the next security step and
+// is called out in the report rather than implied by a locked-looking menu.
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import * as SC from "@/data/han-scale";
-import { Icon } from "@/ds";
-import { readKey, writeKey } from "@/services/storage";
+import { Button, Icon } from "@/ds";
 import { sx } from "@/lib/sx";
 
 export interface PanelTab {
@@ -32,37 +38,55 @@ export interface PanelTab {
   soon?: boolean;
 }
 
-const ROLE_KEY = "han-panel-role";
+export interface SessionUser {
+  id: string;
+  name: string;
+  tel: string;
+  role: string;
+}
 
-export function usePanelRole(): [string, (r: string) => void] {
-  const [role, setRole] = useState("yonetici");
-  // Read after mount: the server has no stored role, and reading during render
-  // would make the first client render disagree with the server's.
+export interface PanelSession {
+  /** null while we are still asking, so the panel does not flash a queue at
+   *  someone who turns out not to be signed in. */
+  user: SessionUser | null;
+  loading: boolean;
+}
+
+/** Who is signed in, according to the server. */
+export function usePanelSession(): PanelSession {
+  const [state, setState] = useState<PanelSession>({ user: null, loading: true });
   useEffect(() => {
-    const stored = readKey<string | null>(ROLE_KEY, null);
-    if (stored && SC.ROLES[stored]) setRole(stored);
+    let live = true;
+    fetch("/api/auth", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((b) => { if (live) setState({ user: b.user || null, loading: false }); })
+      .catch(() => { if (live) setState({ user: null, loading: false }); });
+    return () => { live = false; };
   }, []);
-  return [
-    role,
-    (r: string) => {
-      setRole(r);
-      writeKey(ROLE_KEY, r);
-    },
-  ];
+  return state;
 }
 
 export function PanelShell({
-  tabs, active, role, onRole, children,
+  tabs, active, user, children,
 }: {
   tabs: PanelTab[];
   active: string;
-  role: string;
-  onRole: (r: string) => void;
+  user: SessionUser;
   children: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const role = user.role;
   const readOnly = SC.isReadOnly(role);
+
+  const signOut = async () => {
+    await fetch("/api/auth", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "logout" }),
+    }).catch(() => {});
+    router.push("/giris");
+  };
 
   return (
     <div style={sx("min-height:100vh;background:var(--surface-page);font-family:var(--font-sans);font-size:15px;line-height:1.5;color:var(--text-body)")}>
@@ -89,20 +113,9 @@ export function PanelShell({
             </span>
           )}
 
-          {/* Marked as a demo control on purpose: switching roles here changes
-              what the screen offers, not what the server would allow. */}
-          <label style={sx("display:flex;align-items:center;gap:7px;font-size:12.5px;color:rgba(255,255,255,.72)")}>
-            <span>Rol (demo)</span>
-            <select
-              value={role}
-              onChange={(e) => onRole(e.target.value)}
-              style={sx("height:32px;padding:0 8px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff")}
-            >
-              {Object.keys(SC.ROLES).map((r) => (
-                <option key={r} value={r}>{SC.ROLES[r].tr}</option>
-              ))}
-            </select>
-          </label>
+          <span style={sx("font-size:12.5px;color:rgba(255,255,255,.78)")}>
+            {(user.name || user.tel) + " · " + (SC.ROLES[role]?.tr || role)}
+          </span>
 
           <button
             type="button"
@@ -110,6 +123,14 @@ export function PanelShell({
             style={sx("height:32px;padding:0 12px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:none;color:#fff")}
           >
             Alıcı tarafı
+          </button>
+
+          <button
+            type="button"
+            onClick={signOut}
+            style={sx("height:32px;padding:0 12px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:none;color:#fff")}
+          >
+            Çıkış
           </button>
         </div>
       </header>

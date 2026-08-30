@@ -17,8 +17,11 @@
  * Usage: node scripts/loop.mjs [baseUrl]
  */
 import { chromium } from "playwright";
+import { findClaimable, resetAccounts, signIn } from "./testkit.mjs";
 
-const BASE = process.argv[2] || "http://localhost:3000";
+// The panel needs a session and the reset flow needs development mode, so the
+// default target is the dev server.
+const BASE = process.argv[2] || "http://localhost:3001";
 const EXEC = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const OWNER = "Mustafa Yalçın";
@@ -37,41 +40,17 @@ const run = async () => {
   const external = (t) => /tile\.openstreetmap\.org/.test(t);
   page.on("pageerror", (e) => { if (!external(String(e))) errors.push(String(e)); });
 
+  // Sign in first: the operations queues are behind a session now.
+  await resetAccounts();
+  await signIn(page, BASE);
+  ok("signed in as an operations administrator");
+
   // ── 1 · the trader claims a record ──────────────────────────────────────
-  // Pick a place with declared records so the finder has something to show.
-  await page.goto(BASE + "/esnaf?l=tr", { waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
-
-  // Target the finder's own select by its label: the buyer shell's header also
-  // has selects (mode, currency, language), and the first one on the page is
-  // the buying mode, not the place.
-  const PLACE_SEL = 'select[aria-label="Yer"]';
-  const placeId = await page.evaluate((sel) => {
-    const el = document.querySelector(sel);
-    if (!el) return null;
-    const opt = Array.from(el.options).find((o) => o.value && o.value !== "all");
-    return opt ? opt.value : null;
-  }, PLACE_SEL);
-  if (!placeId) return bad("finder has no places to choose"), finish(browser);
-
-  await page.selectOption(PLACE_SEL, placeId);
-  await page.waitForTimeout(600);
-
-  // The record has to be one the declaration queue will actually show, i.e. in
-  // "beyan" status — otherwise step 4 silently tests nothing. The finder lists
-  // every status, so pick by the badge the row carries.
-  const claimBtn = page
-    .locator('div:has(> span > span:text-is("Esnaf beyanı · onay bekliyor")) button:has-text("Bu benim")')
-    .first();
-  if (!(await claimBtn.count())) {
-    bad("no record in " + placeId + " is awaiting approval — nothing to drive the loop with");
-    return finish(browser);
-  }
-  const recordName = await claimBtn.evaluate((btn) => {
-    const row = btn.closest("div");
-    const name = row?.querySelector("span > span");
-    return name ? (name.textContent || "").trim() : "";
-  });
+  // Search every place for one that still has a record awaiting approval.
+  // Assuming the first place would have was really assuming a virgin database.
+  const found = await findClaimable(page, BASE);
+  if (!found) { bad("no record anywhere is awaiting approval — nothing to drive the loop with"); return finish(browser); }
+  const { name: recordName, button: claimBtn } = found;
   await claimBtn.click();
   await page.waitForTimeout(500);
   ok("trader opened the claim form" + (recordName ? " (" + recordName.trim().slice(0, 24) + "…)" : ""));

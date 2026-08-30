@@ -19,8 +19,10 @@
  * Usage: node scripts/crossdevice.mjs [baseUrl]
  */
 import { chromium } from "playwright";
+import { resetAccounts, signIn } from "./testkit.mjs";
 
-const BASE = process.argv[2] || "http://localhost:3000";
+// Operations is behind a session and the sign-in flow needs development mode.
+const BASE = process.argv[2] || "http://localhost:3001";
 const EXEC = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 /** startSync polls on this interval; allow a couple of cycles plus slack. */
 const SYNC_WAIT = 10000;
@@ -159,8 +161,11 @@ const run = async () => {
   });
   void target;
 
+  // Device B is the one doing operations work, so it signs in.
+  await resetAccounts();
+  await signIn(B, BASE);
   await B.goto(BASE + "/panel/kuyruk", { waitUntil: "networkidle" });
-  await B.waitForTimeout(1500);
+  await B.waitForTimeout(1800);
   const box = B.locator('input[type="checkbox"]').first();
   if (!(await box.count())) { bad("the declaration queue is empty on device B"); return finish(browser); }
   const suspendedName = await box.getAttribute("aria-label");

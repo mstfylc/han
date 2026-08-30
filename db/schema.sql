@@ -55,3 +55,54 @@ CREATE TABLE IF NOT EXISTS decisions (
 
 CREATE INDEX IF NOT EXISTS decisions_record_idx
   ON decisions (record_id, decided_at DESC);
+
+-- ── operations accounts ───────────────────────────────────────────────────
+--
+-- These are real tables, not documents, and that is the point.
+--
+-- The prototype kept PINs, attempt counters and reset codes in localStorage.
+-- It said so itself ("⚠ PROTOTİP"), and it was right: a PIN in the browser is
+-- readable by any script on the origin, an attempt counter the client owns can
+-- be reset by the client, and a "code sent to your phone" that lives in storage
+-- can be read instead of received. None of that is a security boundary.
+--
+-- Here the secret never leaves the server: only a scrypt hash is stored, the
+-- lockout counter is the server's, and reset codes are hashed, single-use and
+-- expiring. The browser gets an opaque session token in an httpOnly cookie —
+-- something JavaScript on the page cannot read at all.
+
+CREATE TABLE IF NOT EXISTS ops_users (
+  id          TEXT        PRIMARY KEY,
+  name        TEXT        NOT NULL DEFAULT '',
+  -- Digits only, so "0532 111 22 33" and "05321112233" are the same person.
+  tel         TEXT        NOT NULL UNIQUE,
+  role        TEXT        NOT NULL DEFAULT 'okuma',
+  place       TEXT,
+  officer     TEXT,
+  active      BOOLEAN     NOT NULL DEFAULT TRUE,
+  -- scrypt: 'scrypt$N$r$p$salt$hash'. NULL means "no password set yet", which
+  -- is a state the sign-in screen has to handle rather than an error.
+  pin_hash    TEXT,
+  tries       INTEGER     NOT NULL DEFAULT 0,
+  locked_until TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen   TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS ops_sessions (
+  -- sha256 of the token. A leaked database cannot be replayed as a login.
+  token_hash  TEXT        PRIMARY KEY,
+  user_id     TEXT        NOT NULL REFERENCES ops_users(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ops_sessions_user_idx ON ops_sessions (user_id);
+
+CREATE TABLE IF NOT EXISTS ops_resets (
+  code_hash   TEXT        PRIMARY KEY,
+  user_id     TEXT        NOT NULL REFERENCES ops_users(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ
+);

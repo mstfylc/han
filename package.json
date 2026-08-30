@@ -10,8 +10,9 @@
     "typecheck": "tsc --noEmit",
     "parity": "tsx scripts/parity.ts",
     "smoke": "node scripts/smoke.mjs",
-    "loop": "node scripts/loop.mjs",
-    "crossdevice": "node scripts/crossdevice.mjs"
+    "loop": "node --env-file-if-exists=.env.local scripts/loop.mjs",
+    "crossdevice": "node --env-file-if-exists=.env.local scripts/crossdevice.mjs",
+    "auth": "node --env-file-if-exists=.env.local scripts/auth.mjs"
   },
   "dependencies": {
     "next": "16.3.3",

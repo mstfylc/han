@@ -28,7 +28,7 @@ import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
 import type { ApprovalVia, RecordStatus, ShopRecord } from "@/data/types";
 import { Button, EmptyState, Icon, Textarea } from "@/ds";
-import { PanelShell, usePanelRole } from "@/components/PanelShell";
+import { PanelShell, usePanelSession } from "@/components/PanelShell";
 import type { PanelTab } from "@/components/PanelShell";
 import { KEYS, readKey, writeKey } from "@/services/storage";
 import { sx } from "@/lib/sx";
@@ -70,7 +70,16 @@ export default function PanelPage() {
 function PanelScreen() {
   const params = useParams<{ tab?: string[] }>();
   const router = useRouter();
-  const [role, setRole] = usePanelRole();
+  const session = usePanelSession();
+  const role = session.user?.role || "okuma";
+
+  // Not signed in: the operations queues are not something to show and then
+  // refuse to act on. Send them to sign in and come back to where they aimed.
+  useEffect(() => {
+    if (!session.loading && !session.user) {
+      router.replace("/giris?next=" + encodeURIComponent(window.location.pathname));
+    }
+  }, [session.loading, session.user, router]);
 
   // Everything below is read from storage AFTER mount and re-read whenever a
   // decision is written. Reading during render would disagree with the server's
@@ -157,7 +166,13 @@ function PanelScreen() {
       .filter((r) => r.status === "beyan")
       .map((r) => {
         const reported = reportCounts[r.id] || 0;
-        const claimed = claims[r.id]?.status === "bekliyor" ? 1 : 0;
+        const claimStatus = claims[r.id]?.status;
+        // A record whose owner has ALREADY been verified is the most urgent
+        // thing in this queue: a real person is waiting, identified, and the
+        // only thing between them and their shop is this decision. Scoring only
+        // pending claims had it backwards — approving the claim dropped the
+        // record back into the crowd, which is precisely when it should rise.
+        const claimed = claimStatus === "onayli" ? 1.5 : claimStatus === "bekliyor" ? 1 : 0;
         const density = (placeUnits[r.place] || 0) / maxUnits;
         // Weighted so a reported record always outranks a merely dense one.
         const score = reported * 100 + claimed * 60 + density * 30 + (r.band ? 5 : 0);
@@ -230,8 +245,16 @@ function PanelScreen() {
   const current = TABS.find((t) => t.id === tab)!;
   const allowed = SC.can(role, current.perm);
 
+  if (session.loading || !session.user) {
+    return (
+      <div style={sx("min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);color:var(--text-muted);font-size:14px")}>
+        {session.loading ? "Oturum kontrol ediliyor…" : "Giriş sayfasına yönlendiriliyorsunuz…"}
+      </div>
+    );
+  }
+
   return (
-    <PanelShell tabs={TABS} active={tab} role={role} onRole={setRole}>
+    <PanelShell tabs={TABS} active={tab} user={session.user}>
       {!ready ? (
         <div style={sx(CARD)}>
           <div style={sx("font-size:14px;color:var(--text-muted)")}>Ölçek verisi ve kararlar yükleniyor…</div>
@@ -628,7 +651,7 @@ function Kuyruk({
               </span>
               <span style={sx("flex:none;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end")}>
                 {reported > 0 && <Pill label={reported + " şikayet"} t="danger" />}
-                {claimed > 0 && <Pill label="sahiplenme" t="warning" />}
+                {claimed >= 1.5 ? <Pill label="sahibi onaylı" t="success" /> : claimed > 0 ? <Pill label="sahiplenme" t="warning" /> : null}
               </span>
             </div>
           );

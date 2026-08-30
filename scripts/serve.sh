@@ -14,8 +14,10 @@ cd "$(dirname "$0")/.."
 for pid in $(ss -lptnH 'sport = :3000' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do
   kill "$pid" 2>/dev/null
 done
-pgrep -f "next-server" | while read -r pid; do kill "$pid" 2>/dev/null; done
-pgrep -f "node .*next.*start" | while read -r pid; do kill "$pid" 2>/dev/null; done
+# Deliberately NOT `pkill -f next-server`: that pattern also matches the
+# development server on :3001, so restarting the production build was silently
+# killing the dev server the auth checks run against. Owning port 3000 is the
+# only thing that makes a process ours to stop.
 
 for i in $(seq 1 15); do
   curl -s -o /dev/null --max-time 1 http://localhost:3000/ 2>/dev/null || break

@@ -56,5 +56,12 @@ yani tek tarayıcıda çalışır ama cihazlar arası paylaşım olmaz.
 | `npm run smoke` | 39 rota × {tr, ar} + 390px; konsol hatası, sızan `undefined`/`NaN`, `lang`/`dir`, yatay taşma |
 | `npm run loop` | Sahiplenme → onay → esnaf paneli döngüsü kapalı (E1 ve E3 dahil) |
 | `npm run crossdevice` | Pazar gerçekten paylaşılıyor: iki ayrı tarayıcı birbirini görüyor |
+| `npm run auth` | Giriş gerçekten kimlik doğrulaması: şifre sızmıyor, çerez httpOnly, kilit sunucuda, kod tek kullanımlık |
 
-`loop` ve `crossdevice` çalışan bir sunucu ister: `bash scripts/serve.sh`.
+`smoke` üretim sunucusu ister (`bash scripts/serve.sh`, :3000).
+`loop`, `crossdevice` ve `auth` geliştirme sunucusu ister (`bash scripts/serve-dev.sh`, :3001)
+— şifre sıfırlama kodu yalnız geliştirmede döner, üretimde dönmez ve `auth` bunu ayrıca
+üretim sunucusuna karşı doğrular.
+
+> `loop`, `crossdevice` ve `auth` yerel veritabanındaki tabloları sıfırlar ve
+> `DATABASE_URL` localhost'u göstermiyorsa çalışmayı reddeder.
