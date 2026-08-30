@@ -34,6 +34,26 @@ import { KEYS, readKey, writeKey } from "@/services/storage";
 import { sx } from "@/lib/sx";
 import type { Claim, UserReport } from "@/state/types";
 
+import Alicilar from "../tabs/alicilar";
+import Ayarlar from "../tabs/ayarlar";
+import Gorevler from "../tabs/gorevler";
+import Gorsel from "../tabs/gorsel";
+import Hanlar from "../tabs/hanlar";
+import HaritaDuzen from "../tabs/haritaduzen";
+import IceAktar from "../tabs/iceaktar";
+import Icerik from "../tabs/icerik";
+import Kalite from "../tabs/kalite";
+import Kayitlar from "../tabs/kayitlar";
+import Kullanicilar from "../tabs/kullanicilar";
+import Sozluk from "../tabs/sozluk";
+import Sponsorluk from "../tabs/sponsorluk";
+import Talepler from "../tabs/talepler";
+import Teklifler from "../tabs/teklifler";
+import Temalar from "../tabs/temalar";
+import Yerler from "../tabs/yerler";
+import Yetkililer from "../tabs/yetkililer";
+import Yorumlar from "../tabs/yorumlar";
+
 const CARD = "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:18px 20px;box-shadow:0 3px 4px rgba(0,0,0,.03)";
 const KICKER = "font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)";
 const H1 = "font-size:23px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin:0";
@@ -70,7 +90,7 @@ export default function PanelPage() {
 function PanelScreen() {
   const params = useParams<{ tab?: string[] }>();
   const router = useRouter();
-  const [role, setRole] = usePanelRole();
+  const [role, setRole, me] = usePanelRole();
 
   // Everything below is read from storage AFTER mount and re-read whenever a
   // decision is written. Reading during render would disagree with the server's
@@ -203,26 +223,34 @@ function PanelScreen() {
 
   // ── tabs ────────────────────────────────────────────────────────────────
 
+  // Prototipin navAll kaydı birebir: aynı gruplar, aynı sıra, aynı izinler.
   const TABS: PanelTab[] = [
-    { id: "ozet", label: "Özet", icon: "home", perm: "ozet" },
-    { id: "sahiplenme", label: "Sahiplenme", icon: "profile-circle", perm: "sahiplenme", count: pendingClaims.length },
+    { id: "ozet", label: "Özet", icon: "home", perm: "ozet", group: "OPERASYON" },
+    { id: "kayitlar", label: "Mağaza Kayıtları", icon: "files", perm: "kayitlar" },
+    { id: "talepler", label: "Alıcı Talepleri", icon: "notepad", perm: "talepler" },
+    { id: "sahiplenme", label: "Sahiplenme", icon: "profile-circle", perm: "sahiplenme", count: pendingClaims.length, group: "ONAY & MODERASYON" },
     { id: "kuyruk", label: "Beyan Kuyruğu", icon: "notepad", perm: "kuyruk", count: queue.length },
-    { id: "toplu", label: "Toplu Onay", icon: "verify", perm: "toplu" },
-    { id: "sikayet", label: "Şikayet Triyajı", icon: "shield", perm: "sikayet", count: Object.keys(reportCounts).length },
     { id: "askidakiler", label: "Askıdakiler", icon: "trash", perm: "askidakiler", count: suspended.length },
+    { id: "toplu", label: "Toplu Onay", icon: "verify", perm: "toplu" },
+    { id: "teklifler", label: "Teklif Denetimi", icon: "chart-line-up", perm: "teklifler", group: "PAZAR SAĞLIĞI" },
+    { id: "sikayet", label: "Şikayet Triyajı", icon: "shield-search", perm: "sikayet", count: Object.keys(reportCounts).length },
+    { id: "yorumlar", label: "Yorum Denetimi", icon: "star", perm: "yorum" },
+    { id: "alicilar", label: "Alıcı Doğrulama", icon: "verify", perm: "alicilar" },
+    { id: "yerler", label: "Yerler", icon: "category", perm: "yerler", group: "SAHA" },
+    { id: "gorevler", label: "Saha Görevleri", icon: "rocket", perm: "gorevler" },
+    { id: "kalite", label: "Veri Kalitesi", icon: "shield-search", perm: "kalite" },
+    { id: "iceaktar", label: "Toplu İçe Aktarma", icon: "folder", perm: "iceaktar" },
+    { id: "hanlar", label: "Kapsama", icon: "chart-line-up", perm: "ozet" },
+    { id: "yetkililer", label: "Yetkililer", icon: "profile-circle", perm: "yetkililer" },
+    { id: "sponsorluk", label: "Sponsorluk", icon: "star", perm: "sponsorluk", group: "GELİR" },
+    { id: "sozluk", label: "Arama Sözlüğü", icon: "magnifier", perm: "sozluk", group: "İÇERİK & ARAMA" },
+    { id: "icerik", label: "Etkinlik & Kampanya", icon: "calendar", perm: "icerik" },
+    { id: "gorsel", label: "Mağaza Görselleri", icon: "folder", perm: "gorsel" },
+    { id: "haritaduzen", label: "Harita & Kat Planı", icon: "category", perm: "harita" },
+    { id: "ayarlar", label: "Sistem Ayarları", icon: "setting-2", perm: "ayarlar", group: "SİSTEM" },
+    { id: "kullanicilar", label: "Kullanıcılar", icon: "profile-circle", perm: "kullanicilar" },
     { id: "defter", label: "Karar Defteri", icon: "files", perm: "defter" },
-    // Faz 4 · henüz yazılmadı. Boş sekme göstermektense açıkça "yakında" der.
-    { id: "kayitlar", label: "Mağaza Kayıtları", icon: "files", perm: "kayitlar", soon: true },
-    { id: "talepler", label: "Alıcı Talepleri", icon: "notepad", perm: "talepler", soon: true },
-    { id: "teklifler", label: "Teklif Denetimi", icon: "chart-line-up", perm: "teklifler", soon: true },
-    { id: "yorumlar", label: "Yorum Denetimi", icon: "star", perm: "yorum", soon: true },
-    { id: "alicilar", label: "Alıcı Doğrulama", icon: "verify", perm: "alicilar", soon: true },
-    { id: "gorevler", label: "Saha Görevleri", icon: "rocket", perm: "gorevler", soon: true },
-    { id: "kalite", label: "Veri Kalitesi", icon: "shield", perm: "kalite", soon: true },
-    { id: "iceaktar", label: "Toplu İçe Aktarma", icon: "folder", perm: "iceaktar", soon: true },
-    { id: "yerler", label: "Yerler", icon: "category", perm: "yerler", soon: true },
-    { id: "sozluk", label: "Arama Sözlüğü", icon: "magnifier", perm: "sozluk", soon: true },
-    { id: "icerik", label: "Etkinlik & Kampanya", icon: "calendar", perm: "icerik", soon: true },
+    { id: "temalar", label: "Temalar", icon: "setting-2", perm: "ozet" },
   ];
 
   const raw = params.tab?.[0] || "ozet";
@@ -231,14 +259,14 @@ function PanelScreen() {
   const allowed = SC.can(role, current.perm);
 
   return (
-    <PanelShell tabs={TABS} active={tab} role={role} onRole={setRole}>
+    <PanelShell tabs={TABS} active={tab} role={role} onRole={setRole} me={me}>
       {!ready ? (
         <div style={sx(CARD)}>
           <div style={sx("font-size:14px;color:var(--text-muted)")}>Ölçek verisi ve kararlar yükleniyor…</div>
         </div>
       ) : !allowed ? (
         <EmptyState
-          icon="lock"
+          icon="shield-search"
           tone="neutral"
           title="Bu bölüm rolünüzde yok"
           description={SC.ROLES[role].tr + " — " + SC.ROLES[role].note + ". Bölüme erişmesi gereken biri varsa rolü Yetkililer'den değiştirilir."}
@@ -312,6 +340,26 @@ function PanelScreen() {
           )}
 
           {tab === "defter" && <Defter approvals={approvals} />}
+
+          {tab === "kayitlar" && <Kayitlar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "talepler" && <Talepler role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "teklifler" && <Teklifler role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "yorumlar" && <Yorumlar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "alicilar" && <Alicilar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "yerler" && <Yerler role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "gorevler" && <Gorevler role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "kalite" && <Kalite role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "iceaktar" && <IceAktar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "hanlar" && <Hanlar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "yetkililer" && <Yetkililer role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "sponsorluk" && <Sponsorluk role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "sozluk" && <Sozluk role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "icerik" && <Icerik role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "gorsel" && <Gorsel role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "haritaduzen" && <HaritaDuzen role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "ayarlar" && <Ayarlar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "kullanicilar" && <Kullanicilar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
+          {tab === "temalar" && <Temalar role={role} readOnly={SC.isReadOnly(role)} refresh={refresh} say={say} />}
         </>
       )}
 
