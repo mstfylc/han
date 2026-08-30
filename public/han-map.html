@@ -42,6 +42,18 @@
 <script type="module">
 import { HANS, AREAS, STORES } from "./han-data.js";
 
+// Panelde düzeltilen konum (han-geo-v1) omurgaya işlenir: alıcı haritası da
+// aynı pini kullanır. iframe aynı origin'de olduğu için depoyu kendisi okur.
+try {
+  const geo = JSON.parse(localStorage.getItem("han-geo-v1") || "{}");
+  [HANS, AREAS].forEach(list => (list || []).forEach(p => {
+    const o = geo[p.id];
+    if (!o) return;
+    if (typeof o.lat === "number") p.lat = o.lat;
+    if (typeof o.lng === "number") p.lng = o.lng;
+  }));
+} catch {}
+
 const params = new URLSearchParams(location.search);
 const lang = params.get("lang") || "tr";
 const t = (o, k) => o[k + lang.charAt(0).toUpperCase() + lang.slice(1)] || o[lang] || o.tr;

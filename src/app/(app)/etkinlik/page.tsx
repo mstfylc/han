@@ -9,6 +9,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
+import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
 import { Button, EmptyState } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
@@ -44,7 +45,9 @@ function EventsScreen() {
 
   const rows = useMemo(() => {
     const today = new Date().getDate();
-    return (D.EVENTS || [])
+    // Panelin içerik katmanı temel veriyi bozmadan biner: eklenen etkinlik
+    // burada görünür, yayından alınan hem burada hem anasayfada kaybolur.
+    return AD.mergeContent(D.EVENTS || [], "events")
       .filter((e) => filter === "all" || e.kind === filter)
       .map((e) => {
         const day = parseInt(e.day as string, 10) || 0;

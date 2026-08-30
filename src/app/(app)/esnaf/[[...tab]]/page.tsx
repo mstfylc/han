@@ -22,6 +22,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
+import * as AD from "@/data/han-admin";
 import * as OF from "@/data/han-offers";
 import * as SC from "@/data/han-scale";
 import * as SE from "@/data/han-search";
@@ -175,14 +176,29 @@ function TraderScreen() {
   // ── this record's inbox ──────────────────────────────────────────────────
   // A request lands here because it matches this record's category — the same
   // distribution the buyer's funnel is measured against, not a second opinion.
+  // A routed request (the panel's "Teklif Denetimi" nudge) lands in this
+  // inbox even when distribution never picked the record: an unanswered
+  // request does not solve itself, so management can point it at a shop.
+  const nudgedIds = useMemo<Set<string>>(() => {
+    if (!mRec) return new Set();
+    const all = AD.allNudges();
+    const mine = new Set<string>();
+    Object.keys(all).forEach((reqId) => {
+      if ((all[reqId] || []).some((n) => n.recordId === mRec.id)) mine.add(String(reqId));
+    });
+    return mine;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mRec, state.offersRev]);
+
   const inbox = useMemo<BuyRequest[]>(() => {
     if (!mRec) return [];
     return (state.talepler || []).filter((req) => {
+      if (nudgedIds.has(String(req.id))) return true;
       const d = SE.distribute(req, { mode, lang });
       return !!d && (d.sent || []).some((x) => x.id === mRec.id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mRec, state.talepler, mode, lang, state.offersRev]);
+  }, [mRec, state.talepler, mode, lang, state.offersRev, nudgedIds]);
 
   // U3 · "opened it" is recorded the instant the panel actually shows the
   // request. Written in an effect, never during render.
@@ -810,6 +826,19 @@ function TraderScreen() {
                               </span>
                             </div>
                             {!!meta && <div style={sx("font-size:13px;color:var(--text-muted);margin-top:3px")}>{meta}</div>}
+                            {nudgedIds.has(String(req.id)) && (
+                              <div style={sx("display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:600;color:var(--color-warning-accent);margin-top:7px;padding:9px 11px;border-radius:9px;background:var(--color-warning-soft);text-wrap:pretty")}>
+                                <Icon name="shield" size={15} />
+                                <span>
+                                  {t({
+                                    tr: "Yönetici bu talebi size iletti — uygun değilse “cevaplayamam” demeniz de bir yanıttır.",
+                                    en: "Management routed this request to you — if it doesn't fit, saying “I can't answer” is also an answer.",
+                                    ru: "Администрация направила эту заявку вам — «не могу ответить» тоже ответ.",
+                                    ar: "وجّهت الإدارة هذا الطلب إليك — إن لم يناسبك فقول «لا أستطيع» يُعدّ ردًا.",
+                                  })}
+                                </span>
+                              </div>
+                            )}
                             {!!req.aciklama && (
                               <div style={sx("font-size:13px;color:var(--text-body);margin-top:6px;padding:9px 11px;border-radius:9px;background:var(--surface-muted);text-wrap:pretty")}>
                                 {req.aciklama}
