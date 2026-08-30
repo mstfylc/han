@@ -25,9 +25,17 @@ const eslintConfig = [
       //     compiler cannot prove a useMemo dependency is stable. Fixing it
       //     means making the data layer immutable, which is its own change.
       //
-      // Both stay visible in every lint run; neither is switched off.
+      //   set-state-in-effect — the panel and the role hook read a synchronous
+      //     browser store after mount, because the server cannot read it at
+      //     all. That "render empty, then fill in" step is unavoidable while
+      //     the store is localStorage; with an API it becomes a real loading
+      //     state. Where this rule caught a genuine defect it was fixed rather
+      //     than downgraded (see the search box in Ara).
+      //
+      // All three stay visible in every lint run; none is switched off.
       "react-hooks/purity": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/set-state-in-effect": "warn",
 
       // A leading underscore is the convention for "this argument exists to
       // hold a position in the signature". Several ported engine functions keep

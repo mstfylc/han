@@ -9,7 +9,7 @@ import { readKey, writeKey, KEYS } from "@/services/storage";
 import type {
   Trade,
   AccessInfo, ApprovalVia, Band, CuratedStore, GroupEntry, L10n, Lang, Mode,
-  OpenState, Place, PlaceKind, Sector, Semt, ShopRecord, SrcTag, UnitRef,
+  OpenState, Place, PlaceKind, RecordStatus, Sector, Semt, ShopRecord, SrcTag, UnitRef,
 } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -688,7 +688,7 @@ export function loadDrafts(onAdd?: (rec: ShopRecord) => void): ShopRecord[] {
   return out;
 }
 
-export function applyApprovals(log: Dict<{ status?: string; via?: string; officer?: string; at?: number }>): string[] {
+export function applyApprovals(log: Dict<{ status?: string; via?: string; officer?: string | null; at?: number }>): string[] {
   const out: string[] = [];
   Object.keys(log || {}).forEach(id => {
     const dec = log[id], rec = RECORDS.find(r => r.id === id);
@@ -702,6 +702,48 @@ export function applyApprovals(log: Dict<{ status?: string; via?: string; office
     out.push(id);
   });
   return out;
+}
+
+/** One decision in the approval log: what was decided, on what grounds, by
+ *  whom, and when. E3 — an approval is a decision, not a button, so the
+ *  grounds are chosen rather than assumed, and the trail survives. */
+export interface ApprovalDecision {
+  status: RecordStatus;
+  /** which of APPROVAL's grounds this rests on */
+  via: ApprovalVia;
+  officer: string | null;
+  at: number;
+}
+
+export function allApprovals(): Dict<ApprovalDecision> {
+  return readKey<Dict<ApprovalDecision>>(KEYS.approvals, {});
+}
+
+/**
+ * E2/E3/E4 · the writer for `han-approvals-v1`.
+ *
+ * This is the counterpart the buyer surface was missing: it read the approval
+ * log but nothing wrote it, so a claimed record sat at "bekliyor" forever and
+ * the trust ladder never moved. Writing here and calling `applyApprovals` keeps
+ * the single merge point — every surface reads the same log.
+ *
+ * The log is keyed by record, so a later decision replaces an earlier one:
+ * that is what makes E4 (undo, suspend, reinstate) work — reinstating is just
+ * another decision, never a deletion, and `auditLog()` still shows both.
+ */
+export function setApprovals(
+  ids: string[],
+  status: RecordStatus,
+  meta?: { via?: ApprovalVia; officer?: string | null },
+): Dict<ApprovalDecision> {
+  const log = allApprovals();
+  const at = Date.now();
+  (ids || []).forEach((id) => {
+    log[id] = { status, via: meta?.via || "han", officer: meta?.officer ?? null, at };
+  });
+  writeKey(KEYS.approvals, log);
+  applyApprovals(log);
+  return log;
 }
 
 const built = build();

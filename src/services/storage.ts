@@ -171,6 +171,22 @@ export const KEYS = {
   media: "han-media-v1",
   /** place geography, gates, floor plans */
   geo: "han-geo-v1",
+  /** field visits assigned to an officer */
+  tasks: "han-tasks-v1",
+  /** the operations team: who exists, what role, which area */
+  users: "han-users-v1",
+  /**
+   * ⚠ PROTOTYPE ONLY — never ships as real authentication.
+   *
+   * The prototype keeps PINs, reset codes and the session in the browser so the
+   * screens and their states can be demonstrated. A PIN in localStorage is
+   * readable by any script on the origin and by anyone with the device; reset
+   * codes stored client-side can simply be read instead of received. Real
+   * verification belongs on the server (see the Postgres phase), which is why
+   * this key is deliberately NOT in BUYER_WATCHED_KEYS and must not grow into
+   * the production login.
+   */
+  auth: "han-auth-v1",
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];
