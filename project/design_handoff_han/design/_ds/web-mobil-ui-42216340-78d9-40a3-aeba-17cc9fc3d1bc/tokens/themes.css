@@ -1,0 +1,257 @@
+/* ============================================================
+   TEMALAR — adlandırılmış marka temaları (çok temalı yapı)
+   ------------------------------------------------------------
+   İKİ EKSENLİ MODEL:
+     1) Marka ekseni  → <html data-theme="uyanik | okyanus | ...">
+     2) Şema ekseni    → <html class="dark">  (veya [data-theme-dark])
+
+   Bir tema YALNIZCA marka katmanını ezer (primary + accent rampaları,
+   ring, link). Yapısal token'lar (grey/surface/text/border) ve light↔dark
+   geçişi colors.css'ten gelir ve tüm temalarca paylaşılır.
+
+   Varsayılan :root zaten Uyanık (light) olduğu için sıfır-konfig = Uyanık.
+   "uyanik" handle'ı bu kimliği AÇIKÇA isimlendirir (değerler :root ile aynı).
+
+   Light marka  → [data-theme="x"]:not(.dark)
+   Dark marka   → [data-theme="x"].dark
+   Yeni tema eklemek için en alttaki şablonu kopyalayın.
+   ============================================================ */
+
+/* ============================================================
+   UYANIK — lacivert + turuncu (kanonik tema)
+   ============================================================ */
+[data-theme="uyanik"] {
+  --color-primary:             #1f3864;
+  --color-primary-active:      #162a4c;
+  --color-primary-soft:        #eaeef4;
+  --color-primary-accent:      #14233f;
+  --color-primary-transparent: rgba(31,56,100,0.20);
+
+  --color-orange:              #e08a2b;
+  --color-orange-active:       #c6751c;
+  --color-orange-soft:         #fbf1e4;
+  --color-orange-light:        #fbf1e4;
+  --color-orange-transparent:  rgba(224,138,43,0.20);
+  --color-accent:              #e08a2b;
+  --color-accent-active:       #c6751c;
+  --color-accent-soft:         #fbf1e4;
+  --color-accent-transparent:  rgba(224,138,43,0.20);
+  --color-accent-accent:       #8a5212;
+
+  --ring-primary:              rgba(31,56,100,0.20);
+}
+[data-theme="uyanik"].dark {
+  --color-primary:             #3f5d92;
+  --color-primary-active:      #52719f;
+  --color-primary-soft:        #18233a;
+  --color-primary-accent:      #b6c4dc;
+  --color-primary-transparent: rgba(63,93,146,0.24);
+
+  --color-orange:              #eb9c45;
+  --color-orange-active:       #e08a2b;
+  --color-orange-soft:         #2a2113;
+  --color-orange-light:        #2a2113;
+  --color-orange-transparent:  rgba(235,156,69,0.24);
+  --color-accent:              #eb9c45;
+  --color-accent-active:       #e08a2b;
+  --color-accent-soft:         #2a2113;
+  --color-accent-transparent:  rgba(235,156,69,0.24);
+  --color-accent-accent:       #f0a85f;
+
+  --ring-primary:              rgba(63,93,146,0.24);
+}
+
+/* ============================================================
+   OKYANUS — teal + mercan (örnek ikinci tema)
+   Aynı yapı, farklı marka. Yapı kanıtı + kopya şablonu.
+   ============================================================ */
+[data-theme="okyanus"] {
+  --color-primary:             #0f6e78;
+  --color-primary-active:      #0a565f;
+  --color-primary-soft:        #e6f3f4;
+  --color-primary-accent:      #0a4a52;
+  --color-primary-transparent: rgba(15,110,120,0.20);
+
+  --color-orange:              #f2674b;
+  --color-orange-active:       #db5238;
+  --color-orange-soft:         #fdeee9;
+  --color-orange-light:        #fdeee9;
+  --color-orange-transparent:  rgba(242,103,75,0.20);
+  --color-accent:              #f2674b;
+  --color-accent-active:       #db5238;
+  --color-accent-soft:         #fdeee9;
+  --color-accent-transparent:  rgba(242,103,75,0.20);
+  --color-accent-accent:       #9a3422;
+
+  --ring-primary:              rgba(15,110,120,0.20);
+}
+[data-theme="okyanus"].dark {
+  --color-primary:             #3fa9b5;
+  --color-primary-active:      #58bcc7;
+  --color-primary-soft:        #0d2a2e;
+  --color-primary-accent:      #bfe0e4;
+  --color-primary-transparent: rgba(63,169,181,0.24);
+
+  --color-orange:              #f5836b;
+  --color-orange-active:       #f2674b;
+  --color-orange-soft:         #2c1611;
+  --color-orange-light:        #2c1611;
+  --color-orange-transparent:  rgba(245,131,107,0.24);
+  --color-accent:              #f5836b;
+  --color-accent-active:       #f2674b;
+  --color-accent-soft:         #2c1611;
+  --color-accent-transparent:  rgba(245,131,107,0.24);
+  --color-accent-accent:       #f5a08e;
+
+  --ring-primary:              rgba(63,169,181,0.24);
+}
+
+/* ============================================================
+   MANSIS — premium SaaS (navy yapı + blue aksiyon + cyan accent)
+   Mansis OS Default Theme. Brand Direction v0.1 paletinden.
+   • primary  = blue #0A6EEB (ana aksiyon, link, seçili)
+   • primary-accent = navy #0A163B (sidebar / güçlü zemin)
+   • accent   = derin cyan (solid CTA beyaz metni tutar); parlak
+     marka cyan'ı #03C9E9 transparent/glow + light yüzeylerde yaşar
+   • status   = Mansis premium paleti (yeşil/amber/kırmızı/sky)
+   ============================================================ */
+[data-theme="mansis"] {
+  --color-primary:             #0a6eeb;
+  --color-primary-active:      #0857c0;
+  --color-primary-soft:        #e7f0fe;
+  --color-primary-accent:      #0a163b;
+  --color-primary-transparent: rgba(10,110,235,0.20);
+
+  --color-orange:              #0ea0be;
+  --color-orange-active:       #0c89a3;
+  --color-orange-soft:         #e2f6fb;
+  --color-orange-light:        #e2f6fb;
+  --color-orange-transparent:  rgba(3,201,233,0.22);
+  --color-accent:              #0ea0be;
+  --color-accent-active:       #0c89a3;
+  --color-accent-soft:         #e2f6fb;
+  --color-accent-transparent:  rgba(3,201,233,0.22);
+  --color-accent-accent:       #075968;
+
+  /* Mansis premium status */
+  --color-success:             #16a34a;
+  --color-success-active:      #15913f;
+  --color-success-soft:        #e7f7ec;
+  --color-success-accent:      #0d6b30;
+  --color-warning:             #f59e0b;
+  --color-warning-active:      #db8d09;
+  --color-warning-soft:        #fef4e5;
+  --color-warning-accent:      #92600a;
+  --color-danger:              #dc2626;
+  --color-danger-active:       #c41f1f;
+  --color-danger-soft:         #fcebeb;
+  --color-danger-accent:       #8f1a1a;
+  --color-info:                #0ea5e9;
+  --color-info-active:         #0d93d0;
+  --color-info-soft:           #e5f6fd;
+  --color-info-accent:         #075f86;
+
+  --text-link:                 #0a6eeb;
+  --ring-primary:              rgba(10,110,235,0.22);
+}
+[data-theme="mansis"].dark {
+  --color-primary:             #4aa4f1;
+  --color-primary-active:      #6fb7f4;
+  --color-primary-soft:        #0e2238;
+  --color-primary-accent:      #0a1024;
+  --color-primary-transparent: rgba(74,164,241,0.24);
+
+  --color-orange:              #14a7c4;
+  --color-orange-active:       #1ab7d6;
+  --color-orange-soft:         #0c2a33;
+  --color-orange-light:        #0c2a33;
+  --color-orange-transparent:  rgba(43,211,238,0.26);
+  --color-accent:              #14a7c4;
+  --color-accent-active:       #1ab7d6;
+  --color-accent-soft:         #0c2a33;
+  --color-accent-transparent:  rgba(43,211,238,0.26);
+  --color-accent-accent:       #5fd8ef;
+
+  --color-success-soft:        #0c2417;
+  --color-success-accent:      #4ade80;
+  --color-warning-soft:        #2a1e05;
+  --color-warning-accent:      #fcd34d;
+  --color-danger-soft:         #2c0f0f;
+  --color-danger-accent:       #f87171;
+  --color-info-soft:           #07273a;
+  --color-info-accent:         #5fc8f5;
+
+  --text-link:                 #4aa4f1;
+  --ring-primary:              rgba(74,164,241,0.26);
+}
+
+/* ============================================================
+   HAN — lacivert + altın (Tahtakale han keşif ürünü)
+   Marka katmanı: primary #14304F yapısal, accent #C9A227 yalnızca CTA.
+   Uyanık turuncusu HAN'da kullanılmaz — accent zinciri doğrudan set
+   edilir, --color-orange'a alias bırakılmaz.
+   NOT: alıcı arayüzü (A) için dark varyant ÜRETİLMEZ (dış mekân, güneş).
+   Dark satırı yalnızca esnaf/saha/yönetim panelleri (B/C/D) içindir.
+   ============================================================ */
+[data-theme="han"] {
+  --color-primary:             #14304f;
+  --color-primary-active:      #0f2439;
+  --color-primary-soft:        #e8edf3;
+  --color-primary-accent:      #0b1a2b;
+  --color-primary-transparent: rgba(20,48,79,0.20);
+
+  --color-orange:              #c9a227;
+  --color-orange-active:       #a8851c;
+  --color-orange-soft:         #faf3e0;
+  --color-orange-light:        #faf3e0;
+  --color-orange-transparent:  rgba(201,162,39,0.20);
+  --color-accent:              #c9a227;
+  --color-accent-active:       #a8851c;
+  --color-accent-soft:         #faf3e0;
+  --color-accent-transparent:  rgba(201,162,39,0.20);
+  --color-accent-accent:       #7d6314;
+
+  --text-link:                 #14304f;
+  --ring-primary:              rgba(20,48,79,0.20);
+}
+/* B / C / D panelleri için — A arayüzünde kullanılmaz */
+[data-theme="han"].dark {
+  --color-primary:             #4a6f9e;
+  --color-primary-active:      #5f83b1;
+  --color-primary-soft:        #16223a;
+  --color-primary-accent:      #bdcbe0;
+  --color-primary-transparent: rgba(74,111,158,0.24);
+
+  --color-orange:              #d4b23f;
+  --color-orange-active:       #c9a227;
+  --color-orange-soft:         #262008;
+  --color-orange-light:        #262008;
+  --color-orange-transparent:  rgba(212,178,63,0.24);
+  --color-accent:              #d4b23f;
+  --color-accent-active:       #c9a227;
+  --color-accent-soft:         #262008;
+  --color-accent-transparent:  rgba(212,178,63,0.24);
+  --color-accent-accent:       #e0c66a;
+
+  --text-link:                 #4a6f9e;
+  --ring-primary:              rgba(74,111,158,0.24);
+}
+
+/* ============================================================
+   YENİ TEMA ŞABLONU — kopyalayıp "<ad>" ve renkleri değiştirin.
+   Sadece marka katmanını ezin; gerisi otomatik gelir.
+   ------------------------------------------------------------
+   [data-theme="<ad>"] {
+     --color-primary: #...;        --color-primary-active: #...;
+     --color-primary-soft: #...;   --color-primary-accent: #...;
+     --color-primary-transparent: rgba(...,0.20);
+     --color-orange: #...;         --color-orange-active: #...;
+     --color-orange-soft: #...;    --color-orange-light: #...;
+     --color-orange-transparent: rgba(...,0.20);
+     --color-accent-accent: #...;
+     --ring-primary: rgba(...,0.20);
+   }
+   [data-theme="<ad>"].dark {
+     ... dark marka değerleri (soft arka planlar koyu, accent metin açık) ...
+   }
+   ============================================================ */

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>HAN · indeks ve parça üretimi</title>
+<style>
+  body { margin:0; font-family: system-ui, sans-serif; background:#FCFCFC; color:#1B1C22; }
+  main { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 24px; letter-spacing: -.02em; margin: 0 0 6px; }
+  p { color:#4B5675; line-height:1.55; }
+  button { height:44px; padding:0 18px; border-radius:8px; border:none; background:#1F3864; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+  pre { background:#fff; border:1px solid #DBDFE9; border-radius:10px; padding:14px; font-size:12.5px; overflow:auto; }
+  ul { color:#4B5675; line-height:1.6; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Arama indeksi ve veri parçaları</h1>
+  <p>Bu sayfa <code>han-scale.js</code>'teki kayıtlardan iki build çıktısı üretir: semt bazlı kayıt parçaları
+  (<code>data/records-&lt;semt&gt;.json</code>) ve ters arama indeksi (<code>data/index.json</code>).
+  Uygulama bu dosyalar varsa yalnız gereken parçayı indirir; yoksa bellekte üretir — yani prototip her koşulda çalışır.</p>
+  <p><button id="go">Üret ve indir</button></p>
+  <pre id="out">Hazır.</pre>
+  <ul>
+    <li>Üretilen dosyaları projedeki <code>data/</code> klasörüne koyun.</li>
+    <li>Kayıt sayısı 30–50 bine çıktığında yalnız bu çıktılar değişir; arama kodu aynı kalır.</li>
+  </ul>
+</main>
+<script type="module">
+import { buildIndex, buildShards } from "./han-index.js";
+import { RECORDS } from "./han-scale.js";
+
+const out = document.getElementById("out");
+const dl = (name, obj) => {
+  const blob = new Blob([JSON.stringify(obj)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+
+document.getElementById("go").addEventListener("click", () => {
+  const idx = buildIndex(RECORDS);
+  const shards = buildShards(RECORDS);
+  const lines = ["index.json · " + Object.keys(idx.tokens).length + " token · " + idx.total + " kayıt"];
+  dl("index.json", idx);
+  Object.keys(shards).forEach(semt => {
+    lines.push("records-" + semt + ".json · " + shards[semt].length + " kayıt");
+    dl("records-" + semt + ".json", shards[semt]);
+  });
+  out.textContent = lines.join("\n");
+});
+
+out.textContent = RECORDS.length + " kayıt yüklendi. Üretime hazır.";
+</script>
+</body>
+</html>

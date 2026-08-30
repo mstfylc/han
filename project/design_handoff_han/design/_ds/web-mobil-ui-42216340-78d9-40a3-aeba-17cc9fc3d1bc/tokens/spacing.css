@@ -1,0 +1,56 @@
+/* ============================================================
+   METRONIC — SPACING, RADII, SHADOWS, BORDERS
+   ============================================================ */
+
+:root {
+  /* ---- Spacing scale (0.25rem base) ---- */
+  --space-0:  0px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Corner radii ---- */
+  --radius-xs:   4px;
+  --radius-sm:   6px;    /* buttons, inputs, badges */
+  --radius-md:   8px;
+  --radius-lg:   12px;   /* default card */
+  --radius-xl:   16px;
+  --radius-2xl:  20px;   /* feature panels */
+  --radius-full: 999px;  /* pills, avatars */
+
+  /* ---- Elevation / shadows ---- */
+  /* Metronic relies on very soft, low-opacity shadows */
+  --shadow-xs:   0 1px 2px 0 rgba(0,0,0,0.03);
+  --shadow-sm:   0 3px 4px 0 rgba(0,0,0,0.03);          /* default card */
+  --shadow-md:   0 3px 8px 0 rgba(0,0,0,0.07);          /* raised button */
+  --shadow-lg:   0 7px 18px 0 rgba(0,0,0,0.09);         /* dropdown / popover */
+  --shadow-xl:   0 10px 35px 0 rgba(0,0,0,0.10);        /* modal */
+  --shadow-focus: 0 0 0 3px var(--ring-primary);        /* focus ring */
+  --shadow-inset-border: inset 0 0 0 1px var(--border-strong);
+
+  /* ---- Border widths ---- */
+  --border-width: 1px; /* @kind other */
+
+  /* ---- Z-index scale ---- */
+  --z-dropdown: 1000; /* @kind other */
+  --z-sticky:   1020; /* @kind other */
+  --z-fixed:    1030; /* @kind other */
+  --z-modal-backdrop: 1040; /* @kind other */
+  --z-modal:    1050; /* @kind other */
+  --z-popover:  1060; /* @kind other */
+  --z-tooltip:  1070; /* @kind other */
+
+  /* ---- Motion ---- */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --duration-fast: 0.15s; /* @kind other */
+  --duration-base: 0.2s; /* @kind other */
+  --transition-base: all var(--duration-base) var(--ease-default); /* @kind other */
+}

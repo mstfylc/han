@@ -1,0 +1,49 @@
+/* ============================================================
+   METRONIC — BASE / RESET
+   Minimal element defaults so specimen cards, components and
+   UI kits inherit the brand look without extra wiring.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-relaxed);
+  color: var(--text-body);
+  background-color: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--text-heading);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-snug);
+}
+
+a { color: var(--text-link); text-decoration: none; }
+a:hover { color: var(--color-primary-active); }
+
+p { margin: 0; }
+
+code, kbd, pre, samp { font-family: var(--font-mono); }
+
+/* Inline-SVG icon helper: <span class="ki" style="-webkit-mask-image:url(...)">
+   or simply size an <img> icon. Icons ship with fill="currentColor". */
+.mt-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+.mt-icon svg, .mt-icon img { width: 100%; height: 100%; display: block; }
+
+::selection { background: var(--color-primary-soft); color: var(--color-primary-accent); }
