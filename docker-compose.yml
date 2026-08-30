@@ -1,0 +1,42 @@
+# HAN — tek komutla canlı: uygulama + otomatik HTTPS (Caddy).
+#
+#   1. Sunucuda: DOMAIN=han.ornek.com docker compose up -d --build
+#   2. DNS'te alan adını sunucunun IP'sine yönlendirin — sertifika kendiliğinden gelir.
+#
+# Veritabanı `han-data` volume'ünde yaşar; yeniden kurulum/deploy veriye dokunmaz.
+# Yedek: `docker compose exec app node scripts/backup-db.mjs` (yedekler volume içinde
+# .data/backups/ altına düşer).
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_SITE_URL=https://${DOMAIN:-localhost}
+      # SMS bağlanacaksa (bkz. README):
+      # - HAN_SMS_PROVIDER=netgsm
+      # - HAN_NETGSM_USER=...
+      # - HAN_NETGSM_PASS=...
+      # - HAN_NETGSM_HEADER=...
+    volumes:
+      - han-data:/app/.data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  han-data:
+  caddy-data:
+  caddy-config:
