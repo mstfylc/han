@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAN — Harita</title>
+<!-- Leaflet is vendored, not pulled from a CDN: the map has to work in the
+     bazaar, where the promise is that saved data opens offline. -->
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<script src="vendor/leaflet/leaflet.js"></script>
+<style>
+  html,body{margin:0;height:100%;font-family:Inter,system-ui,sans-serif}
+  #map{position:absolute;inset:0}
+  .leaflet-container{background:#eceff4}
+  .pin{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;
+    color:#fff;font-size:12px;font-weight:700;box-shadow:0 3px 8px rgba(0,0,0,.28);border:2px solid #fff}
+  .pin-han{background:#1F3864}
+  /* M3 · listeden seçilen pin: haritada hangisi olduğu tek bakışta görünmeli */
+  .pin-on{outline:3px solid #E08A2B;outline-offset:2px;transform:scale(1.18);z-index:600}
+  #areaSearch{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:500;
+    height:38px;padding:0 18px;border-radius:999px;border:1px solid #DBDFE9;background:#fff;
+    font-family:Inter,system-ui,sans-serif;font-size:13.5px;font-weight:700;color:#1F3864;
+    box-shadow:0 7px 18px rgba(0,0,0,.14);cursor:pointer}
+  #areaSearch:hover{background:#EAEEF4}
+  .pin-area{background:#E08A2B;color:#0b1a2b}
+  .pin-me{background:#0BC33F}
+  .pin-stop{background:#1F3864;width:34px;height:34px;font-size:14px}
+  .pin-risk{background:#ED143B;width:34px;height:34px;font-size:14px}
+  .pop{font-family:Inter,system-ui,sans-serif;min-width:150px}
+  .pop b{display:block;font-size:14px;color:#1B1C22;letter-spacing:-.01em}
+  .pop span{display:block;font-size:12px;color:#78829D;margin-top:2px}
+  .pop button{margin-top:8px;width:100%;height:32px;border:none;border-radius:6px;background:#1F3864;color:#fff;
+    font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+  .legend{position:absolute;left:10px;bottom:14px;z-index:500;background:#fff;border:1px solid #DBDFE9;border-radius:8px;
+    padding:8px 10px;font-size:11px;color:#4B5675;display:flex;flex-direction:column;gap:5px;box-shadow:0 3px 8px rgba(0,0,0,.08)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:999px;margin-inline-end:6px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="legend" id="legend"></div>
+<script type="module">
+import { HANS, AREAS, STORES } from "./han-data.js";
+
+const params = new URLSearchParams(location.search);
+const lang = params.get("lang") || "tr";
+const t = (o, k) => o[k + lang.charAt(0).toUpperCase() + lang.slice(1)] || o[lang] || o.tr;
+const W = {
+  tr: { hans: "Tarihi hanlar", areas: "Çarşı bölgeleri", me: "Yaklaşık konumunuz", open: "Aç", shops: "dükkân", walk: "dk yürüme", route: "Rotanız", stop: "durak", areaSearch: "Bu alanda ara", risk: "Varmadan kapanıyor" },
+  en: { hans: "Historic hans", areas: "Bazaar areas", me: "Your approximate location", open: "Open", shops: "shops", walk: "min walk", route: "Your route", stop: "stop", areaSearch: "Search this area", risk: "Closes before you arrive" },
+  ru: { areaSearch: "Искать здесь", hans: "Исторические ханы", areas: "Районы базара", me: "Ваше примерное положение", open: "Открыть", shops: "лавок", walk: "мин пешком", route: "Ваш маршрут", stop: "остановка", risk: "Закроется до вашего прихода" },
+  ar: { areaSearch: "ابحث في هذه المنطقة", hans: "الخانات التاريخية", areas: "مناطق السوق", me: "موقعك التقريبي", open: "فتح", shops: "متجرًا", walk: "دقيقة سيرًا", route: "مسارك", stop: "محطة", risk: "يغلق قبل وصولك" }
+}[lang] || {};
+
+// Rota modu: pts=lat,lng,encodedAd,risk;... — duraklar sırayla numaralandırılır.
+const route = (params.get("pts") || "").split(";").filter(Boolean).map(s => {
+  const f = s.split(",");
+  return { p: [parseFloat(f[0]), parseFloat(f[1])], label: decodeURIComponent(f[2] || ""), risk: f[3] === "1" };
+}).filter(x => isFinite(x.p[0]) && isFinite(x.p[1]));
+
+const map = L.map("map", { zoomControl: true, attributionControl: true }).setView([41.0165, 28.9690], 15);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19, attribution: "© OpenStreetMap contributors"
+}).addTo(map);
+
+const me = [41.0175, 28.9705];
+const dist = (a, b) => {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(x)));
+};
+
+const icon = (cls, label) => L.divIcon({ html: '<div class="pin ' + cls + '">' + label + "</div>", className: "", iconSize: [30, 30], iconAnchor: [15, 15] });
+
+// M3 · Harita ↔ liste iki yönlü. Pin'ler id ile saklanır ki üst pencere
+// listeden bir satıra dokunduğunda o pin'i işaretleyip ortalayabilelim.
+const pins = {};
+let active = null;
+const setActive = (id) => {
+  if (active && pins[active]) pins[active]._icon && pins[active]._icon.firstChild.classList.remove("pin-on");
+  active = id;
+  const m = pins[id];
+  if (!m) return;
+  if (m._icon) m._icon.firstChild.classList.add("pin-on");
+  map.panTo(m.getLatLng(), { animate: true });
+  m.openPopup();
+};
+
+const bounds = [];
+AREAS.forEach(a => {
+  if (a.lat == null || route.length) return;
+  const p = [a.lat, a.lng]; bounds.push(p);
+  const n = STORES.filter(s => {
+    const h = HANS.find(x => x.id === s.han);
+    return (h ? h.area : s.area) === a.id;
+  }).length;
+  pins[a.id] = L.marker(p, { icon: icon("pin-area", "◆") }).addTo(map).bindPopup(
+    '<div class="pop"><b>' + (a[lang] || a.tr) + "</b><span>" + n + " " + W.shops + " · " +
+    Math.max(1, Math.round(dist(me, p) / 80)) + " " + W.walk + '</span><button data-kind="area" data-id="' + a.id + '">' + W.open + "</button></div>"
+  );
+});
+
+HANS.forEach(h => {
+  if (h.lat == null || route.length) return;
+  const p = [h.lat, h.lng]; bounds.push(p);
+  const n = STORES.filter(s => s.han === h.id).length;
+  pins[h.id] = L.marker(p, { icon: icon("pin-han", "▣") }).addTo(map).bindPopup(
+    '<div class="pop"><b>' + h.name + "</b><span>" + n + " " + W.shops + " · " +
+    Math.max(1, Math.round(dist(me, p) / 80)) + " " + W.walk + '</span><button data-kind="han" data-id="' + h.id + '">' + W.open + "</button></div>"
+  );
+});
+
+if (route.length) {
+  L.polyline([me].concat(route.map(r => r.p)), {
+    color: "#1F3864", weight: 4, opacity: .7, dashArray: "7,7"
+  }).addTo(map);
+  route.forEach((r, i) => {
+    bounds.push(r.p);
+    L.marker(r.p, { icon: icon(r.risk ? "pin-risk" : "pin-stop", String(i + 1)) }).addTo(map)
+      .bindPopup('<div class="pop"><b>' + r.label + "</b><span>" + (i + 1) + ". " + W.stop +
+        (r.risk ? " · " + W.risk : "") + "</span></div>");
+  });
+}
+
+L.marker(me, { icon: icon("pin-me", "●") }).addTo(map).bindPopup('<div class="pop"><b>' + W.me + "</b></div>");
+L.circle(me, { radius: 260, color: "#0BC33F", weight: 1, fillOpacity: .08 }).addTo(map);
+if (bounds.length) map.fitBounds(L.latLngBounds(bounds).pad(0.18));
+
+document.getElementById("legend").innerHTML = route.length
+  ? '<div><i style="background:#1F3864"></i>' + W.route + " · " + route.length + " " + W.stop + "</div>" +
+    (route.some(r => r.risk) ? '<div><i style="background:#ED143B"></i>' + W.risk + "</div>" : "") +
+    '<div><i style="background:#0BC33F"></i>' + W.me + "</div>"
+  : '<div><i style="background:#1F3864"></i>' + W.hans + "</div>" +
+    '<div><i style="background:#E08A2B"></i>' + W.areas + "</div>" +
+    '<div><i style="background:#0BC33F"></i>' + W.me + "</div>";
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-kind]");
+  if (!b) return;
+  parent.postMessage({ source: "han-map", kind: b.dataset.kind, id: b.dataset.id }, "*");
+});
+
+// M3 · İki yönlü seçim ve "bu alanda ara".
+// Pin'e dokunmak da listeyi daraltır — popup'taki düğmeyi beklemek gerekmez.
+Object.keys(pins).forEach(id => {
+  pins[id].on("click", () => {
+    setActive(id);
+    parent.postMessage({ source: "han-map", kind: "hover", id }, "*");
+  });
+});
+
+// Üst pencere listeden bir satır seçtiğinde ilgili pin işaretlenir ve ortalanır.
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || m.source !== "han-web") return;
+  if (m.kind === "focus") setActive(m.id);
+  if (m.kind === "clear" && active && pins[active]) {
+    pins[active]._icon && pins[active]._icon.firstChild.classList.remove("pin-on");
+    pins[active].closePopup();
+    active = null;
+  }
+});
+
+// "Bu alanda ara": görünen çerçeveyi üst pencereye bildirir, liste ona daralır.
+// Haritayı gezmek listeyi kendiliğinden değiştirmez — kullanıcı isteyince olur.
+if (!route.length) {
+  const btn = document.createElement("button");
+  btn.id = "areaSearch";
+  btn.textContent = W.areaSearch || "Bu alanda ara";
+  btn.addEventListener("click", () => {
+    const b = map.getBounds();
+    const inside = Object.keys(pins).filter(id => b.contains(pins[id].getLatLng()));
+    parent.postMessage({ source: "han-map", kind: "bounds", ids: inside,
+      box: { n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() } }, "*");
+  });
+  document.body.appendChild(btn);
+}
+</script>
+</body>
+</html>

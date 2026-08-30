@@ -1,0 +1,104 @@
+/* HAN — global entry point.
+   Design system tokens come from the `web/mobil/UI` bundle shipped with the
+   handoff (_ds/…/tokens). Never write a literal hex in app code: the two-axis
+   theme model (data-theme × .dark) needs every colour to come from a token. */
+
+@import "../styles/tokens/fonts.css";
+@import "../styles/tokens/colors.css";
+@import "../styles/tokens/themes.css";
+@import "../styles/tokens/typography.css";
+@import "../styles/tokens/spacing.css";
+@import "../styles/tokens/base.css";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--surface-page);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary-active);
+}
+
+/* W1 · focus ring — the prototype's accessibility pass. Keyboard users must be
+   able to walk the three columns; without a visible ring they get lost. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+[data-han-skip] {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: -60px;
+  z-index: 80;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: top 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-han-skip]:focus {
+  top: 12px;
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+}
+
+/* The section rail scrolls horizontally on narrow screens but must not show a
+   bar over the navy header. */
+[data-han-nav] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[data-han-nav]::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
