@@ -16,9 +16,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import * as AD from "@/data/han-admin";
+import type { OpsUser } from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
 import { Icon } from "@/ds";
+import * as AUTH from "@/lib/authClient";
 import { readKey, writeKey } from "@/services/storage";
 import { sx } from "@/lib/sx";
 
@@ -37,21 +38,21 @@ export interface PanelTab {
 
 const ROLE_KEY = "han-panel-role";
 
-export function usePanelRole(): [string, (r: string) => void, AD.OpsUser | null] {
+export function usePanelRole(): [string, (r: string) => void, OpsUser | null] {
   const [role, setRole] = useState("yonetici");
-  const [me, setMe] = useState<AD.OpsUser | null>(null);
+  const [me, setMe] = useState<OpsUser | null>(null);
   // Read after mount: the server has no stored role, and reading during render
   // would make the first client render disagree with the server's.
   useEffect(() => {
-    const s = AD.session();
-    const u = s ? AD.allUsers().find((x) => x.id === s.userId) || null : null;
-    if (u && SC.ROLES[u.role]) {
-      setMe(u);
-      setRole(u.role);
-      return;
-    }
     const stored = readKey<string | null>(ROLE_KEY, null);
     if (stored && SC.ROLES[stored]) setRole(stored);
+    // The real session outranks the demo selector the moment it answers.
+    void AUTH.me().then((r) => {
+      if (r.user && SC.ROLES[r.user.role]) {
+        setMe(r.user);
+        setRole(r.user.role);
+      }
+    });
   }, []);
   return [
     role,
@@ -71,7 +72,7 @@ export function PanelShell({
   role: string;
   onRole: (r: string) => void;
   /** the signed-in user, when a session exists; null keeps the demo selector */
-  me?: AD.OpsUser | null;
+  me?: OpsUser | null;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -111,7 +112,7 @@ export function PanelShell({
               </span>
               <button
                 type="button"
-                onClick={() => { AD.logout(); router.push("/giris"); }}
+                onClick={() => { void AUTH.logout().then(() => router.push("/giris")); }}
                 style={sx("height:32px;padding:0 12px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:none;color:#fff")}
               >
                 Çıkış

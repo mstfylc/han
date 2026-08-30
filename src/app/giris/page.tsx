@@ -8,20 +8,26 @@
 // değilse "ilk yöneticiyi kur" çıkar, kayıtlı olmayan telefon da aynı cevabı
 // alır — kimin kayıtlı olduğu sızmaz.
 //
-// ⚠ Kimlik doğrulama PROTOTİPTİR ve ekranda da böyle yazar: şifre tarayıcıda
-// tutulur, kod ekranda görünür. Üretimde üçü de sunucu tarafına taşınır.
+// Kimlik doğrulama artık SUNUCUDADIR: şifre sunucuda hash'lenir, deneme
+// sayacı ve kilit sunucuda tutulur, kod tek kullanımlıktır ve oturum httpOnly
+// çerezdir. Ekrandaki kod yalnız SMS sağlayıcısı olmadığı için görünür ve
+// PROTOTİP etiketiyle işaretlidir.
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import * as AD from "@/data/han-admin";
+import type { OpsUser } from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
 import { Button, Input } from "@/ds";
+import * as AUTH from "@/lib/authClient";
 import { sx } from "@/lib/sx";
 
 type View = "giris" | "girdi" | "unuttum" | "kod";
 
 const LINK = "background:none;border:none;padding:0;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--color-primary);cursor:pointer;white-space:nowrap";
+
+/** Sunucudaki değerle aynı (src/server/auth.ts); metin sunucu davranışını anlatır. */
+const RESET_TTL_MIN = 15;
 
 const digits = (x: string) => String(x || "").replace(/\D/g, "");
 
@@ -30,7 +36,7 @@ export default function GirisPage() {
 
   const [ready, setReady] = useState(false);
   const [view, setView] = useState<View>("giris");
-  const [me, setMe] = useState<AD.OpsUser | null>(null);
+  const [me, setMe] = useState<OpsUser | null>(null);
 
   const [tel, setTel] = useState("");
   const [pin, setPin] = useState("");
@@ -45,29 +51,29 @@ export default function GirisPage() {
   const [noUsers, setNoUsers] = useState(false);
 
   useEffect(() => {
-    const s = AD.session();
-    const u = s ? AD.allUsers().find((x) => x.id === s.userId) || null : null;
-    setMe(u);
-    setView(u ? "girdi" : "giris");
-    setNoUsers(AD.allUsers().length === 0);
-    setReady(true);
+    void AUTH.me().then((r) => {
+      setMe(r.user);
+      setView(r.user ? "girdi" : "giris");
+      setNoUsers(r.noUsers);
+      setReady(true);
+    });
   }, []);
 
   const clearMsgs = () => { setErr(""); setErrors({}); };
 
-  const onLogin = () => {
+  const onLogin = async () => {
     const t = digits(tel);
     const errs: Record<string, string> = {};
     if (t.length < 10) errs.tel = "Geçerli telefon yazın";
     if (!pin) errs.pin = "Şifre gerekli";
     if (Object.keys(errs).length) { setErrors(errs); setErr(""); return; }
-    const r = AD.login(t, pin);
+    const r = await AUTH.login(t, pin);
     if (!r.ok) {
       // Şifresi hiç kurulmamış hesabı çıkmaz sokakta bırakmayız: doğrudan
       // sıfırlama akışına geçer.
       if (r.err === "pinsiz") {
-        const rq = AD.requestReset(t);
-        setView("kod"); setErr(r.msg || ""); setDemoCode(rq.code); setSentTo(rq.masked); setErrors({});
+        const rq = await AUTH.resetRequest({ tel: t });
+        setView("kod"); setErr(r.msg || ""); setDemoCode(rq.demoCode || null); setSentTo(rq.masked || null); setErrors({});
         return;
       }
       setErr(r.msg || "Giriş yapılamadı."); setErrors({});
@@ -76,37 +82,36 @@ export default function GirisPage() {
     setMe(r.user || null); setView("girdi"); setPin(""); clearMsgs();
   };
 
-  const onRequest = () => {
+  const onRequest = async () => {
     const t = digits(tel);
     if (t.length < 10) { setErrors({ tel: "Geçerli telefon yazın" }); setView("unuttum"); return; }
-    const r = AD.requestReset(t);
-    setView("kod"); setDemoCode(r.code); setSentTo(r.masked);
+    const r = await AUTH.resetRequest({ tel: t });
+    setView("kod"); setDemoCode(r.demoCode || null); setSentTo(r.masked || null);
     setCode(""); setNp(""); setNp2(""); clearMsgs();
   };
 
-  const onApply = () => {
+  const onApply = async () => {
     const errs: Record<string, string> = {};
     if (!/^\d{6}$/.test(digits(code))) errs.code = "Altı haneli kodu yazın";
     if (!/^\d{4,8}$/.test(digits(np))) errs.np = "4–8 haneli sayı";
     if (digits(np) !== digits(np2)) errs.np2 = "Şifreler aynı değil";
     if (Object.keys(errs).length) { setErrors(errs); setErr(""); return; }
-    const r = AD.applyReset(digits(code), digits(np));
+    const r = await AUTH.resetApply(digits(code), digits(np));
     if (!r.ok) { setErr(r.msg || "Kod doğrulanamadı."); setErrors({}); return; }
-    const u = AD.allUsers().find((x) => x.id === r.userId) || null;
-    setMe(u); setView("girdi"); setCode(""); setNp(""); setNp2(""); setDemoCode(null); clearMsgs();
+    setMe(r.user || null); setView("girdi"); setCode(""); setNp(""); setNp2(""); setDemoCode(null); clearMsgs();
   };
 
-  const onSeed = () => {
+  const onSeed = async () => {
     // İlk yönetici: kimse yokken panele girilemez. Şifreyi kullanıcı kurar.
     const t = digits(tel) || "5320000000";
-    AD.addUser({ name: "İlk Yönetici", role: "yonetici", tel: t });
-    const r = AD.requestReset(t);
-    setTel(t); setView("kod"); setDemoCode(r.code); setSentTo(r.masked); clearMsgs();
+    const r = await AUTH.seedFirstAdmin(t);
+    if (!r.ok) { setErr(r.msg || "Kurulum yapılamadı."); return; }
+    setTel(t); setView("kod"); setDemoCode(r.demoCode || null); setSentTo(r.masked || null); clearMsgs();
     setNoUsers(false);
   };
 
-  const onLogout = () => {
-    AD.logout();
+  const onLogout = async () => {
+    await AUTH.logout();
     setMe(null); setView("giris"); setPin(""); setErr("");
   };
 
@@ -203,7 +208,7 @@ export default function GirisPage() {
             <div>
               <h2 style={sx("margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text-heading)")}>Şifremi unuttum</h2>
               <p style={sx("margin:8px 0 0;font-size:13.5px;color:var(--text-muted);text-wrap:pretty")}>
-                Telefonunuzu yazın; tek kullanımlık bir kod göndereceğiz. Kod {AD.RESET_TTL_MIN} dakika geçerli olur.
+                Telefonunuzu yazın; tek kullanımlık bir kod göndereceğiz. Kod {RESET_TTL_MIN} dakika geçerli olur.
               </p>
               <div style={sx("margin-top:26px")}>
                 <Input label="Telefon" placeholder="0532 000 00 00" value={tel} onChange={(e) => { setTel(e.target.value); clearMsgs(); }} error={errors.tel} />
@@ -220,7 +225,7 @@ export default function GirisPage() {
               <h2 style={sx("margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text-heading)")}>Yeni şifre kurun</h2>
               <p style={sx("margin:8px 0 0;font-size:13.5px;color:var(--text-muted);text-wrap:pretty")}>
                 {sentTo
-                  ? sentTo + " numarasına altı haneli bir kod gönderildi. Kod " + AD.RESET_TTL_MIN + " dakika geçerli ve bir kez kullanılır."
+                  ? sentTo + " numarasına altı haneli bir kod gönderildi. Kod " + RESET_TTL_MIN + " dakika geçerli ve bir kez kullanılır."
                   : "Kod gönderildi."}
               </p>
 
@@ -255,8 +260,8 @@ export default function GirisPage() {
           )}
 
           <div style={sx("margin-top:30px;padding-top:20px;border-top:1px solid var(--border-default);font-size:12px;color:var(--text-muted);text-wrap:pretty")}>
-            Bu bir prototiptir: kimlik doğrulama tarayıcıda yapılır. Gerçek üretimde şifre sunucuda saklanır,
-            kod tek kullanımlık SMS ile gider ve oturum sunucu tarafından yönetilir.
+            Şifreniz sunucuda hash&apos;lenerek saklanır, deneme sayacı ve kilit sunucudadır, oturum httpOnly
+            çerezle yönetilir. Tek eksik SMS sağlayıcısı: bu yüzden kod, PROTOTİP etiketiyle ekranda gösterilir.
           </div>
         </div>
       </div>

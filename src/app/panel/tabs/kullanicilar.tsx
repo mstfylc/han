@@ -5,16 +5,17 @@
 // OFFICERS sabit bir sözlüktü; artık kullanıcı eklenir, rol değişir, kapsam
 // atanır, hesap kapanır. Yetki tanımı SC.ROLES'ten okunur — çift kaynak yok.
 // Rol seçilirken KAÇ EKRAN GÖRECEĞİ anında yazılır (ROLES[r].can uzunluğu;
-// "*" = hepsi). Şifre durumu AD.hasPin'den; sıfırlama kodu AD.requestReset
-// üretir. Telefonlar hep maskeli gösterilir.
+// "*" = hepsi). Şifre durumu ve sıfırlama kodu SUNUCUDAN gelir (/api/auth):
+// şifre hash'i tarayıcıya hiç inmez. Telefonlar hep maskeli gösterilir.
 //
 // "HAN Panel.dc.html" isKullanicilar bölümü + userVals()'ın portu.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
 import { Alert, Button, Drawer, EmptyState, Input, Select } from "@/ds";
+import * as AUTH from "@/lib/authClient";
 import { sx } from "@/lib/sx";
 
 import { CARD, Pill, H1, SUB, type PanelTabProps } from "./shared";
@@ -37,14 +38,22 @@ export default function Kullanicilar({ readOnly, refresh, say }: PanelTabProps) 
   const [formOpen, setFormOpen] = useState(false);
   const [f, setF] = useState<UserForm>(EMPTY_FORM);
   const [errs, setErrs] = useState<{ name?: string; tel?: string }>({});
-  // Prototipte kod ekranda gösterilir; üretimde SMS ile gider ve burada görünmez.
+  // SMS sağlayıcısı olmadığı için kod ekranda gösterilir (PROTOTİP etiketli);
+  // üretimde SMS ile gider ve burada görünmez.
   const [codes, setCodes] = useState<Record<string, string | null>>({});
+
+  // Şifre durumu sunucudan: hangi hesabın şifresi kurulu, yalnız oturumlu
+  // yönetim kullanıcısına söylenir.
+  const [pins, setPins] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    void AUTH.me().then((r) => setPins(r.pins || {}));
+  }, []);
 
   const R = SC.ROLES;
   const users = AD.allUsers();
   const needle = q.trim().toLocaleLowerCase("tr");
   const rows = users.filter((u) => !needle || (u.name + " " + u.tel).toLocaleLowerCase("tr").includes(needle));
-  const withPin = users.filter((u) => AD.hasPin(u.id)).length;
+  const withPin = users.filter((u) => pins[u.id]).length;
   const fmt = (ts: number | null) => (ts ? new Date(ts).toLocaleDateString("tr-TR") : "hiç girmedi");
 
   const stats = [
@@ -146,7 +155,7 @@ export default function Kullanicilar({ readOnly, refresh, say }: PanelTabProps) 
 
       <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px")}>
         {rows.map((u) => {
-          const pin = AD.hasPin(u.id);
+          const pin = !!pins[u.id];
           const sc = scopeOf(u.role);
           const code = codes[u.id];
           const cardTone = u.active ? (pin ? "success" : "warning") : null;
@@ -231,10 +240,12 @@ export default function Kullanicilar({ readOnly, refresh, say }: PanelTabProps) 
                   size="sm"
                   disabled={readOnly}
                   onClick={() => {
-                    const r = AD.requestReset(u.tel);
-                    setCodes({ ...codes, [u.id]: r.code });
-                    refresh();
-                    say("Sıfırlama kodu üretildi");
+                    void AUTH.resetRequest({ userId: u.id }).then((r) => {
+                      if (!r.ok) return say(r.msg || "Kod üretilemedi — yönetici oturumu gerekir");
+                      setCodes((s) => ({ ...s, [u.id]: r.demoCode || null }));
+                      refresh();
+                      say("Sıfırlama kodu üretildi");
+                    });
                   }}
                 >
                   Şifre sıfırlama kodu

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { StoreSync } from "@/components/StoreSync";
 import { AppProvider } from "@/state/AppState";
 import "@/ds/ds.css";
 import "./globals.css";
@@ -41,7 +42,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="tr" dir="ltr" data-theme="han">
       <body>
-        <AppProvider>{children}</AppProvider>
+        <StoreSync>
+          <AppProvider>{children}</AppProvider>
+        </StoreSync>
       </body>
     </html>
   );
