@@ -147,6 +147,15 @@ export const KEYS = {
   approvals: "han-approvals-v1",
   /** buyer reports; three of them suspend a record automatically */
   reports: "han-reports-v1",
+  /**
+   * Every buyer's open requests.
+   *
+   * These used to live only inside the buyer's own `han-web-v1`, which worked
+   * while all three surfaces were tabs in one browser. Across devices a trader
+   * would have had nothing to quote against, so requests are market state now:
+   * the buyer keeps their own copy, and publishes here for traders and ops.
+   */
+  requests: "han-requests-v1",
   /** a trader's corrections to their own record */
   overrides: "han-overrides-v1",
   /** records opened in the field */
@@ -212,4 +221,6 @@ export const BUYER_WATCHED_KEYS: string[] = [
   KEYS.content,
   KEYS.media,
   KEYS.geo,
+  // A request published on another device is what a trader quotes against.
+  KEYS.requests,
 ];

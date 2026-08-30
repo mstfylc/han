@@ -19,12 +19,14 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 
+import type { BuyRequest } from "@/data/types";
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import * as SE from "@/data/han-search";
 import { detectLang, isLang } from "@/lib/i18n";
 import { PARAM } from "@/lib/routes";
 import { BUYER_WATCHED_KEYS, KEYS, readKey, removeKey, subscribeKeys, writeKey } from "@/services/storage";
+import { startSync } from "@/services/sync";
 import type { AppState, OverrideEntry, PersistedState, TraderSession, UserReport } from "./types";
 
 // ── initial state ─────────────────────────────────────────────────────────
@@ -138,6 +140,33 @@ const PERSIST_FIELDS: (keyof PersistedState)[] = [
   "qHist", "savedSearches", "savedNotes", "savedFolders", "rejects", "qa",
 ];
 
+/**
+ * Publish this buyer's requests into the shared market document.
+ *
+ * Merged rather than replaced: the document holds every buyer's open requests,
+ * so writing our list over it would delete everyone else's. Our own rows are
+ * re-keyed by request id, which also means editing a request updates it rather
+ * than leaving a stale twin behind.
+ */
+function publishRequests(mine: BuyRequest[]): void {
+  const all = readKey<Record<string, BuyRequest>>(KEYS.requests, {});
+  let changed = false;
+  (mine || []).forEach((t) => {
+    if (!t?.id) return;
+    if (JSON.stringify(all[t.id]) === JSON.stringify(t)) return;
+    all[t.id] = t;
+    changed = true;
+  });
+  if (changed) writeKey(KEYS.requests, all);
+}
+
+/** Every open request in the market, whoever raised it — what a trader quotes
+ *  against and what operations measures. */
+export function allRequests(): BuyRequest[] {
+  const all = readKey<Record<string, BuyRequest>>(KEYS.requests, {});
+  return Object.values(all).filter(Boolean);
+}
+
 function persist(state: AppState): void {
   const out = {} as Record<string, unknown>;
   PERSIST_FIELDS.forEach((k) => { out[k] = state[k]; });
@@ -147,6 +176,10 @@ function persist(state: AppState): void {
   writeKey(KEYS.claims, state.claims || {});
   writeKey(KEYS.overrides, state.overrides || {});
   writeKey(KEYS.reports, state.reports || []);
+  // The buyer's requests are market state: a trader on another device has to
+  // see them or there is nothing to quote against. The buyer keeps their own
+  // copy in `web`; this is the published one.
+  publishRequests(state.talepler || []);
   // K10 · the trader's session is a phone, not a device: it lives in its own
   // key so the panel surface recognises the same number.
   if (state.esSession) writeKey(KEYS.traderSession, state.esSession);
@@ -266,10 +299,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [set]);
 
   // ── boot ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (booted.current) return;
-    booted.current = true;
-
+  const boot = useCallback(() => {
     const stored = readKey<Partial<PersistedState> | null>(KEYS.web, null);
     // The mobile app's key is read once, on first open, and never written to.
     const legacy = readKey<Partial<PersistedState> | null>("han-app-v2", null);
@@ -345,6 +375,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    // Point the persistence layer at the database and wait for the first pull,
+    // so the app opens on what is actually stored rather than rendering an
+    // empty bazaar and then jumping when the data lands. If the server cannot
+    // be reached, startSync resolves anyway and the local mirror is used.
+    void startSync().then(boot);
+  }, [boot]);
 
   // ── persistence ─────────────────────────────────────────────────────────
   useEffect(() => {

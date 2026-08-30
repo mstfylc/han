@@ -33,7 +33,7 @@ import { CARD_BOX, STICKY_TOP, areaOn, breaks, searchGrid } from "@/lib/layout";
 import { PARAM, getStr, href } from "@/lib/routes";
 import { recordName } from "@/lib/shop";
 import { sx } from "@/lib/sx";
-import { useApp } from "@/state/AppState";
+import { allRequests, useApp } from "@/state/AppState";
 import type { Claim, OverrideEntry } from "@/state/types";
 
 /** Any four-language string: the inline ones written here and the L10n rows
@@ -175,14 +175,19 @@ function TraderScreen() {
   // ── this record's inbox ──────────────────────────────────────────────────
   // A request lands here because it matches this record's category — the same
   // distribution the buyer's funnel is measured against, not a second opinion.
+  // Read the MARKET's requests, not this browser's. Using `state.talepler`
+  // worked while the buyer and the trader were two tabs on one machine; on a
+  // separate device the trader's own list is empty and there is nothing to
+  // quote against. `state.tick` is in the deps so a request that arrives on the
+  // next sync pull shows up without a reload.
   const inbox = useMemo<BuyRequest[]>(() => {
     if (!mRec) return [];
-    return (state.talepler || []).filter((req) => {
+    return allRequests().filter((req) => {
       const d = SE.distribute(req, { mode, lang });
       return !!d && (d.sent || []).some((x) => x.id === mRec.id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mRec, state.talepler, mode, lang, state.offersRev]);
+  }, [mRec, mode, lang, state.offersRev, state.tick]);
 
   // U3 · "opened it" is recorded the instant the panel actually shows the
   // request. Written in an effect, never during render.

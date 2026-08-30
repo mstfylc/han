@@ -34,3 +34,27 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Çalıştırma
+
+```bash
+npm install
+cp .env.example .env.local     # DATABASE_URL'i kendi Postgres'ine göre düzenle
+npm run dev
+```
+
+`DATABASE_URL` yoksa API 500 döner ve uygulama yalnız yerel aynayla çalışır —
+yani tek tarayıcıda çalışır ama cihazlar arası paylaşım olmaz.
+
+### Doğrulama
+
+| Komut | Ne kanıtlar |
+|---|---|
+| `npm run typecheck` | Tip bütünlüğü |
+| `npm run lint` | Sıfır hata; React Compiler uyarıları `eslint.config.mjs`'te gerekçeli |
+| `npm run parity` | Port edilmiş motor prototiple **birebir** aynı (1.385 kayıt) |
+| `npm run smoke` | 39 rota × {tr, ar} + 390px; konsol hatası, sızan `undefined`/`NaN`, `lang`/`dir`, yatay taşma |
+| `npm run loop` | Sahiplenme → onay → esnaf paneli döngüsü kapalı (E1 ve E3 dahil) |
+| `npm run crossdevice` | Pazar gerçekten paylaşılıyor: iki ayrı tarayıcı birbirini görüyor |
+
+`loop` ve `crossdevice` çalışan bir sunucu ister: `bash scripts/serve.sh`.

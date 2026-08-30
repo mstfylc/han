@@ -82,20 +82,25 @@ const run = async () => {
   await page.locator('button:has-text("Onaya gönder")').first().click();
   await page.waitForTimeout(700);
 
+  // Find OUR claim, by the record we actually clicked. Taking Object.keys()[0]
+  // was only ever right on a virgin database; now that state is durable and
+  // shared, that picked up somebody else's older claim and reported its status
+  // as ours.
   const claim = await page.evaluate(() => {
     try { return JSON.parse(localStorage.getItem("han-claims-v1") || "{}"); } catch { return {}; }
   });
-  const claimIds = Object.keys(claim);
-  if (!claimIds.length) { bad("claim was not recorded"); return finish(browser); }
-  const recId = claimIds[0];
+  const recId = Object.keys(claim).find((id) => (claim[id]?.name || "") === recordName);
+  if (!recId) { bad("claim for " + recordName + " was not recorded"); return finish(browser); }
   if (claim[recId].status !== "bekliyor") bad('a new claim must start at "bekliyor", got ' + claim[recId].status);
   else ok("claim recorded and waiting for an officer");
 
-  const statusBefore = await page.evaluate(() => {
+  // Baseline, not emptiness. The approval log legitimately carries earlier
+  // decisions; what must be true is that OUR claim has not been decided yet.
+  const before = await page.evaluate(() => {
     try { return JSON.parse(localStorage.getItem("han-approvals-v1") || "{}"); } catch { return {}; }
   });
-  if (Object.keys(statusBefore).length) bad("approval log should still be empty at this point");
-  else ok("no record decision has been made yet");
+  if (before[recId]) bad("this record already carries a decision — cannot test the transition");
+  else ok("no decision has been made about this record yet");
 
   // ── 2 · the panel approves the CLAIM (E1) ───────────────────────────────
   await page.goto(BASE + "/panel/sahiplenme", { waitUntil: "networkidle" });
@@ -114,9 +119,10 @@ const run = async () => {
   else ok("panel approved the claim");
 
   // E1 is the point of this assertion: approving WHO owns the shop must not
-  // silently also vouch for WHAT the record says.
-  if (Object.keys(afterClaim.approvals).length) {
-    bad("E1 violated: approving the claim also changed the record's status");
+  // silently also vouch for WHAT the record says. Compared against the baseline
+  // so unrelated earlier decisions do not read as a violation.
+  if (afterClaim.approvals[recId] && !before[recId]) {
+    bad("E1 violated: approving the claim also decided the record's status");
   } else {
     ok("E1 holds: the record's own status is untouched");
   }

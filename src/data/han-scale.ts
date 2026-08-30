@@ -743,6 +743,22 @@ export function setApprovals(
   });
   writeKey(KEYS.approvals, log);
   applyApprovals(log);
+  // Also append to the ledger, where nothing is overwritten. The document above
+  // is keyed by record and therefore only remembers the latest decision; this
+  // is what keeps the history. Fire-and-forget on purpose — an unreachable
+  // ledger must not block an officer's queue, and the document still holds the
+  // current state either way.
+  if (typeof fetch === "function") {
+    void fetch("/api/decisions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        decisions: (ids || []).map((id) => ({
+          recordId: id, status, via: meta?.via || "han", officer: meta?.officer ?? null,
+        })),
+      }),
+    }).catch(() => {});
+  }
   return log;
 }
 

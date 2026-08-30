@@ -10,16 +10,19 @@
     "typecheck": "tsc --noEmit",
     "parity": "tsx scripts/parity.ts",
     "smoke": "node scripts/smoke.mjs",
-    "loop": "node scripts/loop.mjs"
+    "loop": "node scripts/loop.mjs",
+    "crossdevice": "node scripts/crossdevice.mjs"
   },
   "dependencies": {
     "next": "16.3.3",
+    "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

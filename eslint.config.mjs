@@ -14,12 +14,21 @@ const eslintConfig = [
       //
       // Next 16 brings eslint-plugin-react-hooks v7, whose React Compiler rules
       // run even though `reactCompiler` is off in next.config.ts. They are not
-      // noise — they point at exactly the code the Postgres migration has to
-      // restructure, so they are tracked rather than silenced:
+      // noise, and they are tracked rather than silenced:
       //
       //   purity — screens call OF.offersOf()/declineOf() during render, which
-      //     reads storage. Once reads go to the API they become async and MUST
-      //     move out of render anyway. Expected to reach zero in that phase.
+      //     reads the local mirror.
+      //
+      //     An earlier note here predicted these would reach zero once the data
+      //     moved to Postgres. They did not, and that was a design choice worth
+      //     stating rather than quietly leaving stale: reads stayed synchronous
+      //     against a local mirror that syncs in the background, so that the
+      //     screens — and the engine held to the prototype by parity — did not
+      //     have to be rewritten. The reads are impure in React's sense but
+      //     deterministic within a render, and every write goes through the
+      //     driver. Making them genuinely pure means moving to a subscription
+      //     (useSyncExternalStore) or async loaders, which is worth doing when
+      //     the documents are normalised — not before.
       //   preserve-manual-memoization — the ported engine mutates records in
       //     place (applyOverrides rewrites rec.band, rec.status), so the
       //     compiler cannot prove a useMemo dependency is stable. Fixing it
