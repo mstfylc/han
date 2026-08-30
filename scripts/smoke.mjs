@@ -162,7 +162,11 @@ const run = async () => {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  for (const route of ["/", "/ara?q=kılıf", "/plan", "/isler/talep", "/dukkan/emre"]) {
+  for (const route of [
+    "/", "/ara?q=kılıf", "/plan", "/isler/talep", "/dukkan/emre",
+    "/kategori", "/urun/kilif", "/harita", "/etkinlik", "/arac/doviz",
+    "/yer/yildiz", "/esnaf", "/giris", "/panel", "/panel/kayitlar",
+  ]) {
     errors.length = 0;
     await page.goto(BASE + route, { waitUntil: "networkidle" });
     await page.waitForTimeout(300);

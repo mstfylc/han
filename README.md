@@ -46,6 +46,17 @@ ekranda PROTOTİP etiketiyle gösterilir; üretimde SMS'e taşınır.)
   dokümanları (`WEB-PLAN.md`, `ADMIN-PLANI.md`, …). UI bu kaynaktan birebir
   taşınmıştır.
 
+## Mobil
+
+Ayrı bir mobil kod tabanı **bilinçli olarak yok** (tasarım kararı M1:
+mobil prototip emekliye ayrıldı — web telefonda çalışır). Mobil ürün,
+responsive web + **PWA**'dır: site telefona uygulama olarak kurulur
+(Ana Ekrana Ekle), tam ekran açılır, kısayollar taşır (Ara · Harita ·
+Plan · İşlerim) ve service worker statik kabuğu çevrimdışı tutar
+(`public/manifest.webmanifest`, `public/sw.js`). Dil ve para birimi
+cihaza özeldir; paylaşılan çarşı durumundan ayrı tutulur. Mobil tarama
+smoke'ta 390px'te 15 rotada yatay taşma sıfır olarak doğrulanır.
+
 ## SMS sağlayıcısı (isteğe bağlı)
 
 Şifre sıfırlama kodu, sağlayıcı bağlanana kadar ekranda PROTOTİP etiketiyle

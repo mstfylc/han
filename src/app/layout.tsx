@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { StoreSync } from "@/components/StoreSync";
@@ -29,7 +29,15 @@ export const metadata: Metadata = {
       "x-default": "/?lang=en",
     },
   },
-  icons: { icon: "/assets/han-mark.svg" },
+  icons: { icon: "/assets/han-mark.svg", apple: "/assets/icon-192.png" },
+  // PWA: the phone installs the web app instead of us maintaining a second
+  // codebase — the M1 decision ("web IS the mobile product"), taken seriously.
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "HAN", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1f3864",
 };
 
 /**

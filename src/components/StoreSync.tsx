@@ -18,6 +18,10 @@ export function StoreSync({ children }: { children: ReactNode }) {
     void hydrateFromServer().finally(() => {
       if (alive) setPhase("ready");
     });
+    // PWA: register the offline shell. Failure is fine — the site is the app.
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
     return () => { alive = false; };
   }, []);
 

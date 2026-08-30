@@ -22,6 +22,9 @@ const LOCAL_ONLY = new Set([
   "han-panel-role",
   "han-panel-scope-v1",
   "han-panel-theme",
+  // Language and currency belong to the device, not the shared bazaar: one
+  // phone switching to Arabic must not flip every other screen to Arabic.
+  "han-prefs",
 ]);
 
 const shouldSync = (key: string) => /^han-[a-z0-9-]+$/.test(key) && !LOCAL_ONLY.has(key);
