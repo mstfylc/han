@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/themes.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/base.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/styles.css">
+  <script src="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/_ds_bundle.js"></script>
+  <style>
+    html,body{margin:0}
+    a{color:var(--color-primary);text-decoration:none}
+    a:hover{color:var(--color-primary-active)}
+  </style>
+</helmet>
+
+<div style="font-family:var(--font-sans);min-height:100vh;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
+
+  <div style="background:var(--color-primary);color:#fff;padding:48px 44px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;min-height:320px">
+    <div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;letter-spacing:-.02em">H</div>
+        <span style="font-size:19px;font-weight:800;letter-spacing:-.01em">HAN</span>
+        <span style="font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-left:4px">Yönetim</span>
+      </div>
+      <h1 style="margin:36px 0 0;font-size:34px;line-height:1.2;font-weight:700;letter-spacing:-.02em;max-width:20ch;text-wrap:pretty">Tarihi Yarımada'nın kayıt omurgası</h1>
+      <p style="margin:16px 0 0;font-size:14.5px;line-height:1.65;opacity:.78;max-width:44ch;text-wrap:pretty">38 yer, 14.716 dükkân birimi. Kapsamayı kapatan iş sahada yürür — bu panel o işin defterini tutar.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:22px">
+      <sc-for list="{{ heroStats }}" as="s" hint-placeholder-count="3">
+        <div>
+          <div style="font-size:24px;font-weight:700;letter-spacing:-.01em">{{ s.n }}</div>
+          <div style="font-size:12px;opacity:.68;margin-top:3px">{{ s.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:var(--surface-page);padding:48px 40px;display:flex;align-items:center;justify-content:center">
+    <div style="width:100%;max-width:400px">
+
+      <sc-if value="{{ isSignedIn }}">
+        <div style="background:var(--surface-card);border:1px solid var(--color-success);border-radius:14px;padding:28px 26px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--color-success)">Giriş yapıldı</div>
+          <div style="font-size:22px;font-weight:700;letter-spacing:-.015em;color:var(--text-heading);margin-top:9px">{{ meName }}</div>
+          <div style="font-size:13.5px;color:var(--text-muted);margin-top:5px;text-wrap:pretty">{{ meRole }}</div>
+          <div style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
+            <a href="HAN Panel.dc.html" style="{{ panelBtnStyle }}">Panele git</a>
+            <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="ghost" color="dark" full-width="{{ true }}" onClick="{{ onLogout }}" hint-size="100%,40px">Çıkış yap</x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text-heading)">Giriş yap</h2>
+          <p style="margin:8px 0 0;font-size:13.5px;color:var(--text-muted);text-wrap:pretty">Telefonunuz ve şifrenizle girin. Yetkiniz rolünüzden gelir.</p>
+
+          <div style="margin-top:26px;display:flex;flex-direction:column;gap:16px">
+            <x-import component-from-global-scope="WebMobilUI_422163.Input" label="Telefon" placeholder="0532 000 00 00" value="{{ f_tel }}" onChange="{{ set_tel }}" error="{{ e_tel }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="WebMobilUI_422163.Input" label="Şifre" type="password" placeholder="••••" value="{{ f_pin }}" onChange="{{ set_pin }}" error="{{ e_pin }}" hint-size="100%,66px"></x-import>
+          </div>
+
+          <sc-if value="{{ hasError }}">
+            <div style="margin-top:16px;padding:12px 14px;border-radius:9px;background:var(--color-danger-soft);color:var(--color-danger);font-size:13px;font-weight:600;text-wrap:pretty">{{ errMsg }}</div>
+          </sc-if>
+
+          <div style="margin-top:22px">
+            <x-import component-from-global-scope="WebMobilUI_422163.Button" color="accent" size="lg" full-width="{{ true }}" onClick="{{ onLogin }}" hint-size="100%,46px">Giriş yap</x-import>
+          </div>
+          <div style="margin-top:14px;text-align:center">
+            <button type="button" onClick="{{ goForgot }}" style="{{ linkStyle }}">Şifremi unuttum</button>
+          </div>
+
+          <sc-if value="{{ noUsers }}">
+            <div style="margin-top:26px;padding:16px 18px;border-radius:12px;background:var(--surface-card);border:1px solid var(--border-strong)">
+              <div style="font-size:13px;font-weight:600;color:var(--text-heading)">Henüz kullanıcı yok</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:5px;text-wrap:pretty">Sistemde tanımlı kimse olmadan giriş yapılamaz. İlk yöneticiyi buradan kurup panele girebilirsiniz.</div>
+              <div style="margin-top:13px">
+                <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="outline" color="dark" size="sm" full-width="{{ true }}" onClick="{{ onSeed }}" hint-size="100%,36px">İlk yöneticiyi kur</x-import>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isForgot }}">
+        <div>
+          <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text-heading)">Şifremi unuttum</h2>
+          <p style="margin:8px 0 0;font-size:13.5px;color:var(--text-muted);text-wrap:pretty">Telefonunuzu yazın; tek kullanımlık bir kod göndereceğiz. Kod {{ ttl }} dakika geçerli olur.</p>
+          <div style="margin-top:26px">
+            <x-import component-from-global-scope="WebMobilUI_422163.Input" label="Telefon" placeholder="0532 000 00 00" value="{{ f_tel }}" onChange="{{ set_tel }}" error="{{ e_tel }}" hint-size="100%,66px"></x-import>
+          </div>
+          <div style="margin-top:22px">
+            <x-import component-from-global-scope="WebMobilUI_422163.Button" color="accent" size="lg" full-width="{{ true }}" onClick="{{ onRequest }}" hint-size="100%,46px">Kod gönder</x-import>
+          </div>
+          <div style="margin-top:14px;text-align:center">
+            <button type="button" onClick="{{ goLogin }}" style="{{ linkStyle }}">Girişe dön</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isCode }}">
+        <div>
+          <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text-heading)">Yeni şifre kurun</h2>
+          <p style="margin:8px 0 0;font-size:13.5px;color:var(--text-muted);text-wrap:pretty">{{ sentNote }}</p>
+
+          <sc-if value="{{ showDemoCode }}">
+            <div style="margin-top:18px;padding:14px 16px;border-radius:11px;background:var(--color-info-soft);border:1px solid var(--color-info)">
+              <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--color-info)">Prototip</div>
+              <div style="font-family:var(--font-mono);font-size:24px;font-weight:700;letter-spacing:.12em;color:var(--color-info);margin-top:6px">{{ demoCode }}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:7px;text-wrap:pretty">Gerçek üretimde bu kod ekranda görünmez; SMS ile gider. Burada akışı deneyebilmeniz için gösteriliyor.</div>
+            </div>
+          </sc-if>
+
+          <div style="margin-top:22px;display:flex;flex-direction:column;gap:16px">
+            <x-import component-from-global-scope="WebMobilUI_422163.Input" label="Doğrulama kodu" placeholder="000000" value="{{ f_code }}" onChange="{{ set_code }}" error="{{ e_code }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="WebMobilUI_422163.Input" label="Yeni şifre" type="password" placeholder="4–8 haneli" value="{{ f_new }}" onChange="{{ set_new }}" error="{{ e_new }}" hint="Sadece sayı" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="WebMobilUI_422163.Input" label="Yeni şifre (yine)" type="password" placeholder="4–8 haneli" value="{{ f_new2 }}" onChange="{{ set_new2 }}" error="{{ e_new2 }}" hint-size="100%,66px"></x-import>
+          </div>
+
+          <sc-if value="{{ hasError }}">
+            <div style="margin-top:16px;padding:12px 14px;border-radius:9px;background:var(--color-danger-soft);color:var(--color-danger);font-size:13px;font-weight:600;text-wrap:pretty">{{ errMsg }}</div>
+          </sc-if>
+
+          <div style="margin-top:22px">
+            <x-import component-from-global-scope="WebMobilUI_422163.Button" color="accent" size="lg" full-width="{{ true }}" onClick="{{ onApply }}" hint-size="100%,46px">Şifreyi kur ve gir</x-import>
+          </div>
+          <div style="margin-top:14px;text-align:center;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+            <button type="button" onClick="{{ onRequest }}" style="{{ linkStyle }}">Yeni kod isteyin</button>
+            <button type="button" onClick="{{ goLogin }}" style="{{ linkStyle }}">Girişe dön</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="margin-top:30px;padding-top:20px;border-top:1px solid var(--border-default);font-size:12px;color:var(--text-muted);text-wrap:pretty">
+        Bu bir prototiptir: kimlik doğrulama tarayıcıda yapılır. Gerçek üretimde şifre sunucuda saklanır, kod tek kullanımlık SMS ile gider ve oturum sunucu tarafından yönetilir.
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:760}}">
+class Component extends DCLogic {
+  state = {
+    AD: null, SC: null, view: "giris",
+    tel: "", pin: "", code: "", np: "", np2: "",
+    err: "", errors: {}, demoCode: null, sentTo: null, me: null
+  };
+
+  componentDidMount() {
+    // Türkçe büyük harf kuralı (İ) için kök dil işareti.
+    if (document.documentElement) document.documentElement.lang = "tr";
+    Promise.all([import("./han-admin.js"), import("./han-scale.js")]).then(([AD, SC]) => {
+      const s = AD.session();
+      const me = s ? (AD.allUsers().find(u => u.id === s.userId) || null) : null;
+      this.setState({ AD, SC, me, view: me ? "girdi" : "giris" });
+    }).catch(err => console.error("[HAN Giriş] " + (err && (err.stack || err.message))));
+  }
+
+  digits(x) { return String(x || "").replace(/\D/g, ""); }
+
+  renderVals() {
+    const S = this.state, AD = S.AD, SC = S.SC;
+    const linkStyle = "background:none;border:none;padding:0;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--color-primary);cursor:pointer;white-space:nowrap";
+    const panelBtnStyle = "display:flex;align-items:center;justify-content:center;height:44px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;background:var(--color-accent);color:#fff";
+    const users = AD ? AD.allUsers() : [];
+    const D = (x) => this.digits(x);
+
+    return {
+      heroStats: SC ? [
+        { n: SC.SCALE_TOTALS.units.toLocaleString("tr-TR"), label: "dükkân birimi" },
+        { n: SC.RECORDS.length.toLocaleString("tr-TR"), label: "kayıt" },
+        { n: String(SC.PLACES.length), label: "çarşı · han · cadde" }
+      ] : [],
+      linkStyle, panelBtnStyle,
+      isSignedIn: S.view === "girdi",
+      isLogin: S.view === "giris",
+      isForgot: S.view === "unuttum",
+      isCode: S.view === "kod",
+      ttl: AD ? AD.RESET_TTL_MIN : 15,
+      noUsers: !!AD && users.length === 0,
+
+      meName: S.me ? (S.me.name || "Kullanıcı") : "",
+      meRole: (S.me && SC) ? ((SC.ROLES[S.me.role] || {}).tr + " · " + (SC.ROLES[S.me.role] || {}).note) : "",
+      onLogout: () => { AD.logout(); this.setState({ me: null, view: "giris", pin: "", err: "" }); },
+
+      f_tel: S.tel, f_pin: S.pin, f_code: S.code, f_new: S.np, f_new2: S.np2,
+      set_tel: (e) => this.setState({ tel: e.target.value, err: "", errors: {} }),
+      set_pin: (e) => this.setState({ pin: e.target.value, err: "", errors: {} }),
+      set_code: (e) => this.setState({ code: e.target.value, err: "", errors: {} }),
+      set_new: (e) => this.setState({ np: e.target.value, err: "", errors: {} }),
+      set_new2: (e) => this.setState({ np2: e.target.value, err: "", errors: {} }),
+      e_tel: (S.errors || {}).tel || "",
+      e_pin: (S.errors || {}).pin || "",
+      e_code: (S.errors || {}).code || "",
+      e_new: (S.errors || {}).np || "",
+      e_new2: (S.errors || {}).np2 || "",
+      hasError: !!S.err,
+      errMsg: S.err,
+
+      goForgot: () => this.setState({ view: "unuttum", err: "", errors: {} }),
+      goLogin: () => this.setState({ view: "giris", err: "", errors: {}, code: "", np: "", np2: "" }),
+
+      onLogin: () => {
+        const tel = D(S.tel);
+        const errs = {};
+        if (tel.length < 10) errs.tel = "Geçerli telefon yazın";
+        if (!S.pin) errs.pin = "Şifre gerekli";
+        if (Object.keys(errs).length) return this.setState({ errors: errs, err: "" });
+        const r = AD.login(tel, S.pin);
+        if (!r.ok) {
+          // Şifresi hiç kurulmamış hesabı çıkmaz sokakta bırakmayız: doğrudan
+          // sıfırlama akışına geçer.
+          if (r.err === "pinsiz") {
+            const rq = AD.requestReset(tel);
+            return this.setState({ view: "kod", err: r.msg, demoCode: rq.code, sentTo: rq.masked, errors: {} });
+          }
+          return this.setState({ err: r.msg, errors: {} });
+        }
+        this.setState({ me: r.user, view: "girdi", err: "", pin: "", errors: {} });
+      },
+
+      onRequest: () => {
+        const tel = D(S.tel);
+        if (tel.length < 10) return this.setState({ errors: { tel: "Geçerli telefon yazın" }, view: "unuttum" });
+        const r = AD.requestReset(tel);
+        this.setState({ view: "kod", demoCode: r.code, sentTo: r.masked, err: "", errors: {}, code: "", np: "", np2: "" });
+      },
+
+      // Kullanıcı olmasa da aynı ekrana geçer ve aynı mesajı görür: kimin kayıtlı
+      // olduğu bilgisi sızmasın.
+      sentNote: S.sentTo
+        ? S.sentTo + " numarasına altı haneli bir kod gönderildi. Kod " + (AD ? AD.RESET_TTL_MIN : 15) +
+          " dakika geçerli ve bir kez kullanılır."
+        : "Kod gönderildi.",
+      showDemoCode: !!S.demoCode,
+      demoCode: S.demoCode || "",
+
+      onApply: () => {
+        const errs = {};
+        if (!/^\d{6}$/.test(D(S.code))) errs.code = "Altı haneli kodu yazın";
+        if (!/^\d{4,8}$/.test(D(S.np))) errs.np = "4–8 haneli sayı";
+        if (D(S.np) !== D(S.np2)) errs.np2 = "Şifreler aynı değil";
+        if (Object.keys(errs).length) return this.setState({ errors: errs, err: "" });
+        const r = AD.applyReset(D(S.code), D(S.np));
+        if (!r.ok) return this.setState({ err: r.msg, errors: {} });
+        const me = AD.allUsers().find(u => u.id === r.userId) || null;
+        this.setState({ me, view: "girdi", err: "", code: "", np: "", np2: "", demoCode: null, errors: {} });
+      },
+
+      onSeed: () => {
+        // İlk yönetici: kimse yokken panele girilemez. Şifreyi kullanıcı kurar.
+        const tel = D(S.tel) || "5320000000";
+        AD.addUser({ name: "İlk Yönetici", role: "yonetici", tel });
+        const r = AD.requestReset(tel);
+        this.setState({ tel, view: "kod", demoCode: r.code, sentTo: r.masked, err: "", errors: {} });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

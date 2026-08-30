@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/themes.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/tokens/base.css">
+  <link rel="stylesheet" href="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/styles.css">
+  <script src="_ds/web-mobil-ui-42216340-78d9-40a3-aeba-17cc9fc3d1bc/_ds_bundle.js"></script>
+  <style>
+    body { margin: 0; }
+    a { color: var(--color-primary); }
+    a:hover { color: var(--color-primary-active); }
+  </style>
+</helmet>
+
+<div data-theme="han" style="min-height:100vh;background:var(--surface-page);font-family:var(--font-sans);font-size:15px;line-height:1.5;color:var(--text-body)">
+
+  <div style="max-width:1420px;margin:0 auto;padding:18px 24px 56px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-bottom:14px">
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted)">HAN · EDİTÖR</div>
+        <div style="font-size:13.5px;color:var(--text-muted);margin-top:4px;max-width:64ch;text-wrap:pretty">Kapsama tek tek dükkânla değil han han kapatılır. Bir yetkili, han yönetiminin listesiyle 500 dükkânı bir günde onaylar.</div>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <sc-for list="{{ heroStats }}" as="s" hint-placeholder-count="4">
+          <div>
+            <div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text-heading)">{{ s.n }}</div>
+            <div style="font-size:12px;color:var(--text-muted)">{{ s.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border-default)">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <button type="button" onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}<span style="{{ t.countStyle }}">{{ t.count }}</span></button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 0 0">
+      <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)">{{ meLabel }}</span>
+      <sc-for list="{{ meChips }}" as="m" hint-placeholder-count="3">
+        <button type="button" onClick="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ isSuspended }}">
+      <div style="margin-top:20px">
+        <div style="font-size:20px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em">Askıya alınanlar</div>
+        <div style="font-size:13.5px;color:var(--text-muted);margin-top:4px;max-width:78ch;text-wrap:pretty">Üç alıcı bildirimi kaydı otomatik askıya alır — ama otomatik askı kalıcı bir karar değildir. Her satır bir insan kararı bekler.</div>
+        <div style="display:flex;flex-direction:column;gap:11px;margin-top:18px">
+          <sc-for list="{{ suspRows }}" as="s" hint-placeholder-count="3">
+            <div style="{{ s.wrapStyle }}">
+              <div style="flex:1;min-width:200px">
+                <div style="font-size:16px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em">{{ s.name }}</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:3px">{{ s.meta }}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--color-danger);margin-top:5px">{{ s.reason }}</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <x-import component-from-global-scope="WebMobilUI_422163.Button" color="primary" size="sm" onClick="{{ s.onRestore }}" hint-size="auto,34px">Geri aç</x-import>
+                <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="outline" color="danger" size="sm" onClick="{{ s.onKeep }}" hint-size="auto,34px">Askıda kalsın</x-import>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ suspEmpty }}">
+            <div style="background:var(--surface-card);border:1px dashed var(--border-strong);border-radius:14px;padding:30px 24px">
+              <div style="font-size:16px;font-weight:700;color:var(--text-heading)">Askıda kayıt yok</div>
+              <div style="font-size:13.5px;color:var(--text-muted);margin-top:5px">Alıcı bildirimleri eşiği aştığında kayıtlar burada birikir.</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBulk }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:minmax(300px,.8fr) minmax(0,1.2fr);gap:22px;margin-top:20px;align-items:start">
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)">Yerler · kapsama sırasına göre</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:640px;overflow:auto;padding-right:4px">
+            <sc-for list="{{ placeRows }}" as="p" hint-placeholder-count="8">
+              <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                  <span style="font-size:15px;font-weight:700;color:var(--text-heading);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</span>
+                  <span style="flex:none;font-size:13px;font-weight:700;color:{{ p.covColor }};font-variant-numeric:tabular-nums">{{ p.cov }}</span>
+                </span>
+                <span style="display:block;font-size:12.5px;color:var(--text-muted);margin-top:3px">{{ p.meta }}</span>
+                <span style="display:block;height:6px;border-radius:999px;background:var(--surface-muted);overflow:hidden;margin-top:8px">
+                  <span style="{{ p.bar }}"></span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);overflow:hidden">
+            <div style="padding:18px 20px;border-bottom:1px solid var(--border-default)">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+                <div style="min-width:0">
+                  <div style="font-size:20px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em">{{ selName }}</div>
+                  <div style="font-size:13.5px;color:var(--text-muted);margin-top:3px">{{ selMeta }}</div>
+                </div>
+                <span style="{{ selBulkStyle }}">{{ selBulkLabel }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:13px 15px;border-radius:10px;background:var(--surface-muted)">
+                <span style="flex:none;width:38px;height:38px;border-radius:999px;background:var(--color-primary);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ selOfficerIni }}</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">Yetkili</span>
+                  <span style="display:block;font-size:14.5px;font-weight:700;color:var(--text-heading);margin-top:2px">{{ selOfficer }}</span>
+                </span>
+                <button type="button" onClick="{{ reassign }}" style="flex:none;height:34px;padding:0 13px;border-radius:7px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-heading);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Yetkiliyi değiştir</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border-default);flex-wrap:wrap">
+              <button type="button" onClick="{{ toggleAll }}" style="{{ selectAllStyle }}">{{ selectAllLabel }}</button>
+              <div style="flex:1;min-width:120px;font-size:13.5px;color:var(--text-muted)">{{ selCountLabel }}</div>
+              <x-import component-from-global-scope="WebMobilUI_422163.Button" color="accent" size="md" onClick="{{ approveSel }}" hint-size="auto,40px">Seçileni onayla</x-import>
+              <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="outline" color="primary" size="md" onClick="{{ approveAll }}" hint-size="auto,40px">Han listesinden hepsini onayla</x-import>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:9px;padding:12px 20px;border-bottom:1px solid var(--border-default);flex-wrap:wrap;background:var(--surface-muted)">
+              <span style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">{{ viaLabel }}</span>
+              <sc-for list="{{ viaChips }}" as="v" hint-placeholder-count="3">
+                <button type="button" onClick="{{ v.onClick }}" style="{{ v.style }}">{{ v.label }}</button>
+              </sc-for>
+            </div>
+
+            <div style="max-height:520px;overflow:auto">
+              <sc-for list="{{ queueRows }}" as="r" hint-placeholder-count="8">
+                <div style="{{ r.rowStyle }}">
+                  <button type="button" onClick="{{ r.onToggle }}" style="{{ r.boxStyle }}">{{ r.check }}</button>
+                  <span style="flex:1;min-width:0">
+                    <span style="display:block;font-size:14.5px;font-weight:700;color:var(--text-heading);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+                    <span style="display:block;font-size:12.5px;color:var(--text-muted);margin-top:2px">{{ r.meta }}</span>
+                  </span>
+                  <span style="{{ r.statusStyle }}">{{ r.statusLabel }}</span>
+                  <button type="button" onClick="{{ r.onApprove }}" style="{{ r.approveStyle }}">{{ r.approveLabel }}</button>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ queueEmpty }}">
+              <div style="padding:34px 20px;text-align:center">
+                <div style="font-size:16px;font-weight:700;color:var(--text-heading)">Bu yerde onay bekleyen kayıt yok</div>
+                <div style="font-size:13.5px;color:var(--text-muted);margin-top:5px">Saha turunda yeni birim bulunduğunda ya da esnaf başvurduğunda burada görünür.</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isQueue }}">
+      <div style="margin-top:20px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-size:20px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em">Esnaf beyanı kuyruğu</div>
+          <div style="font-size:13.5px;color:var(--text-muted);text-wrap:pretty">Esnafın kendi açtığı kayıtlar yayında ama "doğrulanmadı" damgalı; fiyat ve teklif kapalı.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;margin-top:14px">
+          <sc-for list="{{ declRows }}" as="r" hint-placeholder-count="6">
+            <div style="border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-card);padding:16px;box-shadow:0 3px 4px rgba(0,0,0,.03);display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+                <div style="min-width:0">
+                  <div style="font-size:15.5px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em">{{ r.name }}</div>
+                  <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px">{{ r.meta }}</div>
+                </div>
+                <span style="flex:none;display:inline-flex;align-items:center;height:23px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:700;background:var(--color-warning-soft);color:var(--color-warning-accent)">{{ r.age }}</span>
+              </div>
+              <div style="font-size:13px;color:var(--text-body);text-wrap:pretty">{{ r.claim }}</div>
+              <div style="display:flex;gap:8px;margin-top:auto;flex-wrap:wrap">
+                <x-import component-from-global-scope="WebMobilUI_422163.Button" color="primary" size="sm" onClick="{{ r.onApprove }}" hint-size="auto,34px">Onayla</x-import>
+                <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="outline" color="dark" size="sm" onClick="{{ r.onSuspend }}" hint-size="auto,34px">Askıya al</x-import>
+                <sc-if value="{{ r.canUndo }}">
+                  <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="ghost" color="danger" size="sm" onClick="{{ r.onUndo }}" hint-size="auto,34px">Geri al</x-import>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ declEmpty }}">
+          <div style="margin-top:14px;padding:30px;border:1px dashed var(--border-strong);border-radius:14px;text-align:center;font-size:14px;color:var(--text-muted)">Kuyruk boş — bütün beyanlar işlendi.</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOfficers }}">
+      <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+        <sc-for list="{{ officerRows }}" as="o" hint-placeholder-count="4">
+          <div style="border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-card);padding:18px;box-shadow:0 3px 4px rgba(0,0,0,.03)">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="flex:none;width:44px;height:44px;border-radius:999px;background:var(--color-primary-soft);color:var(--color-primary-accent);font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ o.ini }}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:16px;font-weight:700;color:var(--text-heading)">{{ o.name }}</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:2px;text-wrap:pretty">{{ o.role }}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:14px;background:var(--border-default);border:1px solid var(--border-default);border-radius:10px;overflow:hidden">
+              <sc-for list="{{ o.cells }}" as="c" hint-placeholder-count="4">
+                <div style="background:var(--surface-card);padding:11px 12px">
+                  <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">{{ c.label }}</div>
+                  <div style="font-size:17px;font-weight:700;color:var(--text-heading);margin-top:3px">{{ c.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-muted);margin-top:12px;text-wrap:pretty">{{ o.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isClaims }}">
+      <div style="margin-top:20px">
+        <div style="font-size:20px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em">Sahiplenme talepleri</div>
+        <div style="font-size:13.5px;color:var(--text-muted);margin-top:4px;max-width:76ch;text-wrap:pretty">Esnaf, kendi kaydını bir talep bırakarak sahiplenir. Onaylamadan önce kayıt kilitlidir — ne fiyat, ne katalog, ne fotoğraf değişir.</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:18px">
+          <sc-if value="{{ conflictShow }}">
+            <div style="padding:16px 18px;border-radius:14px;background:var(--color-warning-soft);border:1px solid var(--color-warning)">
+              <div style="font-size:15px;font-weight:700;color:var(--text-heading)">Sahiplik çakışması — devir talebi</div>
+              <div style="font-size:13px;color:var(--text-body);margin-top:4px;text-wrap:pretty">Kapı kaydı kalıcıdır, sahiplik geçicidir. Mevcut sahibe 7 gün itiraz süresi verilir; itiraz yoksa devir onaylanır, devirde eski fiyat ve fotoğraflar sıfırlanır.</div>
+              <div style="display:flex;flex-direction:column;gap:9px;margin-top:13px">
+                <sc-for list="{{ conflictRows }}" as="c" hint-placeholder-count="1">
+                  <div style="{{ c.wrapStyle }}">
+                    <div style="flex:1;min-width:180px">
+                      <div style="font-size:15px;font-weight:700;color:var(--text-heading)">{{ c.name }}</div>
+                      <div style="font-size:13px;color:var(--text-muted);margin-top:3px">{{ c.meta }}</div>
+                      <div style="font-size:13px;font-weight:600;color:var(--color-warning-accent);margin-top:4px">{{ c.note }}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                      <x-import component-from-global-scope="WebMobilUI_422163.Button" color="primary" size="sm" onClick="{{ c.onTransfer }}" hint-size="auto,34px">Devri onayla</x-import>
+                      <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="ghost" color="danger" size="sm" onClick="{{ c.onReject }}" hint-size="auto,34px">Reddet</x-import>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-for list="{{ claimRows }}" as="c" hint-placeholder-count="3">
+            <div style="{{ c.wrapStyle }}">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+                <div style="min-width:0">
+                  <div style="font-size:17px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em">{{ c.name }}</div>
+                  <div style="font-size:13px;color:var(--text-muted);margin-top:3px">{{ c.meta }}</div>
+                </div>
+                <span style="{{ c.stateStyle }}">{{ c.stateLabel }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px;font-size:13.5px">
+                <div><span style="color:var(--text-muted)">Ad soyad · </span><span style="font-weight:600;color:var(--text-heading)">{{ c.owner }}</span></div>
+                <div><span style="color:var(--text-muted)">Telefon · </span><span style="font-weight:600;color:var(--text-heading)">{{ c.tel }}</span></div>
+                <div><span style="color:var(--text-muted)">Doğrulama · </span><span style="font-weight:600;color:var(--text-heading)">{{ c.proofLbl }}</span></div>
+                <div><span style="color:var(--text-muted)">Yetkili · </span><span style="font-weight:600;color:var(--text-heading)">{{ c.officer }}</span></div>
+              </div>
+              <sc-if value="{{ c.isPending }}">
+                <div style="display:flex;gap:9px;margin-top:16px">
+                  <x-import component-from-global-scope="WebMobilUI_422163.Button" color="primary" size="sm" onClick="{{ c.onApprove }}" hint-size="auto,34px">Onayla</x-import>
+                  <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="ghost" color="danger" size="sm" onClick="{{ c.onReject }}" hint-size="auto,34px">Reddet</x-import>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ claimEmpty }}">
+            <div style="background:var(--surface-card);border:1px dashed var(--border-strong);border-radius:14px;padding:32px 24px">
+              <div style="font-size:16px;font-weight:700;color:var(--text-heading)">Henüz sahiplenme talebi yok</div>
+              <div style="font-size:13.5px;color:var(--text-muted);margin-top:5px">Esnaf web tarafında bir kayıt sahiplendiğinde burada listelenir.</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMetrics }}">
+      <div style="margin-top:20px">
+        <div style="border:1px solid var(--color-accent);border-radius:14px;background:var(--surface-card);padding:20px;box-shadow:0 3px 4px rgba(0,0,0,.03)">
+          <div style="font-size:18px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em">Bu hafta nereye gidilecek</div>
+          <div style="font-size:13.5px;color:var(--text-muted);margin-top:4px;max-width:76ch;text-wrap:pretty">Kapsama yüzdesi bir girdi metriğidir, başarı ölçüsü değil. Bu sıralama tek soruya cevap verir: bir yetkilinin bir günü nerede en çok kayıt açar? Han yönetimiyle anlaşması olan yerler öne alınır — orada 500 dükkân tek işlemde kapanır.</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px">
+            <sc-for list="{{ routeRows }}" as="r" hint-placeholder-count="5">
+              <div style="{{ r.rowStyle }}">
+                <span style="{{ r.rankStyle }}">{{ r.rank }}</span>
+                <div style="flex:1;min-width:180px">
+                  <div style="font-size:15.5px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em">{{ r.name }}</div>
+                  <div style="font-size:13px;color:var(--text-muted);margin-top:3px;text-wrap:pretty">{{ r.why }}</div>
+                </div>
+                <span style="flex:none;font-size:15px;font-weight:700;color:var(--color-success);font-variant-numeric:tabular-nums">{{ r.gain }}</span>
+                <x-import component-from-global-scope="WebMobilUI_422163.Button" variant="outline" color="primary" size="sm" onClick="{{ r.onGo }}" hint-size="auto,34px">Kuyruğa git</x-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <div style="font-size:20px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em">Ölçüm</div>
+        <div style="font-size:13.5px;color:var(--text-muted);margin-top:3px;text-wrap:pretty">Bu yedi sayıyı göremezsek plan çalışmıyor demektir. Şişirilmiş tek sayı yok: birim ile kayıt ayrı durur.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px">
+          <sc-for list="{{ metricCards }}" as="m" hint-placeholder-count="7">
+            <div style="border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-card);padding:18px;box-shadow:0 3px 4px rgba(0,0,0,.03)">
+              <div style="font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">{{ m.label }}</div>
+              <div style="font-size:30px;font-weight:700;color:var(--text-heading);letter-spacing:-.025em;margin-top:6px">{{ m.value }}</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px;text-wrap:pretty">{{ m.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:22px;border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-card);overflow:hidden">
+          <div style="padding:16px 18px;border-bottom:1px solid var(--border-default);font-size:15.5px;font-weight:700;color:var(--text-heading)">Semt semt kapsama</div>
+          <div style="display:flex;flex-direction:column;gap:1px;background:var(--border-default)">
+            <sc-for list="{{ semtRows }}" as="s" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;gap:14px;background:var(--surface-card);padding:12px 18px">
+                <span style="flex:1;min-width:0;font-size:14.5px;font-weight:600;color:var(--text-heading)">{{ s.name }}</span>
+                <span style="flex:none;width:150px;height:8px;border-radius:999px;background:var(--surface-muted);overflow:hidden">
+                  <span style="{{ s.bar }}"></span>
+                </span>
+                <span style="flex:none;width:110px;text-align:end;font-size:13px;color:var(--text-muted);font-variant-numeric:tabular-nums">{{ s.meta }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isScore }}">
+      <div style="margin-top:20px;display:grid;grid-template-columns:minmax(280px,.75fr) minmax(0,1.25fr);gap:22px;align-items:start">
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)">Kayıt seç</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:620px;overflow:auto;padding-right:4px">
+            <sc-for list="{{ scoreList }}" as="r" hint-placeholder-count="8">
+              <button type="button" onClick="{{ r.onClick }}" style="{{ r.style }}">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                  <span style="font-size:14.5px;font-weight:700;color:var(--text-heading);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+                  <span style="flex:none;font-size:14px;font-weight:700;color:{{ r.color }}">{{ r.score }}</span>
+                </span>
+                <span style="display:block;font-size:12.5px;color:var(--text-muted);margin-top:3px">{{ r.meta }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-card);padding:22px;box-shadow:0 3px 4px rgba(0,0,0,.03)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+              <div style="min-width:0">
+                <div style="font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">Görünürlük karnesi</div>
+                <div style="font-size:22px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin-top:4px">{{ scName }}</div>
+                <div style="font-size:13.5px;color:var(--text-muted);margin-top:3px">{{ scMeta }}</div>
+              </div>
+              <div style="text-align:end">
+                <div style="font-size:40px;font-weight:700;color:var(--color-primary-accent);letter-spacing:-.03em;line-height:1">{{ scScore }}</div>
+                <div style="font-size:12.5px;color:var(--text-muted)">100 üzerinden</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+              <sc-for list="{{ scRows }}" as="r" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="flex:none;width:22px;height:22px;border-radius:999px;background:{{ r.dotBg }};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ r.mark }}</span>
+                  <span style="flex:1;min-width:0">
+                    <span style="display:block;font-size:14.5px;font-weight:600;color:var(--text-heading)">{{ r.label }}</span>
+                    <span style="display:block;font-size:12.5px;color:var(--text-muted);margin-top:1px;text-wrap:pretty">{{ r.note }}</span>
+                  </span>
+                  <span style="flex:none;font-size:13.5px;font-weight:700;color:var(--text-muted);font-variant-numeric:tabular-nums">{{ r.pts }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top:20px;padding:16px 18px;border-radius:12px;background:var(--color-primary-soft)">
+              <div style="font-size:13.5px;font-weight:700;color:var(--color-primary-accent)">Sıradaki en kârlı adım</div>
+              <div style="font-size:14.5px;color:var(--text-body);margin-top:5px;text-wrap:pretty">{{ scNext }}</div>
+            </div>
+
+            <div style="font-size:12.5px;color:var(--text-muted);margin-top:16px;text-wrap:pretty">Sıralama satın alınamaz. Ücretli yerleşim yalnız "Sponsorlu" etiketiyle ayrı alanlarda görünür; organik sırayı değiştirmez.</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ toastOn }}">
+    <div style="position:fixed;inset-block-end:24px;inset-inline-start:50%;transform:translateX(-50%);z-index:60;padding:13px 20px;border-radius:10px;background:var(--color-primary);color:#fff;font-size:14.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.18)">{{ toastText }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1420,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = {
+    SC: null, D: null, tab: "toplu", embed: false, placeId: null, sel: {}, over: {},
+    scoreId: null, toast: null, claims: {}, claimAction: {}, approvals: {}, via: "han", me: "all", reports: []
+  };
+
+  componentDidMount() {
+    // Türkçe büyük harf kuralı (İ) için kök dil işareti: "YETKILI" değil "YETKİLİ".
+    if (document.documentElement) document.documentElement.lang = "tr";
+    // Panel bu dokümanı gömerken hangi sekmeyi istediğini adresle söyler; gömülüyken
+    // kendi sekme şeridini göstermez — iki katmanlı gezinme olmasın.
+    try {
+      const p = new URLSearchParams(location.search);
+      const t = p.get("tab"), em = p.get("embed") === "1";
+      const valid = ["toplu", "kuyruk", "yetkili", "sahiplenme", "askida", "karne", "olcum"];
+      this.state.embed = em;
+      if (t && valid.includes(t)) this.state.tab = t;
+      this._onHash = () => {
+        const q = new URLSearchParams(location.search).get("tab");
+        if (q && valid.includes(q) && q !== this.state.tab) this.setState({ tab: q });
+      };
+      window.addEventListener("popstate", this._onHash);
+    } catch (e) {}
+    // Ana kategoriler han-data'da, ek kategoriler han-scale'de: ikisi de gerekli.
+    Promise.all([import("./han-scale.js"), import("./han-data.js")]).then(([SC, D]) => {
+      const first = SC.PLACES.slice().sort((a, b) => b.units - a.units)[0];
+      // Sahada panelden açılan kayıtlar beyan kuyruğuna düşmeli: onaylanabilmelerinin
+      // tek yolu editörün onları listesinde görmesi.
+      if (SC.loadDrafts) SC.loadDrafts();
+      // Editör kendi kararlarını ve alıcı bildirimlerini kayıtlara uygular:
+      // ekrandaki durum, alıcının gördüğü durumla aynı olmalı.
+      try {
+        const ap = JSON.parse(localStorage.getItem("han-approvals-v1") || "{}") || {};
+        if (SC.applyApprovals) SC.applyApprovals(ap);
+      } catch (err) {}
+      this.setState({ SC, D, placeId: first ? first.id : null }, this.loadReports);
+    });
+    this.loadClaims();
+    this.loadReports();
+    try {
+      const ap = JSON.parse(localStorage.getItem("han-approvals-v1") || "{}") || {};
+      const over = {};
+      Object.keys(ap).forEach(id => { over[id] = ap[id].status; });
+      this.setState({ approvals: ap, over });
+    } catch (err) {}
+    // Esnaf web tarafında talep bıraktığında kuyruk canlı güncellensin.
+    this._onClaims = (e) => {
+      const k = e && e.key;
+      if (!k || k === "han-claims-v1") this.loadClaims();
+      if (!k || k === "han-reports-v1") this.loadReports();
+      // Panel yeni kayıt açtığında beyan kuyruğu kendiliğinden tazelensin.
+      if (!k || k === "han-panel-drafts") {
+        const SC = this.state.SC;
+        if (SC && SC.loadDrafts && SC.loadDrafts().length) this.forceUpdate();
+      }
+    };
+    window.addEventListener("storage", this._onClaims);
+    window.addEventListener("focus", this._onClaims);
+  }
+
+  // Kullanıcı bildirimleri ("burada değil / kapalı") gerçek bir kuyruktur:
+  // üçüncü bildirimde kayıt otomatik askıya iner, insan denetimi burada devreye girer.
+  loadReports() {
+    try {
+      const reports = JSON.parse(localStorage.getItem("han-reports-v1") || "[]") || [];
+      const SC = this.state.SC;
+      if (SC) {
+        const counts = {};
+        reports.forEach(x => { if (x.recordId) counts[x.recordId] = (counts[x.recordId] || 0) + 1; });
+        SC.applyReports(counts);
+      }
+      this.setState({ reports });
+    } catch (err) {}
+  }
+
+  loadClaims() {
+    try { this.setState({ claims: JSON.parse(localStorage.getItem("han-claims-v1") || "{}") || {} }); } catch (err) {}
+  }
+
+  saveClaims(claims) {
+    this.setState({ claims });
+    try { localStorage.setItem("han-claims-v1", JSON.stringify(claims)); } catch (err) {}
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._t);
+    if (this._onClaims) { window.removeEventListener("storage", this._onClaims); window.removeEventListener("focus", this._onClaims); }
+  }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  // Onaylar oturum içinde state'te tutulur: over[id] = "onayli" | "askida"
+  // E2: kalıcı — `han-approvals-v1` deposuna yazılır, denetim izi (via/officer/at) ile.
+  setStatus(ids, status, meta) {
+    const over = Object.assign({}, this.state.over);
+    const log = Object.assign({}, this.state.approvals || {});
+    ids.forEach(id => {
+      over[id] = status;
+      log[id] = { status, via: (meta && meta.via) || "han", officer: (meta && meta.officer) || null, at: Date.now() };
+    });
+    this.setState({ over, approvals: log, sel: {} });
+    try { localStorage.setItem("han-approvals-v1", JSON.stringify(log)); } catch (err) {}
+  }
+
+  statusOf(rec) { return this.state.over[rec.id] || rec.status; }
+
+  // Sahiplenme onay hattı: karar editörde verilir, sonuç esnafın eline claims deposundan geçer.
+  claimVals(recs, floorLbl, catName) {
+    const S = this.state, SC = S.SC;
+    const claims = S.claims || {};
+    const ids = Object.keys(claims);
+    const rows = ids.map(id => {
+      const c = claims[id], r = recs.find(x => x.id === id);
+      if (!r) return null;
+      const tone = c.status === "onayli" ? "success" : c.status === "red" ? "danger" : "warning";
+      const proofLbl = { han: "Han listesiyle eşleşme", belge: "Belge sunuyor", saha: "Saha turu istiyor" }[c.proof] || c.proof;
+      return {
+        name: r.name || c.name, meta: (SC.PLACES.find(p => p.id === r.place) || {}).name + " · " + floorLbl(r.floor) + " · No " + r.door + " · " + catName(r.cat),
+        owner: c.owner, tel: c.tel, proofLbl,
+        officer: (SC.OFFICERS[c.officer] || {}).name || "—",
+        stateLabel: c.status === "onayli" ? "Onaylandı" : c.status === "red" ? "Reddedildi" : "Bekliyor",
+        stateStyle: "display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-" + tone + "-soft);color:var(--color-" + tone + (tone === "warning" ? "-accent" : "") + ")",
+        wrapStyle: "background:var(--surface-card);border:1px solid " + (c.status === "onayli" ? "var(--color-success)" : c.status === "red" ? "var(--color-danger)" : "var(--border-strong)") + ";border-radius:14px;padding:18px 20px",
+        isPending: c.status === "bekliyor",
+        onApprove: () => {
+          // E1: sahiplenme onayı KAYIT onayı değildir. Sahiplenme kişinin dükkânın sahibi
+          // olduğunu doğrular; kaydın bilgilerinin doğruluğunu doğrulamaz. İki ayrı hat.
+          const next = Object.assign({}, claims, { [id]: Object.assign({}, c, { status: "onayli", decidedAt: Date.now() }) });
+          this.saveClaims(next);
+          this.flash(r.name + " · sahiplenme onaylandı (kayıt durumu değişmedi)");
+        },
+        onReject: () => {
+          const next = Object.assign({}, claims, { [id]: Object.assign({}, c, { status: "red", reason: "Yetkili belgeyi doğrulayamadı." }) });
+          this.saveClaims(next);
+          this.flash(r.name + " talebi reddedildi");
+        }
+      };
+    }).filter(Boolean).sort((a, b) => (b.isPending ? 1 : 0) - (a.isPending ? 1 : 0));
+    return { claimRows: rows, claimEmpty: rows.length === 0 };
+  }
+
+  renderVals() {
+    const S = this.state, SC = S.SC;
+    // Veri dinamik import'la gelir; o ana kadar her hole makul bir boş değer bulmalı.
+    if (!SC) {
+      const noop = () => {};
+      return {
+        heroStats: [], tabs: [], showTabs: true, isBulk: true, isQueue: false, isOfficers: false, isScore: false, isClaims: false,
+        placeRows: [], queueRows: [], queueEmpty: false,
+        claimRows: [], claimEmpty: true,
+        selName: "—", selMeta: "", selBulkLabel: "", selBulkStyle: "display:none",
+        selOfficer: "—", selOfficerIni: "?", reassign: noop,
+        selectAllLabel: "", selectAllStyle: "display:none", toggleAll: noop,
+        selCountLabel: "", approveSel: noop, approveAll: noop, viaChips: [], viaLabel: "",
+        declRows: [], declEmpty: false, officerRows: [],
+        scoreList: [], scRows: [], scName: "—", scMeta: "", scScore: "0", scNext: "",
+        isMetrics: false, metricCards: [], semtRows: [],
+        isSuspended: false, suspRows: [], suspEmpty: true, meChips: [], meLabel: "",
+        routeRows: [], conflictRows: [], conflictEmpty: true, conflictShow: false,
+        toastOn: false, toastText: ""
+      };
+    }
+
+    const num = (n) => (n || 0).toLocaleString("tr-TR");
+    const T = SC.SCALE_TOTALS;
+    const recs = SC.RECORDS.map(r => Object.assign({}, r, { status: this.statusOf(r) }));
+    const cats = ((S.D && S.D.CATS) || []).concat(SC.CATS_EXTRA || []);
+    const catName = (id) => {
+      const c = cats.find(x => x.id === id);
+      return c ? c.tr : id;
+    };
+    const floorLbl = (n) => n > 0 ? n + ". kat" : "zemin";
+    const pending = recs.filter(r => r.status === "beyan");
+
+    const tabDefs = [
+      ["toplu", "Toplu onay", SC.PLACES.length],
+      ["kuyruk", "Beyan kuyruğu", pending.length],
+      ["yetkili", "Yetkililer", Object.keys(SC.OFFICERS).length],
+      ["sahiplenme", "Sahiplenme talepleri", Object.keys(S.claims || {}).filter(id => (S.claims[id] || {}).status === "bekliyor").length],
+      ["askida", "Askıya alınanlar", recs.filter(r => (S.over[r.id] || r.status) === "askida").length],
+      ["karne", "Görünürlük karnesi", null],
+      ["olcum", "Ölçüm", null]
+    ];
+    const tabStyle = (on) => "display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 15px;border-radius:8px;border:1px solid " +
+      (on ? "var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary-accent)" : "transparent;background:none;color:var(--text-muted)") +
+      ";font-family:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer";
+
+    const place = SC.PLACES.find(p => p.id === S.placeId) || SC.PLACES[0];
+    const placeRecs = place ? recs.filter(r => r.place === place.id) : [];
+    // E6 · kuyruk düz liste değil: talep gelen, şikayet alan, sahiplenme talebi olan öne çıkar.
+    const claimsNow = S.claims || {};
+    const prio = (r) => {
+      let p = 0;
+      if ((claimsNow[r.id] || {}).status === "bekliyor") p += 40;
+      if (r.reports) p += 30;
+      if ((r.groups || []).length && r.band) p += 12;
+      if (place && place.units > 300) p += 6;
+      p += Math.min(10, (r.skuCount || 0) / 40);
+      return p;
+    };
+    const queue = placeRecs.filter(r => r.status === "beyan").sort((a, b) => prio(b) - prio(a));
+    const selIds = Object.keys(S.sel).filter(k => S.sel[k]);
+    const allOn = queue.length > 0 && selIds.length === queue.length;
+
+    const stats = (id) => {
+      const pl = SC.PLACES.find(p => p.id === id);
+      const rs = recs.filter(r => r.place === id);
+      const open = rs.filter(r => r.status === "onayli" || r.status === "aktif").length;
+      return { units: pl.units, open, cov: Math.round((open / pl.units) * 100), beyan: rs.filter(r => r.status === "beyan").length };
+    };
+
+    const placeRows = SC.PLACES.filter(p => S.me === "all" || SC.OFFICER_OF_SEMT[p.semt] === S.me).map(p => {
+      const st = stats(p.id);
+      const on = place && p.id === place.id;
+      return {
+        name: p.name, cov: "%" + st.cov,
+        covColor: st.cov >= 40 ? "var(--color-success)" : st.cov >= 15 ? "var(--color-warning-accent)" : "var(--color-danger)",
+        meta: num(st.units) + " birim · " + num(st.open) + " onaylı · " + st.beyan + " beyan" +
+          (SC.BULK_APPROVED.includes(p.id) ? " · han yönetimi anlaşmalı" : ""),
+        bar: "display:block;height:100%;width:" + Math.max(2, st.cov) + "%;background:var(--color-" + (st.cov >= 40 ? "success" : st.cov >= 15 ? "warning" : "danger") + ")",
+        style: "display:block;width:100%;padding:13px 14px;border-radius:12px;border:1px solid " +
+          (on ? "var(--color-primary)" : "var(--border-strong)") + ";background:var(--surface-card);font-family:inherit;text-align:start;cursor:pointer",
+        onClick: () => this.setState({ placeId: p.id, sel: {} })
+      };
+    }).sort((a, b) => parseInt(a.cov.slice(1), 10) - parseInt(b.cov.slice(1), 10));
+
+    const stTone = { aktif: "accent", onayli: "primary", beyan: "warning", askida: "danger" };
+    const stLabel = { aktif: "Aktif", onayli: "Onaylı", beyan: "Beyan", askida: "Askıda" };
+
+    const queueRows = queue.slice(0, 60).map(r => {
+      const on = !!S.sel[r.id];
+      return {
+        name: r.name || "İsimsiz kayıt",
+        meta: floorLbl(r.floor) + " · No " + r.door + " · " + catName(r.cat) + " · " + r.updatedDays + " gün önce başvurdu",
+        check: on ? "✓" : "",
+        boxStyle: "flex:none;width:20px;height:20px;border-radius:5px;box-sizing:border-box;border:1.5px solid " +
+          (on ? "var(--color-primary);background:var(--color-primary);color:#fff" : "var(--border-strong);background:var(--surface-card);color:transparent") +
+          ";font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center",
+        statusLabel: stLabel[r.status], 
+        statusStyle: "flex:none;display:inline-flex;align-items:center;height:23px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:700;background:var(--color-" +
+          stTone[r.status] + "-soft);color:var(--color-" + stTone[r.status] + (stTone[r.status] === "accent" || stTone[r.status] === "warning" ? "-accent" : "") + ")",
+        approveLabel: "Onayla",
+        approveStyle: "flex:none;height:30px;padding:0 11px;border-radius:6px;border:1px solid var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary-accent);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer",
+        rowStyle: "display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border-default);background:" + (on ? "var(--color-primary-soft)" : "var(--surface-card)"),
+        onToggle: () => this.setState({ sel: Object.assign({}, S.sel, { [r.id]: !on }) }),
+        onApprove: () => { this.setStatus([r.id], "onayli"); this.flash("Kayıt onaylandı"); }
+      };
+    });
+
+    const officerRows = Object.keys(SC.OFFICERS).map(id => {
+      const o = SC.OFFICERS[id];
+      const mine = recs.filter(r => r.officer === id);
+      const open = mine.filter(r => r.status === "onayli" || r.status === "aktif").length;
+      const beyan = mine.filter(r => r.status === "beyan").length;
+      const places = SC.PLACES.filter(p => mine.some(r => r.place === p.id));
+      const units = places.reduce((t, p) => t + p.units, 0);
+      return {
+        name: o.name, role: o.tr, ini: o.name.charAt(0),
+        cells: [
+          { label: "Sorumlu birim", value: num(units) },
+          { label: "Onaylı kayıt", value: num(open) },
+          { label: "Beyan kuyruğu", value: num(beyan) },
+          { label: "Anlaşmalı han", value: String(places.filter(p => SC.BULK_APPROVED.includes(p.id)).length) }
+        ],
+        note: "Han yönetimiyle çalışıldığında bir günde bir hanın tamamı (500+ dükkân) onaylanabilir; saha turu ise günde 40–60 birim ilerler."
+      };
+    });
+
+    // Ö7 · Görünürlük karnesi: puanı yükselten şey ücret değil, doldurulan alan.
+    const scoreOf = (r) => {
+      let n = 0;
+      if (r.status === "onayli" || r.status === "aktif") n += 25;
+      if (r.status === "aktif") n += 15;
+      if ((r.groups || []).length >= 3) n += 12;
+      if (r.band) n += 12;
+      if (r.respMins && r.respMins <= 30) n += 12; else if (r.respMins) n += 5;
+      if (r.updatedDays <= 30) n += 10;
+      if ((r.photos || 0) >= 3) n += 8;
+      if ((r.langs || []).length >= 2) n += 6;
+      return Math.min(100, n);
+    };
+    const cands = recs.filter(r => r.status !== "askida").slice(0, 40).map(r => ({ r, s: scoreOf(r) })).sort((a, b) => a.s - b.s);
+    const scoreId = S.scoreId || (cands[0] && cands[0].r.id);
+    const scoreRec = recs.find(r => r.id === scoreId) || (cands[0] && cands[0].r);
+
+    const scoreList = cands.map(({ r, s }) => ({
+      name: r.name || "İsimsiz kayıt",
+      meta: (SC.PLACES.find(p => p.id === r.place) || {}).name + " · " + floorLbl(r.floor) + " · No " + r.door,
+      score: String(s), color: s >= 70 ? "var(--color-success)" : s >= 40 ? "var(--color-warning-accent)" : "var(--color-danger)",
+      style: "display:block;width:100%;padding:12px 13px;border-radius:11px;border:1px solid " +
+        (r.id === scoreId ? "var(--color-primary)" : "var(--border-default)") + ";background:var(--surface-card);font-family:inherit;text-align:start;cursor:pointer",
+      onClick: () => this.setState({ scoreId: r.id })
+    }));
+
+    const scRows = scoreRec ? [
+      { ok: scoreRec.status === "onayli" || scoreRec.status === "aktif", label: "Yetkili onayı", pts: 25,
+        note: "Onaysız kayıt aramada en sonda kalır ve fiyat gösteremez." },
+      { ok: scoreRec.status === "aktif", label: "Katalog açık", pts: 15,
+        note: "Çeşit grupları girilince talep alabilir hale gelir." },
+      { ok: !!scoreRec.band, label: "Fiyat bandı girilmiş", pts: 12,
+        note: "Fiyat aralığı olmayan kayıt, aynı işi yapan rakibin altında kalır." },
+      { ok: (scoreRec.groups || []).length >= 3, label: "En az üç çeşit grubu", pts: 12,
+        note: "Toptancının vitrini değil deposu vardır; grup başlıkları depoyu anlatır." },
+      { ok: !!scoreRec.respMins && scoreRec.respMins <= 30, label: "Yarım saat içinde yanıt", pts: 12,
+        note: "Yanıt hızı sıralamada fiyattan daha ağır tartar." },
+      { ok: scoreRec.updatedDays <= 30, label: "Son 30 günde güncellendi", pts: 10,
+        note: "90 gün dokunulmayan kayıt bir kademe iner." },
+      { ok: (scoreRec.photos || 0) >= 3, label: "En az üç fotoğraf", pts: 8, note: "Kendi dükkânının fotoğrafı temsili fotoğrafın yerini alır." },
+      { ok: (scoreRec.langs || []).length >= 2, label: "İkinci dil", pts: 6, note: "Yabancı alıcı kendi dilinde yazan dükkânı önce açar." }
+    ].map(x => ({
+      label: x.label, note: x.note, pts: (x.ok ? "+" : "") + x.pts,
+      mark: x.ok ? "✓" : "!", dotBg: x.ok ? "var(--color-success)" : "var(--color-warning)"
+    })) : [];
+
+    const missing = scoreRec ? [
+      [!(scoreRec.status === "onayli" || scoreRec.status === "aktif"), "Yetkiliyle randevu alıp onayı kapatın: tek adımda 25 puan ve aramada üst sıralara çıkış."],
+      [scoreRec.status !== "aktif", "Kataloğu açın; fiyat sorulabilir hale gelince talep havuzuna girersiniz."],
+      [!scoreRec.band, "Fiyat bandını girin — aynı handa fiyatı girili rakip ortalama 6 sıra yukarıda çıkıyor."],
+      [(scoreRec.groups || []).length < 3, "Üç çeşit grubu yazın: 'Silikon kılıf · 640 çeşit' gibi tek satırlar yeter."],
+      [!!scoreRec.respMins && scoreRec.respMins > 30, "Yanıt süresini 30 dakikanın altına indirin; 12 puanı geri alırsınız."],
+      [scoreRec.updatedDays > 30, "Haftada bir 'bilgilerim doğru' dokunuşu kaydı taze tutar."],
+      [(scoreRec.photos || 0) < 3, "Üç fotoğraf ekleyin: dükkân önü, iç, tezgâh."]
+    ].find(x => x[0]) : null;
+
+    return {
+      heroStats: [
+        { n: num(T.units), label: "dükkân birimi" },
+        { n: num(recs.filter(r => r.status === "onayli" || r.status === "aktif").length), label: "onaylı kayıt" },
+        { n: num(pending.length), label: "beyan kuyruğunda" },
+        { n: String(SC.BULK_APPROVED.length) + " / " + SC.PLACES.length, label: "han yönetimi anlaşmalı" }
+      ],
+      // Panel içine gömülüyse sekme şeridi Panel'in kenar çubuğunda zaten var.
+      showTabs: !S.embed,
+      tabs: tabDefs.map(t => ({
+        label: t[1], style: tabStyle(S.tab === t[0]),
+        count: t[2] == null ? "" : num(t[2]),
+        countStyle: t[2] == null ? "display:none" : "display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font-size:11.5px;font-weight:700;background:var(--surface-muted);color:var(--text-muted)",
+        onClick: () => this.setState({ tab: t[0] })
+      })),
+      isBulk: S.tab === "toplu", isQueue: S.tab === "kuyruk", isOfficers: S.tab === "yetkili",
+      isScore: S.tab === "karne", isMetrics: S.tab === "olcum", isClaims: S.tab === "sahiplenme",
+      isSuspended: S.tab === "askida",
+      // E5 · yetkili kendi bölgesini görür; "kimim ben" seçimi.
+      meLabel: "Yetkili",
+      meChips: [{ id: "all", name: "Tüm bölgeler" }].concat(Object.keys(SC.OFFICERS).map(k => ({ id: k, name: SC.OFFICERS[k].name }))).map(o => ({
+        label: o.name,
+        style: "height:30px;padding:0 11px;border-radius:7px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid " +
+          (S.me === o.id ? "var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary-accent)" : "var(--border-strong);background:var(--surface-card);color:var(--text-body)"),
+        onClick: () => this.setState({ me: o.id, sel: {} })
+      })),
+      // E7 · askıya alınanlar insan denetimi ister; otomatik askı kalıcı olmamalı.
+      suspRows: recs.filter(r => (S.over[r.id] || r.status) === "askida").slice(0, 40).map(r => ({
+        name: r.name || catName(r.cat),
+        // Askının sebebi görünmeli: kaç alıcı bildirimi geldiği kararı değiştirir.
+        meta: (SC.PLACES.find(p => p.id === r.place) || {}).name + " · " + floorLbl(r.floor) + " · No " + r.door +
+          (((S.reports || []).filter(x => x.recordId === r.id).length)
+            ? " · " + (S.reports || []).filter(x => x.recordId === r.id).length + " alıcı bildirimi"
+            : " · tazelik düşüşü"),
+        reason: r.reports ? r.reports + " alıcı bildirimi" : "Yetkili askıya aldı",
+        wrapStyle: "display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:15px 17px;border-radius:13px;background:var(--surface-card);border:1px solid var(--color-danger)",
+        onRestore: () => { this.setStatus([r.id], "onayli", { via: "saha" }); this.flash("Kayıt geri açıldı"); },
+        onKeep: () => { this.setStatus([r.id], "askida", { via: "saha" }); this.flash("Askı teyit edildi"); }
+      })),
+      suspEmpty: recs.filter(r => (S.over[r.id] || r.status) === "askida").length === 0,
+      // E8 · ölçüm eylem üretmeli: "bu hafta hangi hana git".
+      routeRows: SC.PLACES.filter(p => S.me === "all" || SC.OFFICER_OF_SEMT[p.semt] === S.me)
+        .map(p => {
+          const s = stats(p.id);
+          const gain = p.units - s.open;
+          const bulk = SC.BULK_APPROVED.includes(p.id);
+          return { p, s, gain, bulk, score: gain * (bulk ? 2.2 : 1) };
+        })
+        .sort((a, b) => b.score - a.score).slice(0, 6)
+        .map((x, i) => ({
+          rank: String(i + 1),
+          name: x.p.name,
+          why: num(x.gain) + " birim kayıtsız · kapsama %" + x.s.cov + (x.bulk ? " · han yönetimi anlaşmalı, tek işlemde kapanır" : " · anlaşma yok, kapı kapı gerekir"),
+          gain: "+" + num(x.gain),
+          rowStyle: "display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:13px;background:var(--surface-card);border:1px solid " + (x.bulk ? "var(--color-success)" : "var(--border-strong)"),
+          rankStyle: "flex:none;width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:var(--color-" + (x.bulk ? "success" : "primary") + "-soft);color:var(--color-" + (x.bulk ? "success" : "primary-accent") + ")",
+          onGo: () => this.setState({ tab: "toplu", placeId: x.p.id, sel: {} })
+        })),
+      // E9/K6 · sahiplik çakışması: kapı kaydı kalıcı, sahiplik geçici.
+      conflictRows: Object.keys(S.claims || {}).filter(id => {
+        const c = S.claims[id];
+        return c && c.status === "bekliyor" && c.prevOwner;
+      }).map(id => {
+        const c = S.claims[id], r = recs.find(x => x.id === id) || {};
+        return {
+          name: r.name || c.name,
+          meta: (SC.PLACES.find(p => p.id === r.place) || {}).name + " · No " + r.door,
+          note: "Mevcut sahip: " + c.prevOwner + " · itiraz süresi 7 gün",
+          wrapStyle: "display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:15px 17px;border-radius:13px;background:var(--surface-card);border:1px solid var(--color-warning)",
+          onTransfer: () => {
+            const next = Object.assign({}, S.claims, { [id]: Object.assign({}, c, { status: "onayli", prevOwner: null, transferredAt: Date.now() }) });
+            this.saveClaims(next);
+            this.flash("Devir onaylandı · içerik sıfırlandı");
+          },
+          onReject: () => {
+            const next = Object.assign({}, S.claims, { [id]: Object.assign({}, c, { status: "red", reason: "Mevcut sahip itiraz etti." }) });
+            this.saveClaims(next);
+            this.flash("Devir reddedildi");
+          }
+        };
+      }),
+      conflictEmpty: !Object.keys(S.claims || {}).some(id => (S.claims[id] || {}).prevOwner),
+      conflictShow: Object.keys(S.claims || {}).some(id => (S.claims[id] || {}).prevOwner),
+      ...this.claimVals(recs, floorLbl, catName),
+
+      // § 12 · Ölçüm: kapsama, durum dağılımı, onay hızı, yanıt, ölü kayıt.
+      ...(() => {
+        const open = recs.filter(r => r.status === "onayli" || r.status === "aktif");
+        const aktif = recs.filter(r => r.status === "aktif");
+        const dead = recs.filter(r => r.updatedDays > (SC.SETTINGS.freshDays.value || 90));
+        const resp = aktif.map(r => r.respMins).filter(Boolean).sort((a, b) => a - b);
+        const median = resp.length ? resp[Math.floor(resp.length / 2)] : 0;
+        const bulkUnits = SC.PLACES.filter(p => SC.BULK_APPROVED.includes(p.id)).reduce((t, p) => t + p.units, 0);
+        return {
+          metricCards: [
+            { label: "Kapsama oranı", value: "%" + Math.round((open.length / T.units) * 100),
+              note: num(open.length) + " onaylı kayıt / " + num(T.units) + " birim" },
+            { label: "Fiyat sorulabilir", value: "%" + Math.round((aktif.length / Math.max(1, open.length)) * 100),
+              note: num(aktif.length) + " kayıt kataloğunu açtı" },
+            { label: "Beyan kuyruğu", value: num(pending.length),
+              note: "Esnafın açtığı, yetkili onayı bekleyen kayıt" },
+            { label: "Medyan yanıt süresi", value: median + " dk",
+              note: "Aktif kayıtların ortadaki değeri" },
+            { label: "Teyit bekleyen", value: num(recs.filter(r => r.status === "askida").length),
+              note: "Üç kullanıcı bildirimi ya da tazelik düşüşü" },
+            { label: "Ölü kayıt oranı", value: "%" + Math.round((dead.length / Math.max(1, recs.length)) * 100),
+              note: (SC.SETTINGS.freshDays.value || 90) + " günden uzun süre dokunulmamış" },
+            { label: "Toplu onay kapsamı", value: "%" + Math.round((bulkUnits / T.units) * 100),
+              note: num(bulkUnits) + " birim han yönetimi anlaşmalı yerlerde" }
+          ],
+          semtRows: SC.SEMTLER.map(s => {
+            const st = SC.semtStats(s.id);
+            const mine = recs.filter(r => r.semt === s.id);
+            const op = mine.filter(r => r.status === "onayli" || r.status === "aktif").length;
+            const cov = Math.round((op / Math.max(1, st.units)) * 100);
+            return {
+              name: s.tr, cov,
+              bar: "display:block;height:100%;width:" + Math.max(2, cov) + "%;background:var(--color-" + (cov >= 40 ? "success" : cov >= 15 ? "warning" : "danger") + ")",
+              meta: "%" + cov + " · " + num(op) + "/" + num(st.units)
+            };
+          }).sort((a, b) => b.cov - a.cov)
+        };
+      })(),
+
+      placeRows,
+      selName: place ? place.name : "—",
+      selMeta: place ? (num(place.units) + " birim · " + (place.floors || [0]).length + " kat · " +
+        num(stats(place.id).open) + " onaylı kayıt · %" + stats(place.id).cov + " kapsama") : "",
+      selBulkLabel: place && SC.BULK_APPROVED.includes(place.id) ? "Han yönetimi listesi bağlı" : "Yönetim listesi yok · saha turu",
+      selBulkStyle: "flex:none;display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-" +
+        (place && SC.BULK_APPROVED.includes(place.id) ? "success-soft);color:var(--color-success)" : "warning-soft);color:var(--color-warning-accent)"),
+      selOfficer: place ? ((SC.OFFICERS[(placeRecs[0] || {}).officer] || {}).name || "—") : "—",
+      selOfficerIni: place ? ((SC.OFFICERS[(placeRecs[0] || {}).officer] || {}).name || "?").charAt(0) : "?",
+      reassign: () => this.flash("Yetkili ataması saha yöneticisinde açılır"),
+      selectAllLabel: allOn ? "Seçimi kaldır" : "Kuyruktakilerin hepsini seç",
+      selectAllStyle: "height:34px;padding:0 13px;border-radius:7px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-heading);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer",
+      toggleAll: () => {
+        if (allOn) return this.setState({ sel: {} });
+        const next = {};
+        queue.forEach(r => { next[r.id] = true; });
+        this.setState({ sel: next });
+      },
+      selCountLabel: selIds.length ? selIds.length + " kayıt seçili" : queue.length + " kayıt onay bekliyor",
+      // E3: onay bir karar — neye dayanarak onayladığın kayda geçer.
+      viaChips: Object.keys(SC.APPROVAL).map(k => ({
+        label: SC.APPROVAL[k].tr,
+        style: "height:32px;padding:0 12px;border-radius:7px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid " +
+          (S.via === k ? "var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary-accent)"
+            : "var(--border-strong);background:var(--surface-card);color:var(--text-body)"),
+        onClick: () => this.setState({ via: k })
+      })),
+      viaLabel: "Onay kaynağı",
+      approveSel: () => {
+        if (!selIds.length) return this.flash("Önce kayıt seçin");
+        this.setStatus(selIds, "onayli", { via: S.via, officer: place && place.officer });
+        this.flash(selIds.length + " kayıt onaylandı · " + SC.APPROVAL[S.via].tr);
+      },
+      approveAll: () => {
+        if (!place) return;
+        const ids = queue.map(r => r.id);
+        if (!ids.length) return this.flash("Kuyruk boş");
+        this.setStatus(ids, "onayli", { via: "han", officer: place && place.officer });
+        this.flash(place.name + " · " + ids.length + " kayıt tek işlemde onaylandı");
+      },
+      queueRows, queueEmpty: queue.length === 0,
+
+      declRows: pending.slice(0, 24).map(r => ({
+        name: r.name || "İsimsiz kayıt",
+        meta: (SC.PLACES.find(p => p.id === r.place) || {}).name + " · " + floorLbl(r.floor) + " · No " + r.door,
+        age: r.updatedDays + " gün",
+        claim: catName(r.cat) + " işi yapıyor; " + (r.moq > 1 ? "minimum " + r.moq + " adet" : "perakende") +
+          (r.isProducer ? " · üretici beyanı" : "") + ". Belge ve yerinde görülme bekliyor.",
+        onApprove: () => { this.setStatus([r.id], "onayli", { via: S.via }); this.flash("Onaylandı · " + SC.APPROVAL[S.via].tr); },
+        onSuspend: () => { this.setStatus([r.id], "askida"); this.flash("Askıya alındı"); },
+        // E4: yanlış karar düzeltilebilir olmalı.
+        canUndo: !!(S.approvals || {})[r.id],
+        onUndo: () => {
+          const over = Object.assign({}, S.over); delete over[r.id];
+          const log = Object.assign({}, S.approvals || {}); delete log[r.id];
+          this.setState({ over, approvals: log });
+          try { localStorage.setItem("han-approvals-v1", JSON.stringify(log)); } catch (err) {}
+          this.flash("Karar geri alındı");
+        }
+      })),
+      declEmpty: pending.length === 0,
+
+      officerRows,
+
+      scoreList,
+      scName: scoreRec ? (scoreRec.name || "İsimsiz kayıt") : "—",
+      scMeta: scoreRec ? ((SC.PLACES.find(p => p.id === scoreRec.place) || {}).name + " · " + floorLbl(scoreRec.floor) + " · No " + scoreRec.door + " · " + catName(scoreRec.cat)) : "",
+      scScore: scoreRec ? String(scoreOf(scoreRec)) : "0",
+      scRows,
+      scNext: missing ? missing[1] : "Karne dolu: bu kayıt yapabileceği her şeyi yapmış. Sıradaki kazanç ücretli değil, yanıt hızını korumak.",
+
+      toastOn: !!S.toast, toastText: S.toast || ""
+    };
+  }
+}
+</script>
+</body>
+</html>

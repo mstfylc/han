@@ -1,0 +1,185 @@
+/* ============================================================
+   METRONIC — COLOR TOKENS
+   Base palette sourced 1:1 from the Figma Variable set
+   (modes: Light default + Dark). Semantic aliases below map
+   the palette to real component usage seen across the file.
+   ============================================================ */
+
+:root {
+  /* ---- Brand / Primary (Uyanık navy) ---- */
+  --color-primary:             #1f3864;
+  --color-primary-active:      #162a4c;
+  --color-primary-soft:        #eaeef4;
+  --color-primary-accent:      #14233f;
+  --color-primary-transparent: rgba(31,56,100,0.20);
+
+  /* ---- Success (green) ---- */
+  --color-success:             #0bc33f;
+  --color-success-active:      #06b838;
+  --color-success-soft:        #e1fce9;
+  --color-success-accent:      #0b5c22;
+  --color-success-transparent: rgba(11,195,63,0.20);
+
+  /* ---- Danger (red) ---- */
+  --color-danger:              #ed143b;
+  --color-danger-active:       #d80d31;
+  --color-danger-soft:         #ffeaee;
+  --color-danger-accent:       #991930;
+  --color-danger-transparent:  rgba(237,20,59,0.20);
+
+  /* ---- Warning (amber) ---- */
+  --color-warning:             #fec524;
+  --color-warning-active:      #f3b70f;
+  --color-warning-soft:        #fffae9;
+  --color-warning-accent:      #b88800;
+  --color-warning-transparent: rgba(254,197,36,0.20);
+
+  /* ---- Info (violet) ---- */
+  --color-info:                #4921ea;
+  --color-info-active:         #3d17d4;
+  --color-info-soft:           #f0ecff;
+  --color-info-accent:         #271086;
+  --color-info-transparent:    rgba(73,33,234,0.20);
+
+  /* ---- Dark / Light constants ---- */
+  --color-dark:                #000000;
+  --color-dark-active:         #262626;
+  --color-dark-soft:           #f6f6f6;
+  --color-white:               #ffffff;
+  --color-light:               #ffffff;
+  --color-light-active:        #fafafa;
+
+  /* ---- Accent gradient orange (Uyanık orange) ---- */
+  --color-orange:              #e08a2b;
+  --color-orange-active:       #c6751c;
+  --color-orange-soft:         #fbf1e4;
+  --color-orange-light:        #fbf1e4;
+  --color-orange-transparent:  rgba(224,138,43,0.20);
+
+  /* ---- Brand accent / CTA (semantic alias of orange) ---- */
+  --color-accent:              var(--color-orange);
+  --color-accent-active:       var(--color-orange-active);
+  --color-accent-soft:         var(--color-orange-soft);
+  --color-accent-accent:       #8a5212;
+  --color-accent-transparent:  var(--color-orange-transparent);
+
+  /* ---- Neutral grey ramp (Figma variables) ---- */
+  --color-grey-50:  #f9f9f9;
+  --color-grey-100: #f4f4f4;
+  --color-grey-200: #eeeeee;
+  --color-grey-300: #dcddde;
+  --color-grey-400: #cbced3;
+  --color-grey-500: #bcbfc5;
+  --color-grey-600: #8e9198;
+  --color-grey-700: #676a72;
+  --color-grey-800: #393b40;
+  --color-grey-900: #2c2d30;
+  --color-grey-950: #151516;
+
+  /* ---- "Coal" text neutrals (actual rendered component text) ---- */
+  --color-coal-900: #1b1c22;   /* near-black headings */
+  --color-coal-700: #252f4a;   /* navy heading variant */
+  --color-coal-600: #4b5675;   /* body / secondary text */
+  --color-coal-500: #78829d;   /* muted */
+  --color-coal-400: #99a1b7;   /* placeholder / disabled */
+
+  /* ============================================================
+     SEMANTIC ALIASES — use these in components
+     ============================================================ */
+
+  /* Text */
+  --text-heading:    var(--color-coal-900);
+  --text-body:       var(--color-coal-600);
+  --text-muted:      var(--color-coal-500);
+  --text-placeholder:var(--color-coal-400);
+  --text-disabled:   var(--color-grey-500);
+  --text-inverse:    #ffffff;
+  --text-link:       var(--color-primary);
+
+  /* Surfaces */
+  --surface-page:    #fcfcfc;
+  --surface-muted:   var(--color-grey-50);
+  --surface-card:    #ffffff;
+  --surface-hover:   var(--color-grey-100);
+  --surface-active:  var(--color-grey-200);
+  --surface-inverse: var(--color-coal-900);
+
+  /* Borders (Metronic bluish-grey lines) */
+  --border-subtle:   #f1f1f4;
+  --border-default:  #f1f1f4;
+  --border-strong:   #dbdfe9;
+  --border-input:    #dbdfe9;
+
+  /* Focus ring */
+  --ring-primary:    rgba(31,56,100,0.20);
+}
+
+/* ---- Dark theme (opt-in via [data-theme="dark"] or .dark) ---- */
+:root[data-theme="dark"], .dark {
+  --color-primary:             #3f5d92;
+  --color-primary-active:      #52719f;
+  --color-primary-soft:        #18233a;
+  --color-primary-accent:      #b6c4dc;
+  --color-primary-transparent: rgba(63,93,146,0.24);
+  --color-orange:              #eb9c45;
+  --color-orange-active:       #e08a2b;
+  --color-orange-soft:         #2a2113;
+  --color-orange-light:        #2a2113;
+  --color-accent:              #eb9c45;
+  --color-accent-active:       #e08a2b;
+  --color-accent-soft:         #2a2113;
+  --color-accent-transparent:  rgba(235,156,69,0.24);
+  --color-success-soft:        #0a2412;
+  --color-danger-soft:         #2b0d13;
+  --color-warning-soft:        #282004;
+  --color-info-soft:           #1a0e3d;
+
+  --color-grey-50:  #141419;
+  --color-grey-100: #141419;
+  --color-grey-200: #26272f;
+  --color-grey-300: #363843;
+  --color-grey-400: #464852;
+  --color-grey-500: #636674;
+  --color-grey-600: #808290;
+  --color-grey-700: #808290;
+  --color-grey-800: #b5b7c8;
+  --color-grey-900: #dbdce4;
+  --color-grey-950: #f5f5f5;
+
+  --color-dark:        #ffffff;
+  --color-dark-active: #dfdfdf;
+  --color-light:       #0a0a0d;
+  --color-light-active:#0e0e10;
+  --color-white:       #ffffff;
+
+  --text-heading:     #f5f5f5;
+  --text-body:        #b5b7c8;
+  --text-muted:       #808290;
+  --text-placeholder: #636674;
+
+  --surface-page:    #07080a;
+  --surface-muted:   #141419;
+  --surface-card:    #141419;
+  --surface-hover:   #1c1d24;
+  --surface-active:  #26272f;
+  --surface-inverse: #f5f5f5;
+
+  --border-subtle:   #26272f;
+  --border-default:  #26272f;
+  --border-strong:   #363843;
+  --border-input:    #363843;
+
+  /* ---- Dark kontrast düzeltmesi (DS) ----
+     "light/soft" varyantlar (Badge/Button/Alert/Toast/Modal/StatusBadge) soft
+     arka plan + koyu "*-accent" metin kullanır. Dark'ta soft arka plan
+     koyulaştığı için bu metin token'ları AYDINLATILIR; yoksa metin görünmez olur.
+     (DS colors.css güncellendi → CHANGELOG §12.5 Light+Dark teyidi.)
+     NOT: base --color-info/--color-danger DEĞİŞTİRİLMEZ — onlar solid arka plan
+     olarak da kullanılır (beyaz metin kontrastı korunur); soft metin için
+     ilgili bileşenler artık *-accent token'ını okur. */
+  --color-success-accent: #45d97e;
+  --color-warning-accent: #ffd35c;
+  --color-danger-accent:  #ff7a90;
+  --color-info-accent:    #9d8bff;
+  --color-accent-accent:  #f0a85f;
+}

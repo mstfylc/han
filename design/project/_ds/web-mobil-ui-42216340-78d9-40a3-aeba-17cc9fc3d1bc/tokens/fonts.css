@@ -1,0 +1,9 @@
+/* ============================================================
+   METRONIC — WEBFONTS
+   Inter (UI) + JetBrains Mono (code) loaded from Google Fonts.
+   NOTE: the brand wordmark uses "Museo Sans 900" which is not
+   freely available — it is substituted with Inter here and the
+   <MetronicLogo> wordmark renders in a heavy Inter weight.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@500;700;800&display=swap");
