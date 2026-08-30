@@ -19,8 +19,8 @@ export async function POST(req: Request) {
     if (!me || me.role !== "yonetici") return json({ ok: false, msg: "kullanıcı için kod üretmek yönetici oturumu ister" }, 401);
     const target = userById(String(body.userId));
     if (!target) return json({ ok: false, msg: "kullanıcı bulunamadı" }, 404);
-    return json(requestReset(String(target.tel)));
+    return json(await requestReset(String(target.tel)));
   }
 
-  return json(requestReset(String(body.tel || "")));
+  return json(await requestReset(String(body.tel || "")));
 }

@@ -13,6 +13,7 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 
 import { allUsers, getDb, userByTel, userById } from "./db";
 import type { KvUser } from "./db";
+import { sendSms, smsConfigured } from "./sms";
 
 export const RESET_TTL_MIN = 15;
 export const MAX_TRIES = 5;
@@ -116,14 +117,24 @@ export function login(tel: string, pin: string): LoginOutcome {
 
 // ── reset codes ───────────────────────────────────────────────────────────
 
-/** Without an SMS provider the code has nowhere to go but back to the screen;
- *  the response says so explicitly so the UI keeps its "prototype" notice. */
-export function requestReset(tel: string): { ok: true; masked: string; demoCode: string | null } {
+/** With an SMS provider configured (src/server/sms.ts) the code goes out as a
+ *  text and never reaches the screen. Without one it has nowhere to go but
+ *  back to the response, and the UI keeps its "PROTOTİP" notice. */
+export async function requestReset(tel: string): Promise<{ ok: boolean; msg?: string; masked: string; demoCode: string | null }> {
   const u = userByTel(tel);
   // Same answer whether or not the phone is registered.
   if (!u) return { ok: true, masked: maskTel(tel), demoCode: null };
   const code = String(Math.floor(100000 + Math.random() * 900000));
   getDb().prepare("INSERT INTO resets (code_hash, user_id, at, used) VALUES (?, ?, ?, 0)").run(hashCode(code), u.id, Date.now());
+
+  if (smsConfigured()) {
+    const sent = await sendSms(String(u.tel), "HAN doğrulama kodunuz: " + code + " — " + RESET_TTL_MIN + " dk geçerli, kimseyle paylaşmayın.");
+    // A code that could not be delivered must not fall back to the screen;
+    // that would quietly undo SMS delivery for whoever the message failed for.
+    if (!sent) return { ok: false, msg: "Kod gönderilemedi. Biraz sonra yeniden deneyin.", masked: maskTel(String(u.tel)), demoCode: null };
+    return { ok: true, masked: maskTel(String(u.tel)), demoCode: null };
+  }
+
   return { ok: true, masked: maskTel(String(u.tel)), demoCode: code };
 }
 

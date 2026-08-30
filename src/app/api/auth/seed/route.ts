@@ -32,5 +32,5 @@ export async function POST(req: Request) {
     lastSeen: null,
   };
   kvSet("han-users-v1", [rec]);
-  return json({ ...requestReset(tel), user: rec });
+  return json({ ...(await requestReset(tel)), user: rec });
 }

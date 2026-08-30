@@ -46,6 +46,30 @@ ekranda PROTOTİP etiketiyle gösterilir; üretimde SMS'e taşınır.)
   dokümanları (`WEB-PLAN.md`, `ADMIN-PLANI.md`, …). UI bu kaynaktan birebir
   taşınmıştır.
 
+## SMS sağlayıcısı (isteğe bağlı)
+
+Şifre sıfırlama kodu, sağlayıcı bağlanana kadar ekranda PROTOTİP etiketiyle
+gösterilir. Bağlamak için ortam değişkenleri yeterlidir — kod değişikliği
+gerekmez (`src/server/sms.ts`):
+
+```bash
+HAN_SMS_PROVIDER=netgsm  HAN_NETGSM_USER=… HAN_NETGSM_PASS=… HAN_NETGSM_HEADER=…
+# veya
+HAN_SMS_PROVIDER=twilio  HAN_TWILIO_SID=… HAN_TWILIO_TOKEN=… HAN_TWILIO_FROM=…
+```
+
+Sağlayıcı tanımlıyken kod yalnız SMS ile gider; gönderilemezse ekrana
+düşmez, kullanıcıdan yeniden denemesi istenir.
+
+## Açık ürün kararı — M4 · Ticaretin kapanışı
+
+Tasarım sürecinde iki karar çelişik kaldı: karma model onaylandı (küçük
+perakendede ödeme HAN üzerinden, toptanda ticaret teklifte biter) ↔ v1
+kapsamı "işleme girmez" diyor (`design/project/DENETIM-PLANI.md` §3).
+Ödeme kolu bilinçli olarak **yazılmadı**: hangisinin geçerli olduğu ve
+ödeme sağlayıcısı (iyzico/PayTR/Stripe…) ürün sahibi tarafından karara
+bağlanmalı. Bunun dışında plan dokümanlarındaki tüm maddeler uygulandı.
+
 ## Doğrulama
 
 ```bash
