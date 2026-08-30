@@ -65,8 +65,58 @@ export const USER_KEYS: string[] = [KEYS.web, KEYS.traderSession];
 /** Everything that may cross the wire. */
 export const SYNCED_KEYS: string[] = [...SHARED_KEYS, ...USER_KEYS];
 
+/**
+ * Shared keys anyone may write, because participating in the market is the
+ * point of the market.
+ *
+ * A buyer raises a request and reports a bad record; a trader claims a door,
+ * corrects their own entry and answers with an offer. None of that can require
+ * an operations account or there is no bazaar — so these stay open, and the
+ * protections that matter are the ones inside the documents: an offer is bound
+ * to the record that made it, a review is gated on an accepted offer, three
+ * reports raise an alarm rather than a verdict.
+ */
+export const PUBLIC_WRITE_KEYS: string[] = [
+  KEYS.requests,   // a buyer asking for a price
+  KEYS.offers,     // a trader answering with a commitment
+  KEYS.seen,       // the funnel's "opened it" event
+  KEYS.declined,   // "I can't do this one" — better than silence
+  KEYS.reviews,    // gated on an accepted offer (K3)
+  KEYS.claims,     // asking to own a record; approving it is not public
+  KEYS.reports,    // a buyer flagging a record
+  KEYS.overrides,  // a trader correcting their own entry
+];
+
+/**
+ * Shared keys only operations may write. These are the decisions — approvals,
+ * suspensions, field visits, who is on the team, what the search lexicon says,
+ * which places exist. The `perm` is the key from han-scale's ROLES, so the
+ * permission table has exactly one definition and the API and the navigation
+ * cannot disagree about it.
+ */
+export const OPS_WRITE_KEYS: Record<string, string> = {
+  [KEYS.approvals]: "kuyruk",
+  [KEYS.moderation]: "sikayet",
+  [KEYS.nudges]: "teklifler",
+  [KEYS.tasks]: "gorevler",
+  [KEYS.users]: "yetkililer",
+  [KEYS.settings]: "ozet",
+  [KEYS.sponsors]: "sponsorluk",
+  [KEYS.places]: "yerler",
+  [KEYS.lexicon]: "sozluk",
+  [KEYS.content]: "icerik",
+  [KEYS.media]: "gorsel",
+  [KEYS.geo]: "yerler",
+  [KEYS.drafts]: "kayit-ekle",
+};
+
 export function isSharedKey(key: string): boolean {
   return SHARED_KEYS.includes(key);
+}
+
+/** The ROLES permission a write to this key needs, or null when anyone may. */
+export function permForWrite(key: string): string | null {
+  return OPS_WRITE_KEYS[key] ?? null;
 }
 
 export function isSyncedKey(key: string): boolean {

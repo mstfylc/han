@@ -172,6 +172,44 @@ const run = async () => {
   if (stillIn) bad("the old session survived a password reset");
   else ok("resetting the password ended the other session");
 
+  // ── the WRITE path, not just the menu ───────────────────────────────────
+  //
+  // Hiding a tab from a role is usability. What decides whether a decision can
+  // be forged is the endpoint, so it is checked directly rather than through
+  // the UI that is supposed to prevent reaching it.
+  const anon = await ctx.browser().newContext();
+  const anonPage = await anon.newPage();
+  await anonPage.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+
+  const write = (page, key, value) =>
+    page.evaluate(async ({ k, v }) => {
+      const r = await fetch("/api/state", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ writes: [{ scope: "shared", key: k, value: v }] }),
+      });
+      const b = await r.json();
+      return b.results["shared/" + k];
+    }, { k: key, v: value });
+
+  const forged = await write(anonPage, "han-approvals-v1", {
+    "r1": { status: "onayli", via: "han", officer: null, at: Date.now() },
+  });
+  if (forged?.ok) bad("an anonymous request approved a record — the write path is open");
+  else ok("an anonymous request cannot approve a record (" + forged?.reason + ")");
+
+  const forgedUsers = await write(anonPage, "han-users-v1", [{ id: "x", role: "yonetici" }]);
+  if (forgedUsers?.ok) bad("an anonymous request rewrote the operations team");
+  else ok("an anonymous request cannot rewrite the team (" + forgedUsers?.reason + ")");
+
+  // ...but the market itself must stay open, or there is no bazaar.
+  const publicWrite = await write(anonPage, "han-reports-v1", [
+    { recordId: "r1", reason: "test", at: Date.now() },
+  ]);
+  if (!publicWrite?.ok) bad("an anonymous buyer could not file a report — the market is over-locked");
+  else ok("an anonymous buyer can still report a record");
+  await anonPage.close();
+
   // ── the panel is not reachable while signed out ─────────────────────────
   const signedOut = await ctx.browser().newContext();
   const p3 = await signedOut.newPage();

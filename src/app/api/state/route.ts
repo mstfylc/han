@@ -12,9 +12,12 @@
 // the shared database.
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 import { readScope, writeDocument, deleteDocument } from "@/server/db";
-import { SYNCED_KEYS, isSharedKey } from "@/services/scopes";
+import { COOKIE, sessionUser } from "@/server/auth";
+import { can } from "@/data/han-scale";
+import { PUBLIC_WRITE_KEYS, SYNCED_KEYS, isSharedKey, permForWrite } from "@/services/scopes";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +68,12 @@ export async function PUT(request: Request) {
   if (!writes.length) return NextResponse.json({ error: "no writes" }, { status: 400 });
   if (writes.length > 64) return NextResponse.json({ error: "too many writes in one batch" }, { status: 413 });
 
-  const results: Record<string, { ok: boolean; revision?: string; conflict?: unknown }> = {};
+  const results: Record<string, { ok: boolean; revision?: string; conflict?: unknown; reason?: string }> = {};
+
+  // Who is asking. Resolved once: most batches touch a single key, and hitting
+  // the session table per write would make a sync tick N queries deeper.
+  const jar = await cookies();
+  const me = await sessionUser(jar.get(COOKIE)?.value);
 
   try {
     for (const w of writes) {
@@ -88,6 +96,28 @@ export async function PUT(request: Request) {
       if (isSharedKey(key) !== (scope === "shared")) {
         results[scope + "/" + key] = { ok: false };
         continue;
+      }
+      // Decisions need an account; participating in the market does not.
+      //
+      // A buyer raising a request or reporting a record, and a trader claiming
+      // a door or answering with an offer, must stay open — requiring an
+      // operations login for those would mean there is no bazaar. Approving,
+      // suspending, assigning field work, editing the lexicon and changing who
+      // is on the team are decisions, and a decision needs someone behind it.
+      //
+      // The permission table is han-scale's ROLES, the same one the navigation
+      // reads, so the menu and the endpoint cannot disagree about what a role
+      // may do.
+      const perm = permForWrite(key);
+      if (perm && !PUBLIC_WRITE_KEYS.includes(key)) {
+        if (!me) {
+          results[scope + "/" + key] = { ok: false, reason: "anonymous" };
+          continue;
+        }
+        if (!can(me.role, perm)) {
+          results[scope + "/" + key] = { ok: false, reason: "forbidden" };
+          continue;
+        }
       }
 
       if (w.remove) {
