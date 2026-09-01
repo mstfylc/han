@@ -11,7 +11,27 @@
  *     virgin database, and started failing the moment a previous run approved
  *     them. Tests have to find their own subject rather than assume one.
  */
+import { existsSync } from "node:fs";
+import { chromium } from "playwright";
 import pg from "pg";
+
+/**
+ * Launch a browser that works here AND anywhere else.
+ *
+ * These scripts were written against a sandbox that ships Chromium at a fixed
+ * path, and every one of them hard-coded it as a fallback. That meant they
+ * launched with an executablePath that exists on exactly one machine: on CI, or
+ * on anyone else's laptop, they would fail before asserting anything.
+ *
+ * Order: an explicit CHROMIUM_PATH wins, then the sandbox's copy if it is
+ * really there, otherwise let Playwright use the browser it installed itself.
+ */
+export function launch() {
+  const pinned = process.env.CHROMIUM_PATH;
+  const sandbox = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+  const executablePath = pinned || (existsSync(sandbox) ? sandbox : undefined);
+  return chromium.launch(executablePath ? { executablePath } : {});
+}
 
 /** Only ever point this at a local database. Truncating accounts is not the
  *  sort of thing that should be one typo away from production. */

@@ -13,13 +13,11 @@
  *
  * Usage: node scripts/panel.mjs [baseUrl]
  */
-import { chromium } from "playwright";
 import pg from "pg";
 
-import { resetAccounts, signIn } from "./testkit.mjs";
+import { launch, resetAccounts, signIn } from "./testkit.mjs";
 
 const BASE = process.argv[2] || "http://localhost:3001";
-const EXEC = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 let failures = 0;
 const ok = (m) => console.log("  ok  " + m);
@@ -66,7 +64,7 @@ async function setRole(role) {
 
 const run = async () => {
   await resetAccounts();
-  const browser = await chromium.launch({ executablePath: EXEC });
+  const browser = await launch();
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await ctx.newPage();
 

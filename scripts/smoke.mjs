@@ -7,7 +7,7 @@
  *
  * Usage: node scripts/smoke.mjs [baseUrl]
  */
-import { chromium } from "playwright";
+import { launch } from "./testkit.mjs";
 
 const BASE = process.argv[2] || "http://localhost:3000";
 
@@ -65,9 +65,7 @@ const run = async () => {
   // This environment ships Chromium at a pinned path; the npm playwright
   // version may not match its own download build, so point at the real binary
   // rather than fetching another copy.
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  });
+  const browser = await launch();
   let failures = 0;
 
   for (const lang of ["tr", "ar"]) {

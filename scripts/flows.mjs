@@ -16,12 +16,10 @@
  *
  * Usage: node scripts/flows.mjs [baseUrl]
  */
-import { chromium } from "playwright";
 
-import { findClaimable, resetAccounts, signIn } from "./testkit.mjs";
+import { findClaimable, launch, resetAccounts, signIn } from "./testkit.mjs";
 
 const BASE = process.argv[2] || "http://localhost:3001";
-const EXEC = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 let failures = 0;
 const ok = (m) => console.log("  ok  " + m);
@@ -34,7 +32,7 @@ const ls = (page, key, dflt) =>
   }, { k: key, d: dflt });
 
 const run = async () => {
-  const browser = await chromium.launch({ executablePath: EXEC });
+  const browser = await launch();
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 } });
   const page = await ctx.newPage();
   const errors = [];

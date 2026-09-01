@@ -18,12 +18,10 @@
  *
  * Usage: node scripts/crossdevice.mjs [baseUrl]
  */
-import { chromium } from "playwright";
-import { resetAccounts, signIn } from "./testkit.mjs";
+import { launch, resetAccounts, signIn } from "./testkit.mjs";
 
 // Operations is behind a session and the sign-in flow needs development mode.
 const BASE = process.argv[2] || "http://localhost:3001";
-const EXEC = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 /** startSync polls on this interval; allow a couple of cycles plus slack. */
 const SYNC_WAIT = 10000;
 
@@ -43,7 +41,7 @@ async function shared(page, key) {
 }
 
 const run = async () => {
-  const browser = await chromium.launch({ executablePath: EXEC });
+  const browser = await launch();
 
   // Two contexts = two devices. Nothing is shared between them except the server.
   const deviceA = await browser.newContext({ viewport: { width: 1440, height: 900 } });

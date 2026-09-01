@@ -1,0 +1,137 @@
+name: CI
+
+# The verification chain is only real if something runs it. Everything here is
+# a command a person can also run locally — nothing is CI-only magic.
+#
+# Two servers on purpose:
+#   :3000 the production build, which is what `smoke` walks and what proves the
+#         password-reset code is NOT handed out in production
+#   :3001 a development server, which is the only place that code is returned,
+#         so the sign-in flow can be completed without an SMS gateway
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: han
+          POSTGRES_PASSWORD: han
+          POSTGRES_DB: han
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://han:han@localhost:5432/han
+      # Development-only, and asserted to have no effect on the production
+      # build by scripts/auth.mjs.
+      HAN_DEV_SHOW_RESET_CODE: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Playwright brings its own browser; scripts/testkit.mjs only pins a path
+      # when one is actually there, so this is what they launch in CI.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # ── checks that need nothing running ─────────────────────────────────
+      - name: Types
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Copy keys
+        run: npm run copykeys
+
+      # The port is held to the prototype byte for byte: 38 places, 14,716
+      # units, 1,385 records. This is the check that says the port is faithful.
+      - name: Parity with the design prototype
+        run: npm run parity
+
+      - name: Build
+        run: npm run build
+
+      # ── schema, then the servers the end-to-end checks drive ─────────────
+      - name: Apply schema
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+
+      - name: Start production server (:3000)
+        run: |
+          npm run start >/tmp/han-next.log 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          # Fail loudly rather than letting the first check report the symptom.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/)" = "200" \
+            || { echo "production server never answered:"; tail -40 /tmp/han-next.log; exit 1; }
+          # Prove it is serving THIS build, not something stale.
+          want=$(cat .next/BUILD_ID)
+          got=$(curl -s http://localhost:3000/api/build | sed -n 's/.*"buildId":"\([^"]*\)".*/\1/p')
+          test "$want" = "$got" || { echo "served $got, expected $want"; exit 1; }
+          echo "production server up on build $want"
+
+      - name: Start development server (:3001)
+        run: |
+          npx next dev -p 3001 >/tmp/han-next-dev.log 2>&1 &
+          for i in $(seq 1 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/giris || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/giris)" = "200" \
+            || { echo "development server never answered:"; tail -40 /tmp/han-next-dev.log; exit 1; }
+          echo "development server up"
+
+      # ── the end-to-end checks ────────────────────────────────────────────
+      - name: Smoke (39 routes x tr/ar + 390px)
+        run: npm run smoke
+
+      - name: Sign-in behaves like authentication
+        run: npm run auth
+
+      - name: Every operations tab works
+        run: npm run panel
+
+      - name: The approval loop is closed
+        run: npm run loop
+
+      - name: The market is shared across devices
+        run: npm run crossdevice
+
+      - name: All seven audit flows
+        run: npm run flows
+
+      - name: Server logs on failure
+        if: failure()
+        run: |
+          echo "── production ──"; tail -60 /tmp/han-next.log 2>/dev/null || true
+          echo "── development ──"; tail -60 /tmp/han-next-dev.log 2>/dev/null || true

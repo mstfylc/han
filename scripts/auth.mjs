@@ -18,14 +18,13 @@
  *
  * Usage: node scripts/auth.mjs [baseUrl]
  */
-import { chromium } from "playwright";
+import { launch } from "./testkit.mjs";
 import pg from "pg";
 
 // Development mode by default: the reset code is only returned there, which is
 // itself the guard this script also checks against the production server.
 const BASE = process.argv[2] || "http://localhost:3001";
 const PROD = process.env.HAN_PROD_URL || "http://localhost:3000";
-const EXEC = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 let failures = 0;
 const ok = (m) => console.log("  ok  " + m);
@@ -71,7 +70,7 @@ const run = async () => {
     bad("could not reset accounts: " + e.message);
     process.exit(1);
   }
-  const browser = await chromium.launch({ executablePath: EXEC });
+  const browser = await launch();
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(BASE + "/giris", { waitUntil: "networkidle" });
