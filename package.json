@@ -14,7 +14,9 @@
     "crossdevice": "node --env-file-if-exists=.env.local scripts/crossdevice.mjs",
     "auth": "node --env-file-if-exists=.env.local scripts/auth.mjs",
     "panel": "node --env-file-if-exists=.env.local scripts/panel.mjs",
-    "pg": "bash scripts/pg.sh"
+    "pg": "bash scripts/pg.sh",
+    "copykeys": "node scripts/copykeys.mjs",
+    "flows": "node --env-file-if-exists=.env.local scripts/flows.mjs"
   },
   "dependencies": {
     "next": "16.3.3",

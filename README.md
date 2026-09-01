@@ -59,6 +59,8 @@ yani tek tarayıcıda çalışır ama cihazlar arası paylaşım olmaz.
 | `npm run crossdevice` | Pazar gerçekten paylaşılıyor: iki ayrı tarayıcı birbirini görüyor |
 | `npm run auth` | Giriş gerçekten kimlik doğrulaması: şifre sızmıyor, çerez httpOnly, kilit sunucuda, kod tek kullanımlık; yazma yolu role bağlı |
 | `npm run panel` | 21 yönetim sekmesinin hepsi gerçekten render ediyor; salt-okuma eylem alamıyor, yetkisiz rol sekmeye giremiyor |
+| `npm run flows` | Denetim raporundaki **yedi akışın** tamamı uçtan uca yürüyor (K9, K3 dahil) |
+| `npm run copykeys` | Her `W()`/`F()` çağrısı gerçekten var olan bir anahtarı gösteriyor — eksik anahtar sessizce boş basar |
 
 `smoke` üretim sunucusu ister (`bash scripts/serve.sh`, :3000).
 `loop`, `crossdevice` ve `auth` geliştirme sunucusu ister (`bash scripts/serve-dev.sh`, :3001)

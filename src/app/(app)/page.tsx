@@ -16,6 +16,7 @@ import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
 import { Button, Icon, Input } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
+import { StoreCard } from "@/components/StoreCard";
 import { F, W } from "@/lib/copy";
 import { chevron, convert, num, tonePair, tx, loc } from "@/lib/i18n";
 import { href } from "@/lib/routes";
@@ -532,32 +533,35 @@ export default function DiscoverPage() {
           <div style={sx("display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:14px")}>
             {D.STORES.filter((s) => s.verified).slice(0, 3).map((s) => {
               const p = priceOf(s, mode);
+              const t = (s.trade || {}) as Record<string, unknown>;
+              const sells = (t.sells || []) as string[];
+              const moq = (t.toptan as { moq?: number } | null)?.moq;
               return (
-                <button
+                <StoreCard
                   key={s.id}
-                  type="button"
-                  onClick={() => router.push(href.store(s.id))}
-                  style={sx("display:flex;flex-direction:column;align-items:stretch;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);overflow:hidden;font-family:inherit;text-align:start;cursor:pointer;padding:0")}
-                >
-                  <span style={sx("display:block;height:126px;background:var(--surface-muted)")}>
-                    <ImageSlot src={storePhoto(s)} placeholder={s.name} decorative />
-                  </span>
-                  <span style={sx("display:block;padding:14px")}>
-                    <span style={sx("display:flex;align-items:center;gap:6px")}>
-                      <span style={sx("font-size:16px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap")}>{s.name}</span>
-                      {s.verified && (
-                        <span style={sx("flex:none;display:flex;color:var(--color-success)")}>
-                          <Icon name="verify" size={15} />
-                        </span>
-                      )}
-                    </span>
-                    <span style={sx("display:block;font-size:13px;color:var(--text-muted);margin-top:3px")}>{whereOf(s, lang)}</span>
-                    <span style={sx("display:flex;align-items:baseline;gap:8px;margin-top:9px")}>
-                      <span style={sx("font-size:17px;font-weight:700;color:var(--color-primary)")}>{p.label}</span>
-                      <span style={sx("font-size:12.5px;color:var(--text-muted)")}>{cv(p.value)}</span>
-                    </span>
-                  </span>
-                </button>
+                  name={s.name as string}
+                  location={whereOf(s, lang)}
+                  photo={storePhoto(s)}
+                  verified={!!s.verified}
+                  verifiedLabel={W(lang, "cardVerified")}
+                  rating={s.rating as number | null}
+                  price={p.label}
+                  alt={cv(p.value)}
+                  fromLabel={W(lang, "from")}
+                  tags={(s.groups || []).slice(0, 2).map((g: { name?: string }) => String(g.name || ""))}
+                  wholesale={sells.includes("toptan")}
+                  retail={sells.includes("perakende")}
+                  producer={!!s.isProducer}
+                  taxFree={!!s.taxFree}
+                  minLabel={moq && moq > 1 ? W(lang, "minOrder", moq) : ""}
+                  labels={{
+                    wholesale: F(lang, "wholesale"),
+                    retail: F(lang, "retail"),
+                    producer: F(lang, "fProducer"),
+                    taxFree: F(lang, "fTaxFree"),
+                  }}
+                  onOpen={() => router.push(href.store(s.id as string))}
+                />
               );
             })}
           </div>

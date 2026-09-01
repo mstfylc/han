@@ -773,13 +773,13 @@ function CompareView({ lang, cv }: { lang: Lang; cv: (n: number | null) => strin
   const best = valid.length ? Math.min(...valid) : null;
 
   const labels = [
-    F(lang, "rowUnit") || pk({ tr: "Birim fiyat", en: "Unit price", ru: "Цена за шт.", ar: "سعر الوحدة" }, lang),
-    F(lang, "rowMin") || W(lang, "minOrder"),
+    pk({ tr: "Birim fiyat", en: "Unit price", ru: "Цена за шт.", ar: "سعر الوحدة" }, lang),
+    W(lang, "minOrder"),
     pk({ tr: "Fiyat bandı", en: "Price band", ru: "Диапазон цен", ar: "نطاق السعر" }, lang),
     pk({ tr: "Yanıt süresi", en: "Response time", ru: "Время ответа", ar: "زمن الرد" }, lang),
-    F(lang, "rowShip") || F(lang, "fExport"),
-    F(lang, "rowTax") || F(lang, "fTaxFree"),
-    F(lang, "rowTotal") || pk({ tr: "Toplam", en: "Total", ru: "Итого", ar: "الإجمالي" }, lang),
+    F(lang, "fExport"),
+    F(lang, "fTaxFree"),
+    pk({ tr: "Toplam", en: "Total", ru: "Итого", ar: "الإجمالي" }, lang),
   ];
 
   if (!cands.length) {

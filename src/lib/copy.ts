@@ -26,6 +26,12 @@ export const W_COPY: Record<string, CopyEntry> = {
   featured: { tr: "Öne çıkan dükkânlar", en: "Featured shops", ru: "Избранные магазины", ar: "متاجر مميزة" },
   shopsWord: { tr: "dükkân", en: "shops", ru: "магазинов", ar: "متجرًا" },
   from: { tr: "başlangıç", en: "from", ru: "от", ar: "من" },
+  // The badge on a shop card. Deliberately "verified", not "trusted": HAN
+  // checked who they are and where they are, and vouches for nothing else.
+  cardVerified: { tr: "Doğrulanmış", en: "Verified", ru: "Проверено", ar: "موثّق" },
+  saveHint: { tr: "Kayıtlılara eklendi", en: "Saved", ru: "Сохранено", ar: "تم الحفظ" },
+  removedHint: { tr: "Kayıtlılardan çıkarıldı", en: "Removed from saved", ru: "Удалено из сохранённых", ar: "أُزيل من المحفوظات" },
+  reviewsTitle: { tr: "Yorumlar", en: "Reviews", ru: "Отзывы", ar: "التقييمات" },
   products: { tr: "Ürünler ve fiyatlar", en: "Products and prices", ru: "Товары и цены", ar: "المنتجات والأسعار" },
   certs: { tr: "Sertifikalar", en: "Certificates", ru: "Сертификаты", ar: "الشهادات" },
   addPlan: { tr: "Plana ekle", en: "Add to plan", ru: "Добавить в план", ar: "أضف إلى الخطة" },
