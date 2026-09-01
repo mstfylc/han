@@ -1,0 +1,66 @@
+# HAN — tek komutla canlı: uygulama + Postgres + otomatik HTTPS (Caddy).
+#
+#   1. Sunucuda: DOMAIN=han.ornek.com POSTGRES_PASSWORD=... docker compose up -d --build
+#   2. DNS'te alan adını sunucunun IP'sine yönlendirin — sertifika kendiliğinden gelir.
+#
+# Veri `han-pg` volume'ünde, Postgres'in kendi veri dizininde yaşar; uygulama
+# konteyneri durum tutmaz, deploy veriye dokunmaz. Şema ilk istekte kendiliğinden
+# uygulanır (`db/schema.sql`, idempotent).
+#
+# Yedek: `docker compose exec app npm run backup` → `.backups/han-*.sql.gz`.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=han
+      - POSTGRES_USER=han
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}
+    volumes:
+      - han-pg:/var/lib/postgresql/data
+    # Uygulama, veritabanı gerçekten sorgu kabul edene kadar başlamasın —
+    # "port açık" ile "hazır" aynı şey değildir.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U han -d han"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - NEXT_PUBLIC_SITE_URL=https://${DOMAIN:-localhost}
+      - DATABASE_URL=postgres://han:${POSTGRES_PASSWORD}@db:5432/han
+      # Bildirim kanalı bağlanacaksa (bkz. README):
+      # - HAN_NOTIFY=netgsm
+      # - HAN_NETGSM_USER=...
+      # - HAN_NETGSM_PASS=...
+      # - HAN_NETGSM_HEADER=...
+    volumes:
+      - han-backups:/app/.backups
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  han-pg:
+  han-backups:
+  caddy-data:
+  caddy-config:

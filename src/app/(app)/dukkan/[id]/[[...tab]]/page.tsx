@@ -15,6 +15,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 
+import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
 import * as OF from "@/data/han-offers";
 import * as SC from "@/data/han-scale";
@@ -63,8 +64,10 @@ export default function ShopPage() {
     });
   }, [state.acceptedOffers, view?.rec.id, id]);
 
+  // Moderasyonun gizlediği yorum alıcıda da görünmez olur — gerekçesiyle
+  // panelde saklı durur ve geri açılabilir; burada sadece süzülür.
   const reviews = useMemo(
-    () => (view ? OF.reviewsOf(view.rec.id) : []),
+    () => (view ? OF.reviewsOf(view.rec.id).filter((rv) => !AD.reviewState(view.rec.id, rv)?.hidden) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [view?.rec.id, state.offersRev],
   );
@@ -142,7 +145,17 @@ export default function ShopPage() {
       <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:24px;margin-top:16px;align-items:start")}>
         <div>
           <div style={sx("border-radius:16px;overflow:hidden;border:1px solid var(--border-strong);background:var(--surface-muted);height:352px")}>
-            <ImageSlot src={view.photos[0]} placeholder={view.name} decorative />
+            {/* Panelde onaylanan kapak görseli önce gelir; onaysız görsel
+                alıcıya hiç ulaşmaz (Mağaza Görselleri akışı, uçtan uca). */}
+            <ImageSlot
+              src={
+                (AD.mediaOf(view.rec.id).find((m) => m.status === "onayli" && m.cover) ||
+                  AD.mediaOf(view.rec.id).find((m) => m.status === "onayli"))?.slot ||
+                view.photos[0]
+              }
+              placeholder={view.name}
+              decorative
+            />
           </div>
           {/* C3 · photo honesty. Saying whose photo this is costs nothing and
               is the difference between a directory and a catalogue of stock

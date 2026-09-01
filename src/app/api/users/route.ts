@@ -36,15 +36,24 @@ export async function GET() {
   try {
     await ready();
     const { rows } = await pool().query(
-      `SELECT id, name, tel, role, place, officer, active, last_seen
+      `SELECT id, name, tel, role, place, officer, active, last_seen,
+              (pin_hash IS NOT NULL) AS has_pin
          FROM ops_users ORDER BY created_at`,
     );
-    // Never the hash, never the attempt counter.
+    // Never the hash, never the attempt counter. WHETHER a password is set is
+    // a different thing from what it is: the Kullanıcılar tab needs it to show
+    // who still has to finish opening their account, and it is only ever told
+    // to a session that already holds `yetkililer`.
     return NextResponse.json({
       users: rows.map((u) => ({
         id: u.id, name: u.name, tel: u.tel, role: u.role,
         place: u.place, officer: u.officer, active: u.active, lastSeen: u.last_seen,
+        hasPin: !!u.has_pin,
       })),
+      // Keyed by phone, not by id: the panel's own user list comes from the
+      // directory store while accounts live in ops_users, and the phone is what
+      // ties a person to their account (K10).
+      pins: Object.fromEntries(rows.map((u) => [String(u.tel), !!u.has_pin])),
     });
   } catch (e) {
     return NextResponse.json({ error: String((e as Error).message || e) }, { status: 500 });

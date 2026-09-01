@@ -23,30 +23,43 @@ let failures = 0;
 const ok = (m) => console.log("  ok  " + m);
 const bad = (m) => { console.log("FAIL  " + m); failures++; };
 
-/** Each tab, and a phrase that only its own screen renders. */
+/**
+ * Each tab, and a phrase that only its own screen renders.
+ *
+ * Matched against the CONTENT region, never the whole page: the sidebar prints
+ * every tab's label, so a body-wide search would pass for a tab that rendered
+ * nothing at all — which is exactly how the retired `kapsama` id kept reporting
+ * ok after the tab had been renamed to `hanlar`.
+ */
 const TABS = [
   ["ozet", "Özet"],
+  ["kayitlar", "Mağaza Kayıtları"],
+  ["talepler", "Alıcı Talepleri"],
   ["sahiplenme", "Sahiplenme talepleri"],
   ["kuyruk", "Beyan kuyruğu"],
-  ["toplu", "Toplu onay"],
-  ["sikayet", "Şikayet triyajı"],
   ["askidakiler", "Askıdaki kayıtlar"],
-  ["defter", "Karar defteri"],
-  ["kayitlar", "Mağaza kayıtları"],
-  ["talepler", "Alıcı talepleri"],
-  ["teklifler", "Teklif denetimi"],
-  ["yorumlar", "Yorum denetimi"],
-  ["alicilar", "Alıcı doğrulama"],
-  ["kapsama", "Kapsama"],
+  ["toplu", "Toplu onay"],
+  ["teklifler", "Teklif Denetimi"],
+  ["sikayet", "Şikayet triyajı"],
+  ["yorumlar", "Yorum Denetimi"],
+  ["alicilar", "Alıcı Doğrulama"],
   ["yerler", "Yerler"],
-  ["gorevler", "Saha görevleri"],
-  ["kalite", "Veri kalitesi"],
-  ["iceaktar", "Toplu içe aktarma"],
+  ["gorevler", "Saha Görevleri"],
+  ["kalite", "Veri Kalitesi"],
+  ["iceaktar", "Toplu İçe Aktarma"],
+  ["hanlar", "Kapsama"],
   ["yetkililer", "Yetkililer"],
   ["sponsorluk", "Sponsorluk"],
-  ["sozluk", "Arama sözlüğü"],
-  ["icerik", "Etkinlik & kampanya"],
+  ["sozluk", "Arama Sözlüğü"],
+  ["icerik", "Etkinlik & Kampanya"],
+  ["gorsel", "Mağaza Görselleri"],
+  ["haritaduzen", "Harita & Kat Planı"],
+  ["ayarlar", "Sistem Ayarları"],
+  ["kullanicilar", "Kullanıcılar"],
+  ["defter", "Karar defteri"],
+  ["temalar", "Temalar"],
 ];
+
 
 const LEAKS = [
   { re: /\bundefined\b/, why: "the word 'undefined'" },
@@ -85,7 +98,10 @@ const run = async () => {
     await page.goto(BASE + "/panel/" + id, { waitUntil: "networkidle" });
     await page.waitForTimeout(700);
 
-    const text = await page.evaluate(() => document.body.innerText);
+    // The content region only — see the note on TABS.
+    const text = await page.evaluate(
+      () => (document.getElementById("panel-icerik") || document.body).innerText,
+    );
     const problems = [];
     if (!text.includes(heading)) problems.push('did not render its own heading "' + heading + '"');
     if (text.trim().length < 80) problems.push("rendered almost nothing");

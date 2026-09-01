@@ -17,6 +17,11 @@
 // the endpoint. That is enforced separately in /api/state, which reads the same
 // ROLES table this menu does, so the two cannot disagree — and scripts/auth.mjs
 // checks it directly rather than through the UI meant to keep you away from it.
+//
+// The parallel branch kept a stored "Rol (demo)" selector as a fallback for
+// visitors without a session. It is gone: a role the visitor picks is not a
+// role, and leaving it in a shell that also renders a real session teaches the
+// wrong thing about what the panel is. No session, no panel — /giris.
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,6 +40,8 @@ export interface PanelTab {
   count?: number;
   /** tabs not yet ported show as pending rather than pretending to work */
   soon?: boolean;
+  /** starts a new sidebar section with this label (prototype navAll groups) */
+  group?: string;
 }
 
 export interface SessionUser {
@@ -91,8 +98,22 @@ export function PanelShell({
     <div style={sx("min-height:100vh;background:var(--surface-page);font-family:var(--font-sans);font-size:15px;line-height:1.5;color:var(--text-body)")}>
       <a data-han-skip="1" href="#panel-icerik">İçeriğe geç</a>
 
+      {/* The panel is a desk tool, but a yetkili in the field opens it on a
+          phone: below 900px the sidebar folds above the content as a wrapping
+          chip row and the header may break to two lines. !important is the
+          only lever that outranks the inline styles this shell is written in. */}
+      <style>{`
+        @media (max-width: 900px) {
+          [data-panel-head="1"] { flex-wrap: wrap !important; height: auto !important; min-height: 56px; padding-block: 8px !important; row-gap: 6px !important; }
+          [data-panel-grid="1"] { grid-template-columns: minmax(0,1fr) !important; }
+          [data-panel-grid="1"] > nav { position: static !important; max-height: none !important; flex-direction: row !important; flex-wrap: wrap !important; }
+          [data-panel-grid="1"] > nav button { width: auto !important; }
+          [data-panel-grid="1"] [data-nav-label="1"] { flex: 1 0 100%; padding-block: 8px 2px !important; }
+        }
+      `}</style>
+
       <header style={sx("position:sticky;top:0;z-index:30;background:var(--color-primary);box-shadow:0 4px 14px rgba(0,0,0,.12)")}>
-        <div style={sx("max-width:1600px;margin:0 auto;padding:0 22px;height:56px;display:flex;align-items:center;gap:16px")}>
+        <div data-panel-head="1" style={sx("max-width:1600px;margin:0 auto;padding:0 22px;height:56px;display:flex;align-items:center;gap:16px")}>
           <button
             type="button"
             onClick={() => router.push("/panel")}
@@ -140,12 +161,24 @@ export function PanelShell({
             style={sx("position:sticky;top:76px;background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:8px;box-shadow:0 3px 4px rgba(0,0,0,.03);display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 96px);overflow-y:auto")}
             aria-label="Yönetim bölümleri"
           >
-            {tabs.map((t) => {
+            {tabs.map((t, i) => {
               const allowed = SC.can(role, t.perm);
               const on = t.id === active;
+              // A section label only earns its place if the role can see at
+              // least one tab in the section (the prototype's navFor rule).
+              const section = t.group && (() => {
+                const end = tabs.findIndex((x, j) => j > i && x.group);
+                const members = tabs.slice(i, end === -1 ? undefined : end);
+                return members.some((x) => SC.can(role, x.perm));
+              })();
               return (
+                <span key={t.id} style={sx("display:contents")}>
+                {section && (
+                  <span data-nav-label="1" style={sx("display:block;padding:" + (i === 0 ? "6px" : "14px") + " 10px 4px;font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--text-muted)")}>
+                    {t.group}
+                  </span>
+                )}
                 <button
-                  key={t.id}
                   type="button"
                   disabled={!allowed}
                   aria-current={on ? "page" : undefined}
@@ -171,6 +204,7 @@ export function PanelShell({
                     </span>
                   )}
                 </button>
+                </span>
               );
             })}
           </nav>

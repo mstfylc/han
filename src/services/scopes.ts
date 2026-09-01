@@ -15,8 +15,10 @@
 //   user   — one person's own state: language, saved shops, their plan. Synced
 //            so it follows them between devices, but never mixed into shared.
 //
-//   local  — never leaves the browser. Exactly one thing lives here, and it is
-//            here because sending it anywhere would be a security defect.
+//   local  — never leaves the browser. Two things: the prototype PIN store,
+//            because sending it anywhere would be a security defect, and the
+//            device's own reading preferences, because a preference that
+//            follows the device is the point of it.
 
 import { KEYS } from "./storage";
 
@@ -30,7 +32,7 @@ import { KEYS } from "./storage";
  * genuine one. It stays on the device until server-side verification replaces
  * it wholesale.
  */
-export const LOCAL_ONLY_KEYS: string[] = [KEYS.auth];
+export const LOCAL_ONLY_KEYS: string[] = [KEYS.auth, KEYS.prefs];
 
 /** The market's own state — read by every surface. */
 export const SHARED_KEYS: string[] = [

@@ -1,0 +1,7 @@
+node_modules
+.next
+.backups
+.git
+.github
+design
+*.log

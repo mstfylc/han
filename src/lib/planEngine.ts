@@ -12,6 +12,7 @@
 // A manual reorder always wins over the automatic one: the buyer knows their
 // own appointment and which han they want to see first better than we do.
 
+import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import * as SE from "@/data/han-search";
@@ -233,7 +234,7 @@ export function buildPlan(
   );
 
   (opts.events || []).forEach((id) => {
-    const e = (D.EVENTS || []).find((x) => x.id === id);
+    const e = AD.mergeContent(D.EVENTS || [], "events").find((x) => x.id === id);
     if (!e) return;
     const m = /^(\d{1,2})[:.](\d{2})/.exec(String(e.time || ""));
     const h = D.HANS.find((x) => x.id === e.han);

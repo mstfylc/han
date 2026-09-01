@@ -112,13 +112,13 @@ jobs:
           echo "development server up"
 
       # ── the end-to-end checks ────────────────────────────────────────────
-      - name: Smoke (39 routes x tr/ar + 390px)
+      - name: Smoke (all routes x tr/ar + 390px)
         run: npm run smoke
 
       - name: Sign-in behaves like authentication
         run: npm run auth
 
-      - name: Every operations tab works
+      - name: All 26 operations tabs work
         run: npm run panel
 
       - name: The approval loop is closed

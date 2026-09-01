@@ -16,7 +16,8 @@
     "panel": "node --env-file-if-exists=.env.local scripts/panel.mjs",
     "pg": "bash scripts/pg.sh",
     "copykeys": "node scripts/copykeys.mjs",
-    "flows": "node --env-file-if-exists=.env.local scripts/flows.mjs"
+    "flows": "node --env-file-if-exists=.env.local scripts/flows.mjs",
+    "backup": "node --env-file-if-exists=.env.local scripts/backup-db.mjs"
   },
   "dependencies": {
     "next": "16.3.3",

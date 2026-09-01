@@ -196,6 +196,17 @@ export const KEYS = {
    * the production login.
    */
   auth: "han-auth-v1",
+
+  /**
+   * Language and currency, as chosen ON THIS DEVICE.
+   *
+   * These used to be read back out of `han-web-v1` on boot. That was fine while
+   * that document lived in one browser; once it syncs, `src.lang` is whoever
+   * wrote last on ANY of the person's devices, and opening the site on a phone
+   * would flip it to the language of a laptop. A reading preference belongs to
+   * the screen it is read on, so it gets its own key and never leaves it.
+   */
+  prefs: "han-prefs",
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];

@@ -13,9 +13,9 @@ const eslintConfig = [
       // ── React Compiler advisories, deliberately warnings ─────────────────
       //
       // Next 16 brings eslint-plugin-react-hooks v7, whose React Compiler rules
-      // run even though `reactCompiler` is off in next.config.ts. Nine remain,
-      // and each is a decision rather than a shrug. Where the rule found a real
-      // defect it was fixed, not downgraded:
+      // run even though `reactCompiler` is off in next.config.ts. Eighteen
+      // remain, and each is a decision rather than a shrug. Where the rule found
+      // a real defect it was fixed, not downgraded:
       //
       //   · Ara synced its search box to the URL inside an effect, so every
       //     back/forward flashed the previous query. Now adjusted during render.
@@ -42,11 +42,14 @@ const eslintConfig = [
       //     guarantee that says this port is faithful. Not a good trade for a
       //     compiler that is not enabled.
       //
-      //   set-state-in-effect (1) — the panel reads a client-only source after
-      //     mount, because the server cannot read it at all. "Render empty, then
-      //     fill in" is the honest shape for that; with a fully async loader it
-      //     becomes a real loading state, which is a change worth making when
-      //     the documents are normalised, not before.
+      //   set-state-in-effect (10) — the panel tabs read a client-only source
+      //     after mount, because the server cannot read it at all: stored scope
+      //     selections, the theme, the local mirror of a synced document.
+      //     "Render empty, then fill in" is the honest shape for that; the
+      //     alternative is rendering on the server something the server does not
+      //     know, which is the SSR mismatch this avoids. With a fully async
+      //     loader each becomes a real loading state — a change worth making
+      //     when the documents are normalised, not before.
       //
       // An earlier version of this comment said `purity` was about reading
       // storage during render and would reach zero once the data moved to

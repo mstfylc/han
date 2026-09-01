@@ -10,6 +10,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
 import * as L from "@/data/han-logic";
 import * as SC from "@/data/han-scale";
@@ -174,7 +175,7 @@ export default function DiscoverPage() {
       const c = s ? D.CATS.find((k) => k.id === s.cats[0]) : null;
       return c ? tx(c, lang) : "";
     };
-    return (D.CAMPAIGNS || []).slice(0, 4).map((c) => {
+    return AD.mergeContent(D.CAMPAIGNS || [], "camps").slice(0, 4).map((c) => {
       const st = c.store ? D.STORES.find((s) => s.id === c.store) : null;
       return {
         id: c.id as string,
@@ -200,7 +201,8 @@ export default function DiscoverPage() {
       fair: T.eventFair, tour: T.eventTour, workshop: T.eventWorkshop, market: T.eventMarket,
     };
     const dom = new Date().getDate();
-    const all = (D.EVENTS || []).slice().sort((a, b) => (parseInt(a.day, 10) || 0) - (parseInt(b.day, 10) || 0));
+    // İçerik katmanı: panelde yayından alınan etkinlik anasayfada da düşer.
+    const all = AD.mergeContent(D.EVENTS || [], "events").slice().sort((a, b) => (parseInt(a.day, 10) || 0) - (parseInt(b.day, 10) || 0));
     const upcoming = all.filter((e) => (parseInt(e.day, 10) || 0) >= dom);
     return (upcoming.length ? upcoming : all).slice(0, 3).map((e) => {
       const h = D.HANS.find((x) => x.id === e.han);

@@ -51,6 +51,34 @@ const ROUTES = [
   "/esnaf/talep",
   "/esnaf/durum",
   "/esnaf/yonet",
+  "/giris",
+  "/panel",
+  "/panel/ozet",
+  "/panel/kayitlar",
+  "/panel/talepler",
+  "/panel/sahiplenme",
+  "/panel/kuyruk",
+  "/panel/askidakiler",
+  "/panel/toplu",
+  "/panel/teklifler",
+  "/panel/sikayet",
+  "/panel/yorumlar",
+  "/panel/alicilar",
+  "/panel/yerler",
+  "/panel/gorevler",
+  "/panel/kalite",
+  "/panel/iceaktar",
+  "/panel/hanlar",
+  "/panel/yetkililer",
+  "/panel/sponsorluk",
+  "/panel/sozluk",
+  "/panel/icerik",
+  "/panel/gorsel",
+  "/panel/haritaduzen",
+  "/panel/ayarlar",
+  "/panel/kullanicilar",
+  "/panel/defter",
+  "/panel/temalar",
 ];
 
 /** Text that must never reach a reader. */
@@ -86,6 +114,10 @@ const run = async () => {
     page.on("pageerror", (e) => errors.push(String(e)));
 
     for (const route of ROUTES) {
+      // Operations (panel · giriş) run in Turkish, on a desk, all day — they
+      // have no language switch, so the ar pass would only test a promise the
+      // product never makes.
+      if (lang !== "tr" && (route.startsWith("/panel") || route.startsWith("/giris"))) continue;
       errors.length = 0;
       const url = BASE + route + (route.includes("?") ? "&" : "?") + "l=" + lang;
       let status = 0;
@@ -128,7 +160,11 @@ const run = async () => {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  for (const route of ["/", "/ara?q=kılıf", "/plan", "/isler/talep", "/dukkan/emre"]) {
+  for (const route of [
+    "/", "/ara?q=kılıf", "/plan", "/isler/talep", "/dukkan/emre",
+    "/kategori", "/urun/kilif", "/harita", "/etkinlik", "/arac/doviz",
+    "/yer/yildiz", "/esnaf", "/giris", "/panel", "/panel/kayitlar",
+  ]) {
     errors.length = 0;
     await page.goto(BASE + route, { waitUntil: "networkidle" });
     await page.waitForTimeout(300);

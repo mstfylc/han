@@ -172,6 +172,9 @@ function persist(state: AppState): void {
   const out = {} as Record<string, unknown>;
   PERSIST_FIELDS.forEach((k) => { out[k] = state[k]; });
   writeKey(KEYS.web, out);
+  // Device-local mirror of the personal preferences: han-prefs never syncs,
+  // so this screen's language survives whatever another device does.
+  writeKey(KEYS.prefs, { lang: state.lang, currency: state.currency });
   // These live in their own keys because other surfaces read them: the editor
   // reads claims and reports, the trader panel reads overrides.
   writeKey(KEYS.claims, state.claims || {});
@@ -317,7 +320,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const urlCurrency = url.get(PARAM.currency);
     const urlMode = url.get(PARAM.mode);
 
-    const lang = isLang(urlLang) ? urlLang : isLang(src.lang) ? src.lang : detectLang();
+    // Language and currency are DEVICE preferences and never come from the
+    // shared store: with state synced through the server, src.lang is whoever
+    // wrote last on any device — reading it would flip this screen to another
+    // phone's language. URL beats the device's own choice beats its locale.
+    const prefs = readKey<{ lang?: string; currency?: string }>(KEYS.prefs, {});
+    const lang = isLang(urlLang) ? urlLang
+      : isLang(prefs.lang) ? prefs.lang : detectLang();
     const overrides = readKey<Record<string, OverrideEntry>>(KEYS.overrides, {});
     const reports = readKey<UserReport[]>(KEYS.reports, []);
 
@@ -332,7 +341,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       type: "patch",
       patch: {
         lang,
-        currency: (urlCurrency as AppState["currency"]) || src.currency || "auto",
+        currency: (urlCurrency as AppState["currency"]) || (prefs.currency as AppState["currency"]) || "auto",
         mode: (urlMode as AppState["mode"]) || src.mode || "ikisi",
         buyList: src.buyList || [],
         evPlan: src.evPlan || [],
