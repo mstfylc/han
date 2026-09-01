@@ -26,13 +26,18 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
-import type { ApprovalVia, RecordStatus, ShopRecord } from "@/data/types";
+import type { ApprovalVia, BuyRequest, RecordStatus, ShopRecord } from "@/data/types";
 import { Button, EmptyState, Icon, Textarea } from "@/ds";
 import { PanelShell, usePanelSession } from "@/components/PanelShell";
 import type { PanelTab } from "@/components/PanelShell";
 import { KEYS, readKey, writeKey } from "@/services/storage";
 import { sx } from "@/lib/sx";
 import type { Claim, UserReport } from "@/state/types";
+import { allRequests } from "@/state/AppState";
+import { Alicilar, Talepler, Teklifler, Yorumlar } from "../tabs/Market";
+import { IceAktar, Kalite, Kayitlar } from "../tabs/Records";
+import { Gorevler, Kapsama, Yerler } from "../tabs/Places";
+import { Icerik, Sozluk, Sponsorluk, Yetkililer } from "../tabs/Settings";
 
 const CARD = "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:18px 20px;box-shadow:0 3px 4px rgba(0,0,0,.03)";
 const KICKER = "font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)";
@@ -95,11 +100,12 @@ function PanelScreen() {
     reports: UserReport[];
     approvals: Record<string, SC.ApprovalDecision>;
     reportStates: Record<string, AD.ReportState>;
+    requests: BuyRequest[];
   }
   const [snap, setSnap] = useState<Snapshot>({
-    ready: false, claims: {}, reports: [], approvals: {}, reportStates: {},
+    ready: false, claims: {}, reports: [], approvals: {}, reportStates: {}, requests: [],
   });
-  const { ready, claims, reports, approvals, reportStates } = snap;
+  const { ready, claims, reports, approvals, reportStates, requests } = snap;
 
   useEffect(() => {
     // The engine's decisions have to be re-applied on every read: each surface
@@ -119,6 +125,9 @@ function PanelScreen() {
       reports: rp,
       claims: readKey<Record<string, Claim>>(KEYS.claims, {}),
       reportStates: AD.allReportStates(),
+      // The MARKET's requests, not this browser's: operations measures the
+      // whole bazaar, and the requests it must answer for come from every buyer.
+      requests: allRequests(),
     });
   }, [rev]);
 
@@ -226,18 +235,20 @@ function PanelScreen() {
     { id: "sikayet", label: "Şikayet Triyajı", icon: "shield", perm: "sikayet", count: Object.keys(reportCounts).length },
     { id: "askidakiler", label: "Askıdakiler", icon: "trash", perm: "askidakiler", count: suspended.length },
     { id: "defter", label: "Karar Defteri", icon: "files", perm: "defter" },
-    // Faz 4 · henüz yazılmadı. Boş sekme göstermektense açıkça "yakında" der.
-    { id: "kayitlar", label: "Mağaza Kayıtları", icon: "files", perm: "kayitlar", soon: true },
-    { id: "talepler", label: "Alıcı Talepleri", icon: "notepad", perm: "talepler", soon: true },
-    { id: "teklifler", label: "Teklif Denetimi", icon: "chart-line-up", perm: "teklifler", soon: true },
-    { id: "yorumlar", label: "Yorum Denetimi", icon: "star", perm: "yorum", soon: true },
-    { id: "alicilar", label: "Alıcı Doğrulama", icon: "verify", perm: "alicilar", soon: true },
-    { id: "gorevler", label: "Saha Görevleri", icon: "rocket", perm: "gorevler", soon: true },
-    { id: "kalite", label: "Veri Kalitesi", icon: "shield", perm: "kalite", soon: true },
-    { id: "iceaktar", label: "Toplu İçe Aktarma", icon: "folder", perm: "iceaktar", soon: true },
-    { id: "yerler", label: "Yerler", icon: "category", perm: "yerler", soon: true },
-    { id: "sozluk", label: "Arama Sözlüğü", icon: "magnifier", perm: "sozluk", soon: true },
-    { id: "icerik", label: "Etkinlik & Kampanya", icon: "calendar", perm: "icerik", soon: true },
+    { id: "kayitlar", label: "Mağaza Kayıtları", icon: "files", perm: "kayitlar" },
+    { id: "talepler", label: "Alıcı Talepleri", icon: "notepad", perm: "talepler", count: requests.length },
+    { id: "teklifler", label: "Teklif Denetimi", icon: "chart-line-up", perm: "teklifler" },
+    { id: "yorumlar", label: "Yorum Denetimi", icon: "star", perm: "yorum" },
+    { id: "alicilar", label: "Alıcı Doğrulama", icon: "verify", perm: "alicilar" },
+    { id: "kapsama", label: "Kapsama", icon: "chart-line-up", perm: "ozet" },
+    { id: "yerler", label: "Yerler", icon: "category", perm: "yerler" },
+    { id: "gorevler", label: "Saha Görevleri", icon: "rocket", perm: "gorevler" },
+    { id: "kalite", label: "Veri Kalitesi", icon: "shield", perm: "kalite" },
+    { id: "iceaktar", label: "Toplu İçe Aktarma", icon: "folder", perm: "iceaktar" },
+    { id: "yetkililer", label: "Yetkililer", icon: "profile-circle", perm: "yetkililer" },
+    { id: "sponsorluk", label: "Sponsorluk", icon: "star", perm: "sponsorluk" },
+    { id: "sozluk", label: "Arama Sözlüğü", icon: "magnifier", perm: "sozluk" },
+    { id: "icerik", label: "Etkinlik & Kampanya", icon: "calendar", perm: "icerik" },
   ];
 
   const raw = params.tab?.[0] || "ozet";
@@ -335,6 +346,35 @@ function PanelScreen() {
           )}
 
           {tab === "defter" && <Defter approvals={approvals} />}
+
+          {tab === "kayitlar" && <Kayitlar />}
+          {tab === "talepler" && (
+            <Talepler requests={requests} readOnly={SC.isReadOnly(role)} officer={officer} onNudge={refresh} say={say} />
+          )}
+          {tab === "teklifler" && <Teklifler requests={requests} />}
+          {tab === "yorumlar" && <Yorumlar readOnly={SC.isReadOnly(role)} onChange={refresh} say={say} />}
+          {tab === "alicilar" && (
+            <Alicilar requests={requests} readOnly={SC.isReadOnly(role)} onChange={refresh} say={say} />
+          )}
+          {tab === "kapsama" && (
+            <Kapsama readOnly={SC.isReadOnly(role)} officer={officer} onTask={refresh} say={say} />
+          )}
+          {tab === "yerler" && <Yerler readOnly={SC.isReadOnly(role)} onChange={refresh} say={say} />}
+          {tab === "gorevler" && (
+            <Gorevler readOnly={SC.isReadOnly(role)} officer={officer} onChange={refresh} say={say} />
+          )}
+          {tab === "kalite" && (
+            <Kalite readOnly={SC.isReadOnly(role)} officer={officer} onTask={refresh} say={say} />
+          )}
+          {tab === "iceaktar" && (
+            <IceAktar readOnly={SC.isReadOnly(role)} officer={officer} onDone={refresh} say={say} />
+          )}
+          {tab === "yetkililer" && (
+            <Yetkililer me={session.user} readOnly={SC.isReadOnly(role)} say={say} />
+          )}
+          {tab === "sponsorluk" && <Sponsorluk readOnly={SC.isReadOnly(role)} onChange={refresh} say={say} />}
+          {tab === "sozluk" && <Sozluk readOnly={SC.isReadOnly(role)} onChange={refresh} say={say} />}
+          {tab === "icerik" && <Icerik readOnly={SC.isReadOnly(role)} onChange={refresh} say={say} />}
         </>
       )}
 

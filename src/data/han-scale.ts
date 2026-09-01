@@ -704,6 +704,67 @@ export function applyApprovals(log: Dict<{ status?: string; via?: string; office
   return out;
 }
 
+/**
+ * Open a record for a unit that has none yet.
+ *
+ * The shape of a record is not something each surface should invent: the field
+ * team's form, the bulk import and anything else that opens a door all have to
+ * produce the same thing, or the engine ends up with rows it cannot rank.
+ *
+ * Two rules are baked in rather than left to the caller:
+ *   · A new record is a DECLARATION. A tenant list from a han's office says who
+ *     holds a door, not what they sell or whether they are still there, so it
+ *     enters at "beyan" and goes through the same approval line as everything
+ *     else. Bulk approval is a separate, deliberate decision.
+ *   · The address backbone is not overwritten. If a record already exists at
+ *     that place, floor and door, this returns null rather than shadowing it.
+ *
+ * The draft is persisted AND pushed onto the backbone, because a record that
+ * reaches RECORDS but not the search index is invisible — the trap the audit
+ * called out as #9.
+ */
+export function draftRecord(
+  input: {
+    place: string; floor: number; door: string; name: string;
+    cats?: string[]; tel?: string; officer?: string | null;
+  },
+  onIndex?: (rec: ShopRecord) => void,
+): ShopRecord | null {
+  const place = PLACES.find((p) => p.id === input.place);
+  if (!place) return null;
+  const clash = RECORDS.some(
+    (x) => x.place === place.id && String(x.door) === String(input.door) && x.floor === input.floor,
+  );
+  if (clash) return null;
+
+  const cats = (input.cats || []).filter(Boolean);
+  const rec: ShopRecord = {
+    id: "im" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    place: place.id, semt: place.semt, floor: input.floor, door: String(input.door), corridor: null,
+    name: input.name, cat: cats[0] || "", cats,
+    sector: (place.sector || "perakende") as ShopRecord["sector"],
+    status: "beyan", approvedVia: "esnaf", bulk: false,
+    officer: input.officer || "",
+    langs: ["tr"], moq: 1, moqFlex: true,
+    trade: { sells: ["perakende"], quoteBased: false, perakende: { band: null, moq: 1 }, toptan: null, scope: null },
+    band: null,
+    groups: cats.map((c) => ({ name: c, lines: 0, lo: 0, hi: 0 })),
+    skuCount: 0,
+    src: { band: "tahmini", moq: "tahmini", groups: "tahmini", resp: "tahmini", rating: "tahmini", address: "yetkili" },
+    shipsHotel: false, giftWrap: false, isProducer: false, shipsAbroad: false,
+    taxFree: false, invoice: false, payments: ["cash"],
+    respMins: null, respRate: null, rating: null, reviews: 0,
+    updatedDays: 0, photos: 0, tel: input.tel || "", distance: 300,
+    curated: null,
+  };
+
+  const drafts = readKey<ShopRecord[]>(DRAFT_KEY, []);
+  writeKey(DRAFT_KEY, drafts.concat([rec]));
+  const added = addRecord(rec);
+  if (added && onIndex) onIndex(added);
+  return added;
+}
+
 /** One decision in the approval log: what was decided, on what grounds, by
  *  whom, and when. E3 — an approval is a decision, not a button, so the
  *  grounds are chosen rather than assumed, and the trail survives. */

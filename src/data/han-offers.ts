@@ -113,6 +113,12 @@ export function putDecline(
   return writeKey(KEYS.declined, all);
 }
 
+/** How many shops said "I can't answer this". The counterpart to seenCount:
+ *  the funnel's last step is a declined answer, and it is a real one. */
+export function declineCount(reqId: string | number): number {
+  return Object.keys(allDeclined()[String(reqId)] || {}).length;
+}
+
 export function declineOf(reqId: string | number, recordId: string): Decline | null {
   return (allDeclined()[String(reqId)] || {})[recordId] || null;
 }
