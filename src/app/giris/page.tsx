@@ -118,8 +118,14 @@ function LoginScreen() {
     const { body } = await post({ action: "reset", tel });
     if (!body.ok) return setErr("Kod istenemedi.");
     setView("kod");
+    // Say what actually happened. Promising "a code was sent" when no channel
+    // is configured leaves someone waiting for an SMS that is never coming —
+    // and then blaming their phone rather than the deployment.
     setNote(
-      body.masked + " numarasına altı haneli bir kod gönderildi. Kod " + (body.ttl || 15) + " dakika geçerli." +
+      (body.delivered
+        ? body.masked + " numarasına altı haneli bir kod gönderildi."
+        : "Kod üretildi, ancak bu kurulumda mesaj gönderme kanalı tanımlı değil — kod sunucu günlüğünde.") +
+      " Kod " + (body.ttl || 15) + " dakika geçerli." +
       // Only present when the deployment explicitly opted in; never in
       // production. Shown so a developer can complete the flow without an SMS
       // gateway, and labelled so nobody mistakes it for normal behaviour.

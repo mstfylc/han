@@ -171,6 +171,28 @@ const run = async () => {
   if (stillIn) bad("the old session survived a password reset");
   else ok("resetting the password ended the other session");
 
+  // ── the delivery channel ────────────────────────────────────────────────
+  //
+  // Refusing to return the code in production was correct and also a dead end:
+  // a real deployment could not create its second user, because nobody could
+  // ever receive their code. What matters now is that the response says
+  // truthfully whether a channel exists, so the screen does not promise an SMS
+  // that is not coming.
+  if (typeof asked.body.delivered !== "boolean") {
+    bad("the reset response does not say whether a channel is configured");
+  } else {
+    ok("the reset response states delivery honestly (delivered=" + asked.body.delivered + ")");
+  }
+
+  // Whether a channel exists must be the SAME answer for a registered and an
+  // unregistered number, or it becomes another way to probe for accounts.
+  const unknownDelivery = await api(page, { action: "reset", tel: "0500 111 22 33" });
+  if (unknownDelivery.body.delivered !== asked.body.delivered) {
+    bad("delivery status differs between a registered and an unregistered number");
+  } else {
+    ok("delivery status is identical for known and unknown numbers");
+  }
+
   // ── the WRITE path, not just the menu ───────────────────────────────────
   //
   // Hiding a tab from a role is usability. What decides whether a decision can

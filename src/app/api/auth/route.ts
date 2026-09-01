@@ -17,6 +17,7 @@ import {
   applyReset, closeSession, countUsers, createUser, issueReset, login,
   maskTel, normTel, sessionUser, showsResetCode, toPublic,
 } from "@/server/auth";
+import { canDeliver, notifier } from "@/server/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -96,16 +97,32 @@ export async function POST(request: Request) {
       }
 
       const issued = await issueReset(tel);
+
+      // Hand it to whatever channel is configured. Awaited but never allowed to
+      // throw, and its result is NOT reflected in the response: "we could not
+      // deliver" would tell a stranger this number has no account.
+      if (issued) {
+        await notifier().send({
+          to: tel,
+          kind: "reset-code",
+          text: `HAN doğrulama kodunuz: ${issued.code} — ${RESET_TTL_MIN} dakika geçerli.`,
+        });
+      }
+
       // The SAME answer whether or not the number is registered: otherwise this
       // endpoint becomes a way to find out who has an account.
       return NextResponse.json({
         ok: true,
         masked: maskTel(tel),
         ttl: RESET_TTL_MIN,
+        // Whether a real channel exists at all is not a secret — it is the same
+        // for every caller, and the screen has to be able to say something true
+        // about what just happened rather than promising an SMS that is not
+        // coming.
+        delivered: canDeliver(),
         // Only when the deployment has explicitly opted in, and never in
-        // production. Without an SMS gateway there is no delivery channel, and
-        // handing the code to whoever asked for it would mean anyone who knows
-        // a phone number could take the account.
+        // production. Handing the code to whoever asked for it would mean
+        // anyone who knows a phone number could take the account.
         devCode: issued && showsResetCode() ? issued.code : undefined,
       });
     }
