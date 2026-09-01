@@ -10,38 +10,48 @@ const eslintConfig = [
   ...nextTypescript,
   {
     rules: {
-      // ── React Compiler advisories, deliberately warnings for now ──────────
+      // ── React Compiler advisories, deliberately warnings ─────────────────
       //
       // Next 16 brings eslint-plugin-react-hooks v7, whose React Compiler rules
-      // run even though `reactCompiler` is off in next.config.ts. They are not
-      // noise, and they are tracked rather than silenced:
+      // run even though `reactCompiler` is off in next.config.ts. Nine remain,
+      // and each is a decision rather than a shrug. Where the rule found a real
+      // defect it was fixed, not downgraded:
       //
-      //   purity — screens call OF.offersOf()/declineOf() during render, which
-      //     reads the local mirror.
+      //   · Ara synced its search box to the URL inside an effect, so every
+      //     back/forward flashed the previous query. Now adjusted during render.
+      //   · İşlerim read Date.now() while rendering — a render that returns a
+      //     different answer each time it runs is not a function of its inputs,
+      //     which is exactly what makes the server's HTML and the client's first
+      //     render disagree. The clock now lives in state and moves on the tick.
       //
-      //     An earlier note here predicted these would reach zero once the data
-      //     moved to Postgres. They did not, and that was a design choice worth
-      //     stating rather than quietly leaving stale: reads stayed synchronous
-      //     against a local mirror that syncs in the background, so that the
-      //     screens — and the engine held to the prototype by parity — did not
-      //     have to be rewritten. The reads are impure in React's sense but
-      //     deterministic within a render, and every write goes through the
-      //     driver. Making them genuinely pure means moving to a subscription
-      //     (useSyncExternalStore) or async loaders, which is worth doing when
-      //     the documents are normalised — not before.
-      //   preserve-manual-memoization — the ported engine mutates records in
-      //     place (applyOverrides rewrites rec.band, rec.status), so the
-      //     compiler cannot prove a useMemo dependency is stable. Fixing it
-      //     means making the data layer immutable, which is its own change.
+      // What is left, and why:
       //
-      //   set-state-in-effect — the panel and the role hook read a synchronous
-      //     browser store after mount, because the server cannot read it at
-      //     all. That "render empty, then fill in" step is unavoidable while
-      //     the store is localStorage; with an API it becomes a real loading
-      //     state. Where this rule caught a genuine defect it was fixed rather
-      //     than downgraded (see the search box in Ara).
+      //   purity (2) — Date.now() inside `submitClaim` and `doLogin`. These run
+      //     on a click, and a claim has to be stamped with the moment the person
+      //     pressed the button, not with the last tick. The compiler cannot see
+      //     that an arrow function defined in the body is only ever a handler,
+      //     so it flags conservatively. Contorting this would store worse data.
       //
-      // All three stay visible in every lint run; none is switched off.
+      //   preserve-manual-memoization (6) — the ported engine mutates
+      //     module-level state on purpose: applyOverrides rewrites a record in
+      //     place, loadDrafts pushes onto RECORDS. So the compiler cannot prove
+      //     a useMemo dependency derived from it is stable, and it is right that
+      //     it cannot. Making the data layer immutable means rewriting the
+      //     engine, and the engine is what scripts/parity.ts holds byte-for-byte
+      //     against the design prototype — the rewrite would void the one
+      //     guarantee that says this port is faithful. Not a good trade for a
+      //     compiler that is not enabled.
+      //
+      //   set-state-in-effect (1) — the panel reads a client-only source after
+      //     mount, because the server cannot read it at all. "Render empty, then
+      //     fill in" is the honest shape for that; with a fully async loader it
+      //     becomes a real loading state, which is a change worth making when
+      //     the documents are normalised, not before.
+      //
+      // An earlier version of this comment said `purity` was about reading
+      // storage during render and would reach zero once the data moved to
+      // Postgres. Both halves were wrong — it was the clock, and the fix had
+      // nothing to do with Postgres. Corrected rather than left standing.
       "react-hooks/purity": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
       "react-hooks/set-state-in-effect": "warn",

@@ -841,7 +841,12 @@ function TraderScreen() {
                                   t({ tr: "gün", en: "days", ru: "дн.", ar: "يومًا" })}
                               </div>
                               <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:2px")}>
-                                {when(mine.at ?? Date.now(), lang) + " · " + t({ tr: "geçerlilik: ", en: "valid until ", ru: "до ", ar: "حتى " }) + when(mine.validUntil ?? Date.now(), lang)}
+                                {[
+                                  mine.at ? when(mine.at, lang) : null,
+                                  mine.validUntil
+                                    ? t({ tr: "geçerlilik: ", en: "valid until ", ru: "до ", ar: "حتى " }) + when(mine.validUntil, lang)
+                                    : null,
+                                ].filter(Boolean).join(" · ")}
                               </div>
                             </div>
                           )}

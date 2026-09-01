@@ -12,19 +12,18 @@
 // control. Now the server decides: /api/auth returns the signed-in user, the
 // role travels with them, and someone who is not signed in is sent to /giris.
 //
-// Worth being precise about what this does and does not buy. The navigation
-// hides what a role may not touch, and that is a usability decision, not a
-// security one — the real guarantee has to sit on the endpoints that write.
-// Today the write path is /api/state, which is not yet role-aware, so this is
-// honest UI on top of an open door. Closing it is the next security step and
-// is called out in the report rather than implied by a locked-looking menu.
+// Worth being precise about what this does and does not buy. Hiding a tab is
+// usability, never a control: what decides whether a decision can be forged is
+// the endpoint. That is enforced separately in /api/state, which reads the same
+// ROLES table this menu does, so the two cannot disagree — and scripts/auth.mjs
+// checks it directly rather than through the UI meant to keep you away from it.
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import * as SC from "@/data/han-scale";
-import { Button, Icon } from "@/ds";
+import { Icon } from "@/ds";
 import { sx } from "@/lib/sx";
 
 export interface PanelTab {

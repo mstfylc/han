@@ -111,6 +111,7 @@ export function initialState(): AppState {
     online: true,
     offersRev: 0,
     tick: 0,
+    now: 0,
   };
 }
 
@@ -371,6 +372,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         catSel: g0 ? ((g0.cats || [])[0] as string) : null,
         vw: window.innerWidth,
         online: navigator.onLine !== false,
+        now: Date.now(),
       },
     });
     setLoading(false);
@@ -443,7 +445,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Offers drip in over time, and "closes in 20 min" has to stay true.
   useEffect(() => {
     if (loading) return;
-    const id = setInterval(() => dispatch({ type: "patchFn", fn: (s) => ({ tick: s.tick + 1 }) }), 4000);
+    const id = setInterval(
+      () => dispatch({ type: "patchFn", fn: (s) => ({ tick: s.tick + 1, now: Date.now() }) }),
+      4000,
+    );
     return () => clearInterval(id);
   }, [loading]);
 

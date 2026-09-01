@@ -359,7 +359,11 @@ function RequestDetail({ lang, req, reqs, offersOf, ctx, state, save, toast, rou
   const acc = state.acceptedOffers[req.id];
   const dist = useMemo(() => SE.distribute(req, ctx), [req, ctx]);
 
-  const expired = req.deadline && Date.now() > req.deadline && !acc;
+  // `state.now` rather than Date.now(): a render that reads the wall clock is
+  // not a function of its inputs, so the server's HTML and the client's first
+  // render disagree. The tick moves it, so the countdown still counts down.
+  const now: number = state.now;
+  const expired = !!(req.deadline && now && now > req.deadline && !acc);
   // U7 · state reads REAL offers only.
   const stateKey = req.durum === "vazgecildi" ? "vazgecildi"
     : acc ? "anlasildi"
@@ -375,7 +379,9 @@ function RequestDetail({ lang, req, reqs, offersOf, ctx, state, save, toast, rou
     suresi_doldu: ["danger", pk({ tr: "Süresi doldu", en: "Expired", ru: "Истёк", ar: "انتهت المدة" }, lang)],
   };
   const [toneName, stateLabel] = meta[stateKey];
-  const left = req.deadline ? Math.max(0, Math.ceil((req.deadline - Date.now()) / 3600000)) : null;
+  // Null before the clock is known: better no number than a number counted
+  // from 1970.
+  const left = req.deadline && now ? Math.max(0, Math.ceil((req.deadline - now) / 3600000)) : null;
 
   // U3 · every number here is measured. "Opened it" is the marker the trader's
   // panel writes; if nobody opened it, this shows 0 rather than a fraction.
@@ -599,6 +605,9 @@ function RequestDetail({ lang, req, reqs, offersOf, ctx, state, save, toast, rou
 
 function OffersPanel({ lang, req, offers, cv }: any) {
   const { state, save, toast } = useApp();
+  // One instant for the whole panel, from state rather than the wall clock —
+  // see RequestDetail for why reading Date.now() while rendering is a bug.
+  const now: number = state.now;
   const router = useRouter();
   const acc = state.acceptedOffers[req.id];
   const real = offers.filter((o: Offer) => o.real);
@@ -628,8 +637,8 @@ function OffersPanel({ lang, req, offers, cv }: any) {
       <div style={sx("display:flex;flex-direction:column;gap:10px;margin-top:12px")}>
         {offers.map((o: Offer) => {
           const until = o.validUntil || null;
-          const leftDays = until ? Math.max(0, Math.ceil((until - Date.now()) / 86400000)) : null;
-          const expired = !!(o.real && until && Date.now() > until);
+          const leftDays = until && now ? Math.max(0, Math.ceil((until - now) / 86400000)) : null;
+          const expired = !!(o.real && until && now && now > until);
           const isBest = o.real && o.raw === bestRaw;
           const rejected = !!(state.rejects || {})[req.id + ":" + o.recordId];
 

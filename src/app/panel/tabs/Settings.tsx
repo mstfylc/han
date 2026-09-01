@@ -24,7 +24,7 @@ import { Button, EmptyState, Input } from "@/ds";
 import { sx } from "@/lib/sx";
 
 import { Pill } from "./Pill";
-import { CARD, H1, KICKER, ROW, SUB, num } from "./shared";
+import { CARD, H1, KICKER, ROW, SUB } from "./shared";
 
 // ── Yetkililer ────────────────────────────────────────────────────────────
 
@@ -299,7 +299,14 @@ export function Icerik({ readOnly, onChange, say }: {
   readOnly: boolean; onChange: () => void; say: (m: string) => void;
 }) {
   const [rev, setRev] = useState(0);
-  const events = useMemo(() => AD.mergeContent((D.EVENTS || []) as Record<string, unknown>[], "events"), [rev]);
+  const events = useMemo(() => {
+    // `rev` is not read here — it is the re-read trigger. mergeContent goes to
+    // storage, so after an edit the memo has to run again, and bumping rev is
+    // what says so. Referencing it keeps the dependency honest rather than
+    // silencing the rule that noticed.
+    void rev;
+    return AD.mergeContent((D.EVENTS || []) as Record<string, unknown>[], "events");
+  }, [rev]);
   const [title, setTitle] = useState("");
   const [day, setDay] = useState("");
   const [kind, setKind] = useState("fair");

@@ -199,6 +199,19 @@ export interface AppState {
   offersRev: number;
   /** offers drip in over time; this keeps the screen live */
   tick: number;
+  /**
+   * "Now", as of the last tick.
+   *
+   * Screens must not call Date.now() while rendering: a render that returns a
+   * different result each time it runs is not a function of its inputs, which
+   * is what makes the server's HTML and the client's first render disagree.
+   * Reading the clock here means the whole tree sees ONE consistent instant,
+   * and "closes in 20 minutes" still counts down because the tick moves it.
+   *
+   * 0 until the client has booted — server rendering has no clock, and a
+   * screen that needs one must treat 0 as "not known yet" rather than as 1970.
+   */
+  now: number;
 }
 
 /** A trader's corrections to their own generated record. Applying one lifts
