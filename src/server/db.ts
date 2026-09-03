@@ -10,6 +10,22 @@ import { Pool } from "pg";
 
 const globalForDb = globalThis as unknown as { hanPool?: Pool; hanReady?: Promise<void> };
 
+/**
+ * How many connections this process may hold.
+ *
+ * On a long-running server one process serves everyone, so a real pool is
+ * right. On serverless it is the opposite: every concurrent invocation is its
+ * own process, and `max: 8` there means 8 × (however many lambdas are warm) —
+ * which reaches Postgres' connection limit long before it reaches any traffic
+ * worth having. One connection each, and a pooling endpoint (Neon's `-pooler`
+ * host, or PgBouncer) in front, is the shape that survives.
+ */
+function poolSize(): number {
+  const explicit = Number(process.env.HAN_DB_POOL);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return process.env.VERCEL ? 1 : 8;
+}
+
 export function pool(): Pool {
   if (!globalForDb.hanPool) {
     const connectionString = process.env.DATABASE_URL;
@@ -19,19 +35,65 @@ export function pool(): Pool {
           "see db/schema.sql and README for how to point it at one.",
       );
     }
-    globalForDb.hanPool = new Pool({ connectionString, max: 8 });
+    globalForDb.hanPool = new Pool({ connectionString, max: poolSize() });
   }
   return globalForDb.hanPool;
 }
 
-/** Apply the schema once per process. It is written to be idempotent, so this
- *  is safe on every cold start and needs no migration runner yet. */
+/**
+ * Apply the schema once per process.
+ *
+ * The statements are idempotent, so running them on a cold start is safe. What
+ * is NOT safe is running them from several cold starts at once: concurrent
+ * `CREATE TABLE IF NOT EXISTS` on the same name deadlock against each other in
+ * Postgres. One long-running server never noticed, because there was only ever
+ * one process; serverless makes a burst of simultaneous cold starts the normal
+ * case. An advisory lock makes the second one wait instead of failing.
+ *
+ * The lock is taken on a single checked-out client on purpose — advisory locks
+ * belong to a session, so taking it via `pool.query` could unlock on a
+ * different connection than it locked.
+ */
 export function ready(): Promise<void> {
   if (!globalForDb.hanReady) {
-    const sql = readFileSync(path.join(process.cwd(), "db", "schema.sql"), "utf8");
-    globalForDb.hanReady = pool().query(sql).then(() => undefined);
+    globalForDb.hanReady = (async () => {
+      const sql = readFileSync(schemaPath(), "utf8");
+      const client = await pool().connect();
+      try {
+        await client.query("SELECT pg_advisory_lock(hashtext('han-schema'))");
+        await client.query(sql);
+      } finally {
+        await client.query("SELECT pg_advisory_unlock(hashtext('han-schema'))").catch(() => {});
+        client.release();
+      }
+    })();
   }
   return globalForDb.hanReady;
+}
+
+/**
+ * Where db/schema.sql actually is at runtime.
+ *
+ * `process.cwd()` is the project root under `next start` and under `next dev`,
+ * but a serverless bundle is unpacked somewhere else entirely and only carries
+ * the files the build tracer saw. It cannot see through a path built at
+ * runtime, which is why next.config.ts names this file in
+ * `outputFileTracingIncludes` — without that the first API call on Vercel dies
+ * with ENOENT, and the app looks broken rather than misconfigured.
+ */
+function schemaPath(): string {
+  const candidates = [
+    path.join(process.cwd(), "db", "schema.sql"),
+    // The traced copy lands beside the bundled route, under the task root.
+    path.join(process.cwd(), ".next", "server", "db", "schema.sql"),
+  ];
+  for (const p of candidates) {
+    try { readFileSync(p); return p; } catch { /* try the next one */ }
+  }
+  throw new Error(
+    "db/schema.sql not found at runtime. On Vercel this means the build did " +
+      "not include it — check outputFileTracingIncludes in next.config.ts.",
+  );
 }
 
 export interface DocumentRow {

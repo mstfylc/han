@@ -205,9 +205,25 @@ export function startSync(): Promise<void> {
 
   const first = pull();
   if (typeof window !== "undefined") {
-    window.setInterval(() => { void pull(); void push(); }, POLL_MS);
+    window.setInterval(() => {
+      // A hidden tab has nobody watching it, so pulling into it changes
+      // nothing anyone can see — and the listeners below refresh it the moment
+      // it is looked at again. On a long-running server this only wasted a
+      // query; on serverless every poll is a billed invocation, so a forgotten
+      // background tab would quietly bill ~900 an hour for a screen no one is
+      // reading. Pushing still happens either way: work already done on this
+      // device has to reach the market whether or not the tab is in front.
+      if (document.visibilityState !== "hidden") void pull();
+      void push();
+    }, POLL_MS);
     // Coming back to the tab is the other moment someone else's work landed.
     window.addEventListener("focus", () => { void pull(); });
+    // Switching between tabs of the SAME window does not always raise `focus`,
+    // so visibility is its own trigger — otherwise a tab could come back to
+    // the front and sit on stale data until the next tick.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") void pull();
+    });
     // Best effort on the way out, so a decision made and closed still ships.
     window.addEventListener("beforeunload", () => { void push(); });
   }

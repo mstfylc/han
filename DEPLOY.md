@@ -1,7 +1,10 @@
 # HAN — Sunucuya Kurulum
 
-Hedef: yarın sabah ekip çalışmaya başlasın. İki yol var; **Yol A önerilir**
-(tek komut, otomatik HTTPS).
+Hedef: yarın sabah ekip çalışmaya başlasın.
+
+Demo için **Yol V (Vercel + Neon)** en hızlısı ve sunucudaki canlı sitelere
+dokunmayanı. Kendi sunucunuzda çalıştırmak için **Yol A** (Docker Compose,
+otomatik HTTPS) ya da **Yol A2** (sunucuda zaten site varsa).
 
 ## Yarın için ön koşullar (bu ikisi olmadan başlamayın)
 
@@ -10,7 +13,46 @@ Hedef: yarın sabah ekip çalışmaya başlasın. İki yol var; **Yol A önerili
    olmalı. **HTTPS şart** — PWA kurulumunun (telefona uygulama olarak ekleme)
    ve güvenli çerezin çalışması buna bağlı.
 
-## Yol A — Docker Compose (önerilen, ~10 dakika)
+## Yol V — Vercel + Neon (demo için önerilen)
+
+Sunucudaki canlı sitelere hiç dokunmaz; nginx, certbot, Docker adımı yoktur.
+
+**1 · Veritabanı (Neon, ücretsiz katman yeter)**
+[neon.tech](https://neon.tech) → yeni proje → bağlantı adresini kopyalayın.
+**Pooled** olanı alın — host'u `-pooler` ile biten. Serverless'ta her istek
+kendi süreci olduğu için doğrudan uç, trafiğe doymadan bağlantıya doyar.
+
+**2 · Vercel**
+[vercel.com/new](https://vercel.com/new) → bu depoyu Import → framework
+kendiliğinden Next.js olarak tanınır. Environment Variables:
+
+| Değişken | Değer |
+|---|---|
+| `DATABASE_URL` | Neon **pooled** adresi + `?sslmode=require` |
+| `NEXT_PUBLIC_SITE_URL` | `https://han.mansis.com.tr` |
+
+Deploy → şema ilk istekte kendiliğinden uygulanır (`db/schema.sql`, idempotent,
+eşzamanlı soğuk başlangıçlara karşı advisory lock ile korumalı).
+
+**3 · Alan adı**
+Vercel → Project → Settings → Domains → `han.mansis.com.tr`. Cloudflare'deki
+kaydı Vercel'in verdiği hedefe çevirin ve **gri buluta (DNS only)** alın —
+Vercel sertifikayı kendisi yönetir, turuncu bulut araya girip çift proxy olur.
+
+**Bilinmesi gerekenler**
+
+- **Hobby planı ticari kullanıma kapalıdır.** Demo için uygun; ürün olarak
+  yayında kalacaksa Pro gerekir.
+- **Yoklama maliyeti.** `sync.ts` 4 saniyede bir sunucuya gider. Görünmeyen
+  sekmede artık yoklama yapılmıyor, ama açık ve önde duran her sekme saatte
+  ~900 çağrı demektir. Demo ölçeğinde önemsiz; gerçek trafikte aralığı
+  büyütmek ya da itmeli bir kanala geçmek gerekir. Bu, uzun ömürlü süreçte
+  (Yol A) bedava olan tek şeydir ve Hetzner'i üretim için hâlâ daha ucuz yapan
+  şey budur.
+- **Yedek** Neon'un kendi anlık görüntülerinden alınır; `npm run backup`
+  (pg_dump) yine çalışır, `DATABASE_URL` verilmesi yeter.
+
+## Yol A — Docker Compose (kendi sunucunuz)
 
 ```bash
 # sunucuda:
