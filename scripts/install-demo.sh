@@ -25,6 +25,8 @@ DOMAIN=""
 DIR="${HAN_DIR:-/opt/han}"
 BRANCH="${HAN_BRANCH:-claude/design-screens-coding-3il7b6}"
 PORT="${HAN_PORT:-3000}"
+VHOST="no"
+TLS="no"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -33,6 +35,8 @@ while [ $# -gt 0 ]; do
     --domain)  DOMAIN="${2:-}"; shift 2 ;;
     --dir)     DIR="${2:-}";    shift 2 ;;
     --port)    PORT="${2:-}";   shift 2 ;;
+    --vhost)   VHOST="yes";     shift ;;
+    --tls)     TLS="yes"; VHOST="yes"; shift ;;
     *) echo "bilinmeyen argüman: $1"; exit 2 ;;
   esac
 done
@@ -175,7 +179,106 @@ api=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/api/auth"
 [ "$api" = "200" ] && ok "Postgres bağlantısı çalışıyor (/api/auth 200)" \
                    || warn "/api/auth $api döndü — veritabanı bağlantısını kontrol edin"
 
-# ── 3 · vhost: BASILIR, KURULMAZ ───────────────────────────────────────────
+# ── 3 · vhost ──────────────────────────────────────────────────────────────
+#
+# --vhost verilmediyse blok yalnızca BASILIR. Verildiyse yazılır, ama tek bir
+# kural altında: `nginx -t` geçmeden hiçbir şey reload edilmez, ve test
+# başarısız olursa eklediğimiz her şey geri alınıp yapılandırmanın yeniden
+# geçerli olduğu DOĞRULANIR. Sunucuda iki canlı site var; bozuk bir config'le
+# reload etmek üçünü birden düşürür.
+if [ "$VHOST" = "yes" ] && [ "$PROXY" = "nginx" ]; then
+  say "nginx vhost"
+  AVAIL="/etc/nginx/sites-available/${DOMAIN}"
+  LINK="/etc/nginx/sites-enabled/${DOMAIN}"
+  BACKUP=""
+
+  if [ -e "$AVAIL" ]; then
+    BACKUP="${AVAIL}.han-yedek.$(date +%s)"
+    cp -a "$AVAIL" "$BACKUP"
+    warn "aynı isimde vhost vardı — yedeklendi: $BACKUP"
+  fi
+
+  cat > "$AVAIL" <<NGINX
+# HAN — ${DOMAIN}. scripts/install-demo.sh tarafından yazıldı.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+
+    # Yükleme boyutu: toplu içe aktarma CSV'leri ve mağaza görselleri için.
+    client_max_body_size 25m;
+
+    location / {
+        proxy_pass         http://127.0.0.1:${PORT};
+        proxy_http_version 1.1;
+        proxy_set_header   Host              \$host;
+        proxy_set_header   X-Real-IP         \$remote_addr;
+        proxy_set_header   X-Forwarded-For   \$proxy_add_x_forwarded_for;
+        # Bu başlık olmadan giriş çalışmaz: oturum çerezi üretimde 'secure'
+        # işaretlidir ve TLS'i nginx (veya Cloudflare) sonlandırdığı için
+        # uygulamaya istek düz http gibi görünür.
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_set_header   Upgrade           \$http_upgrade;
+        proxy_set_header   Connection        "upgrade";
+        proxy_read_timeout 300s;
+    }
+}
+NGINX
+  ln -sfn "$AVAIL" "$LINK"
+  ok "vhost yazıldı: $AVAIL"
+
+  if nginx -t 2>/tmp/han-nginx-test.log; then
+    ok "nginx -t geçti"
+    systemctl reload nginx
+    ok "nginx reload edildi (restart DEĞİL — canlı bağlantılar kesilmedi)"
+  else
+    # Geri al ve config'in gerçekten kurtarıldığını doğrula.
+    rm -f "$LINK"
+    if [ -n "$BACKUP" ]; then mv -f "$BACKUP" "$AVAIL"; else rm -f "$AVAIL"; fi
+    if nginx -t >/dev/null 2>&1; then
+      warn "vhost geri alındı; nginx yapılandırması yine geçerli, siteler etkilenmedi"
+    else
+      warn "DİKKAT: geri alındı ama nginx -t hâlâ başarısız — sorun bizim vhost'tan ÖNCE de vardı"
+    fi
+    cat /tmp/han-nginx-test.log
+    die "nginx yapılandırma testi başarısız. Hiçbir şey reload edilmedi."
+  fi
+
+  if [ "$TLS" = "yes" ]; then
+    say "sertifika"
+    if ! command -v certbot >/dev/null; then
+      warn "certbot yok. Kurulum: apt install -y certbot python3-certbot-nginx"
+    else
+      # --nginx eklentisi vhost'u kendisi 443'e taşır ve yeniden yükler.
+      if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
+                 --register-unsafely-without-email --redirect; then
+        ok "sertifika alındı ve nginx 443'e taşındı"
+      else
+        warn "certbot başarısız. Cloudflare proxy'si (turuncu bulut) açıksa"
+        warn "HTTP-01 doğrulaması engellenmiş olabilir — kaydı geçici olarak"
+        warn "'DNS only' (gri) yapıp tekrar deneyin, sonra istersen turuncuya alın."
+      fi
+    fi
+  fi
+
+  say "son adım — Cloudflare"
+  cat <<TXT
+
+  Kayıt şu an PROXIED (turuncu bulut) görünüyor. SSL/TLS → Overview'da modun
+  **Full (strict)** olduğundan emin olun.
+
+  "Flexible" seçiliyse Cloudflare ile sunucunuz arasındaki bacak ŞİFRESİZ
+  http olur — tarayıcı kilidi görür ama trafik son adımda açıktır.
+
+TXT
+  say "bitti — https://${DOMAIN}"
+  echo "  İlk giriş: https://${DOMAIN}/giris → 'İlk yöneticiyi kur'"
+  echo "  Kod loga düşer: docker compose ${COMPOSE_ARGS[*]} logs app | grep notify"
+  echo "  Geri alma:  cd ${DIR} && docker compose ${COMPOSE_ARGS[*]} down -v"
+  echo "              rm -f ${LINK} ${AVAIL} && nginx -t && systemctl reload nginx"
+  exit 0
+fi
+
 say "son adım — vhost (bunu SİZ yerleştirin)"
 cat <<TXT
 
