@@ -39,6 +39,24 @@ Bitti: `https://han.alanadi.com` yayında, sertifika kendiliğinden alınır.
   `gunzip -c han-....sql.gz | docker compose exec -T db psql -U han -d han`
 - **Log**: `docker compose logs -f app`
 
+## Yol A2 — Sunucuda zaten başka siteler varken
+
+Yol A kendi Caddy'sini getirir ve 80/443'ü tutar. Sunucuda hâlihazırda
+nginx/apache/Caddy ile yayınlanan siteler varsa o portlar doludur ve yığın
+ayağa kalkmaz. O durumda ikinci bir compose dosyası devreye girer:
+
+```bash
+POSTGRES_PASSWORD=... docker compose \
+  -f docker-compose.yml -f docker-compose.proxy.yml up -d --build
+```
+
+Bu, kendi Caddy'sini kapatır ve uygulamayı yalnız `127.0.0.1:3000`'e bağlar;
+önüne mevcut vekil sunucudan bir vhost eklersiniz (örnek nginx ve Caddy
+blokları `docker-compose.proxy.yml`'nin başında). **`X-Forwarded-Proto`
+başlığını iletmeyi atlamayın** — oturum çerezi üretimde `secure` işaretlidir.
+
+HTTPS şart: hem çerez hem PWA kurulumu buna bağlı (`certbot --nginx -d …`).
+
 ## Yol B — PM2 + Nginx (Docker istemiyorsanız)
 
 ```bash

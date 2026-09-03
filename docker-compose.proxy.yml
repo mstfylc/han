@@ -1,0 +1,51 @@
+# HAN — sunucuda ZATEN bir web sunucusu varken.
+#
+# Varsayılan `docker-compose.yml` kendi Caddy'sini getirir ve 80/443'ü kendisi
+# tutar. Sunucuda başka siteler yayındaysa (nginx/apache/Caddy) o portlar
+# doludur ve yığın hiç ayağa kalkmaz — bu dosya o durumun cevabı:
+#
+#   · Caddy servisi devre dışı (profil altına alındı, hiç başlamaz)
+#   · uygulama YALNIZ 127.0.0.1:3000'e bağlanır — dışarıya açık değil,
+#     mevcut ters vekil sunucu önüne geçer
+#   · Postgres yine sadece konteyner ağında; hostta port açmaz
+#
+# Kullanım (iki dosya birlikte, sıra önemli):
+#
+#   POSTGRES_PASSWORD=... docker compose \
+#     -f docker-compose.yml -f docker-compose.proxy.yml up -d --build
+#
+# Sonra mevcut vekil sunucuya bir vhost ekleyin. nginx için:
+#
+#   server {
+#     server_name han.alanadi.com;
+#     location / {
+#       proxy_pass         http://127.0.0.1:3000;
+#       proxy_http_version 1.1;
+#       proxy_set_header   Host              $host;
+#       proxy_set_header   X-Real-IP         $remote_addr;
+#       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+#       proxy_set_header   X-Forwarded-Proto $scheme;   # ← güvenli çerez buna bakar
+#       proxy_set_header   Upgrade           $http_upgrade;
+#       proxy_set_header   Connection        "upgrade";
+#     }
+#   }
+#
+# ardından `certbot --nginx -d han.alanadi.com`. HTTPS şart: oturum çerezi
+# üretimde `secure` işaretli çıkar ve PWA kurulumu da TLS ister.
+#
+# Mevcut Caddy varsa vhost daha kısa:
+#
+#   han.alanadi.com { reverse_proxy 127.0.0.1:3000 }
+
+services:
+  # Kendi Caddy'miz başlamasın. Profil verilen servis, o profil açıkça
+  # istenmedikçe hiç ayağa kalkmaz — "up" onu görmezden gelir.
+  caddy:
+    profiles: ["disabled"]
+
+  app:
+    # `expose` yerine `ports`: sadece loopback'e bağlanır, yani konteyner
+    # dışına ancak sunucunun kendi vekili üzerinden erişilir. 0.0.0.0 yazmayın —
+    # Docker, UFW kurallarını atlayarak portu internete açar.
+    ports:
+      - "127.0.0.1:3000:3000"
