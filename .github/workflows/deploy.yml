@@ -1,0 +1,150 @@
+name: Deploy
+
+# Sunucuya kurulum/güncelleme — SSH'ı GitHub'ın runner'ı yapar.
+#
+# Bu dosya, geliştirme ortamının sunucuya erişememesi sorununun cevabıdır:
+# oradan giden 22 portu kapalı, ama GitHub runner'ının ağı açık. Kurulum
+# mantığı yine `scripts/install-demo.sh` içinde — bu workflow onu uzaktan
+# çalıştırmaktan başka bir şey yapmaz, yani sunucuda elle çalıştırdığınızla
+# BİREBİR aynı adımlar koşar.
+#
+# ── Bir kerelik kurulum (repo → Settings → Secrets and variables → Actions)
+#
+#   DEPLOY_HOST         sunucunun IP'si ya da adı        (ör. 91.99.197.135)
+#   DEPLOY_USER         ssh kullanıcısı                  (ör. root)
+#   DEPLOY_SSH_KEY      ÖZEL anahtar, tam metin (-----BEGIN ... END-----)
+#   DEPLOY_KNOWN_HOSTS  önerilir; sunucuda:  ssh-keyscan -H <ip>
+#                       yoksa ilk bağlantı güvenilir kabul edilir (TOFU) ve
+#                       parmak izi loga basılır — bir kere gözle doğrulayın.
+#
+# Anahtarı bu iş için ayrı üretin ve yalnız bu sunucuya yetkilendirin:
+#   ssh-keygen -t ed25519 -C "han-deploy" -f han-deploy -N ""
+#   ssh-copy-id -i han-deploy.pub root@91.99.197.135
+#
+# ── Çalıştırma: Actions → Deploy → Run workflow
+#
+# Elle tetiklenir. Otomatik deploy KASITLI OLARAK yok: sunucuda başka canlı
+# siteler var ve her push'ta oraya dokunmak istemezsiniz.
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Alan adı"
+        required: true
+        default: han.mansis.com.tr
+      mode:
+        description: "Ne yapılsın"
+        required: true
+        default: check
+        type: choice
+        options:
+          - check          # sadece bakar, hiçbir şey değiştirmez
+          - install        # kurar, vhost'u BASAR ama yerleştirmez
+          - install+vhost  # kurar + nginx vhost'unu yerleştirir
+          - install+tls    # kurar + vhost + certbot
+      dir:
+        description: "Sunucudaki dizin"
+        required: false
+        default: /opt/han
+
+concurrency:
+  # İki deploy aynı anda aynı dizinde çalışırsa git ve compose birbirine girer.
+  group: deploy-${{ inputs.domain }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Ortam adı, GitHub'da istenirse onay kuralı bağlayabilmeniz için.
+    environment: production
+
+    steps:
+      - name: Anahtarı yerleştir
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          test -n "$KEY"  || { echo "::error::DEPLOY_SSH_KEY secret'ı yok"; exit 1; }
+          test -n "$HOST" || { echo "::error::DEPLOY_HOST secret'ı yok"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if [ -n "$KNOWN" ]; then
+            printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts
+            echo "host anahtarı sabitlendi (DEPLOY_KNOWN_HOSTS)"
+          else
+            # TOFU. Güvenli değil ama sessiz de değil: parmak izini basıyoruz ki
+            # bir kere gözle doğrulayıp secret'a taşıyabilesiniz.
+            echo "::warning::DEPLOY_KNOWN_HOSTS yok — ilk bağlantı güvenilir kabul ediliyor."
+            ssh-keyscan -H "$HOST" > ~/.ssh/known_hosts 2>/dev/null
+            echo "sunucunun parmak izi (doğrulayın):"
+            ssh-keygen -lf ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Bayrakları belirle
+        id: flags
+        run: |
+          case "${{ inputs.mode }}" in
+            check)         echo "args=" >> "$GITHUB_OUTPUT" ;;
+            install)       echo "args=--install" >> "$GITHUB_OUTPUT" ;;
+            install+vhost) echo "args=--install --vhost" >> "$GITHUB_OUTPUT" ;;
+            install+tls)   echo "args=--install --tls" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::bilinmeyen mod"; exit 1 ;;
+          esac
+
+      - name: Sunucuda çalıştır
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          DIR: ${{ inputs.dir }}
+          DOMAIN: ${{ inputs.domain }}
+          ARGS: ${{ steps.flags.outputs.args }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Uzak tarafta koşacak betik. Depoyu bu workflow'un çalıştığı DALA
+          # sabitliyoruz: "hangi kod kuruldu" sorusunun cevabı belirsiz kalmasın.
+          cat > /tmp/remote.sh <<REMOTE
+          set -euo pipefail
+          if [ -d "$DIR/.git" ]; then
+            git -C "$DIR" fetch origin "$BRANCH" --quiet
+            git -C "$DIR" checkout -q "$BRANCH"
+            git -C "$DIR" reset --hard "origin/$BRANCH" --quiet
+          else
+            git clone --branch "$BRANCH" https://github.com/${{ github.repository }}.git "$DIR" --quiet
+          fi
+          cd "$DIR"
+          echo "kurulan sürüm: \$(git rev-parse --short HEAD) — \$(git log -1 --format=%s)"
+          # install-demo.sh de kendi başına fetch/reset yapar. HAN_BRANCH'i
+          # geçmezsek kendi varsayılan dalına döner ve az önce checkout
+          # ettiğimiz kodu sessizce değiştirir — "hangi sürüm kuruldu"
+          # sorusunun iki farklı cevabı olurdu.
+          export HAN_BRANCH="$BRANCH"
+          bash scripts/install-demo.sh $ARGS --domain "$DOMAIN" --dir "$DIR"
+          REMOTE
+
+          ssh -i ~/.ssh/id_deploy \
+              -o StrictHostKeyChecking=yes \
+              -o BatchMode=yes \
+              -p "${PORT:-22}" \
+              "${USER:-root}@${HOST}" 'bash -s' < /tmp/remote.sh
+
+      - name: Alan adı gerçekten yanıt veriyor mu
+        if: inputs.mode != 'check'
+        run: |
+          # Runner internetten bakar — sunucunun kendi içinden 200 alması,
+          # dışarıdan erişilebildiğini KANITLAMAZ (vhost, DNS, Cloudflare).
+          for scheme in https http; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+                   "$scheme://${{ inputs.domain }}/" || echo 000)
+            echo "$scheme → $code"
+            [ "$code" = "200" ] && exit 0
+          done
+          echo "::warning::Alan adı dışarıdan 200 dönmedi. vhost yerleştirildi mi, \
+          Cloudflare SSL modu Full (strict) mi, kontrol edin."
