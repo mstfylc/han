@@ -22,6 +22,7 @@ import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
 import { Badge, Button, EmptyState, Icon, Textarea } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
+import SantralFloorMap from "@/components/SantralFloorMap";
 import { F, W } from "@/lib/copy";
 import { convert, localeOf, money, num, tonePair, tx } from "@/lib/i18n";
 import { href } from "@/lib/routes";
@@ -256,15 +257,41 @@ export default function ShopPage() {
               size="lg"
               fullWidth
               onClick={() => {
+                const item = { id: "b" + Date.now(), name: view.name, qty: "1", target: "" };
+                const activeTripId = state.tripId || ((state.trips || [])[0]?.id ?? null);
+                const nextTrips = (state.trips || []).map((t) =>
+                  t.id === activeTripId
+                    ? { ...t, items: (t.items || []).concat([item]), phase: "rota" as const }
+                    : t,
+                );
                 save({
-                  buyList: (state.buyList || []).concat([{ id: "b" + Date.now(), name: view.name, qty: "1", target: "" }]),
+                  buyList: (state.buyList || []).concat([item]),
+                  trips: nextTrips,
                 });
                 toast(W(lang, "addPlan"));
               }}
             >
-              {W(lang, "addPlan")}
+              ➕ {W(lang, "addPlan")}
             </Button>
             <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+              <Button
+                variant="solid"
+                color="primary"
+                size="md"
+                style={{ flex: 1 }}
+                onClick={() => router.push(href.directions(view.id))}
+              >
+                🧭 {W(lang, "directions")}
+              </Button>
+              <Button
+                variant="outline"
+                color="primary"
+                size="md"
+                style={{ flex: 1 }}
+                onClick={() => router.push(href.store(view.id, "konum"))}
+              >
+                🗺️ {pk({ tr: "Kat Planı & Kapı", en: "Floor Plan & Door" }, lang)}
+              </Button>
               <Button
                 variant="outline"
                 color="dark"
@@ -278,17 +305,6 @@ export default function ShopPage() {
               >
                 {isSaved ? W(lang, "unsave") : W(lang, "save")}
               </Button>
-              {view.store && (
-                <Button
-                  variant="outline"
-                  color="primary"
-                  size="md"
-                  style={{ flex: 1 }}
-                  onClick={() => router.push("/ara?p=route:" + encodeURIComponent(view.id))}
-                >
-                  {W(lang, "directions")}
-                </Button>
-              )}
             </div>
             {view.tel && (
               <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
@@ -566,48 +582,81 @@ function TrustTab({ view, lang }: { view: NonNullable<ReturnType<typeof resolveS
 function LocationTab({
   view, lang, onReport,
 }: { view: NonNullable<ReturnType<typeof resolveShop>>; lang: Lang; onReport: () => void }) {
+  const router = useRouter();
+  const lat = view.place?.lat ?? 41.01518;
+  const lng = view.place?.lng ?? 28.96845;
+  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+
   return (
-    <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:20px;align-items:start")}>
-      <section style={sx(CARD)}>
-        <div style={sx(KICKER)}>{pk({ tr: "Adres", en: "Address", ru: "Адрес", ar: "العنوان" }, lang)}</div>
-        <div style={sx("font-size:17px;font-weight:700;color:var(--text-heading);margin-top:6px;text-wrap:pretty")}>{view.where}</div>
-        {view.place && (
-          <div style={sx("font-size:13.5px;color:var(--text-muted);margin-top:4px")}>
-            {tx(SC.SEMTLER.find((s) => s.id === view.place!.semt), lang)} ·{" "}
-            {tx(SC.PLACE_KINDS[view.place.kind], lang)}
-          </div>
-        )}
+    <div style={sx("display:flex;flex-direction:column;gap:20px")}>
+      <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:20px;align-items:start")}>
+        <section style={sx(CARD)}>
+          <div style={sx(KICKER)}>{pk({ tr: "Adres & Navigasyon", en: "Address & Navigation", ru: "Адрес", ar: "العنوان" }, lang)}</div>
+          <div style={sx("font-size:17px;font-weight:700;color:var(--text-heading);margin-top:6px;text-wrap:pretty")}>{view.where}</div>
+          {view.place && (
+            <div style={sx("font-size:13.5px;color:var(--text-muted);margin-top:4px")}>
+              {tx(SC.SEMTLER.find((s) => s.id === view.place!.semt), lang)} ·{" "}
+              {tx(SC.PLACE_KINDS[view.place.kind], lang)}
+            </div>
+          )}
 
-        <div style={sx("margin-top:18px")}>
-          <div style={sx(KICKER)}>{pk({ tr: "Fiziksel erişim", en: "Getting there", ru: "Доступ", ar: "الوصول" }, lang)}</div>
-          <div style={sx("display:flex;flex-direction:column;gap:8px;margin-top:9px")}>
-            {view.accessLines.map((line) => (
-              <div key={line} style={sx("display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text-body)")}>
-                <span style={sx(medStyle("primary", 28))}>
-                  <Icon name="handcart" size={14} />
-                </span>
-                <span style={sx("flex:1;min-width:0;text-wrap:pretty")}>{line}</span>
-              </div>
-            ))}
+          <div style={sx("display:flex;gap:8px;flex-wrap:wrap;margin-top:14px")}>
+            <Button size="sm" color="primary" variant="solid" onClick={() => router.push(href.directions(view.id))}>
+              🧭 {pk({ tr: "Tam Ekran Adım Adım Yol Tarifi", en: "Full-Screen Turn-by-Turn Guide" }, lang)}
+            </Button>
+            <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none")}>
+              <Button size="sm" color="accent" variant="outline" iconStart="map">
+                🌍 {pk({ tr: "Google Maps ile Han Kapısına Yürü", en: "Walk to Han Gate (Google Maps)" }, lang)}
+              </Button>
+            </a>
           </div>
-        </div>
-      </section>
 
-      <section style={sx(CARD)}>
-        <div style={sx(KICKER)}>{pk({ tr: "Bilgi yanlış mı?", en: "Wrong information?", ru: "Информация неверна?", ar: "معلومة خاطئة؟" }, lang)}</div>
-        <p style={sx("font-size:13.5px;color:var(--text-body);margin-top:6px;text-wrap:pretty")}>
-          {pk({
-            tr: "Dükkân burada değilse ya da kapandıysa bildirin. Üç bildirim kaydı yetkili kuyruğuna düşürür.",
-            en: "If the shop is not here or has closed, tell us. Three reports move the record into the officer queue.",
-            ru: "Если лавки здесь нет — сообщите. Три сообщения отправят запись на проверку.",
-            ar: "إن لم يكن المتجر هنا فأبلغنا. ثلاثة بلاغات تنقل السجل إلى قائمة المسؤول.",
-          }, lang)}
-        </p>
-        <div style={sx("margin-top:12px")}>
-          <Button variant="outline" color="danger" size="md" onClick={onReport}>
-            {pk({ tr: "Burada değil / kapalı bildir", en: "Report closed or moved", ru: "Сообщить: закрыто/переехало", ar: "أبلغ: مغلق أو انتقل" }, lang)}
-          </Button>
+          <div style={sx("margin-top:18px")}>
+            <div style={sx(KICKER)}>{pk({ tr: "Fiziksel erişim", en: "Getting there", ru: "Доступ", ar: "الوصول" }, lang)}</div>
+            <div style={sx("display:flex;flex-direction:column;gap:8px;margin-top:9px")}>
+              {view.accessLines.map((line) => (
+                <div key={line} style={sx("display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text-body)")}>
+                  <span style={sx(medStyle("primary", 28))}>
+                    <Icon name="handcart" size={14} />
+                  </span>
+                  <span style={sx("flex:1;min-width:0;text-wrap:pretty")}>{line}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section style={sx(CARD)}>
+          <div style={sx(KICKER)}>{pk({ tr: "Bilgi yanlış mı?", en: "Wrong information?", ru: "Информация неверна?", ar: "معلومة خاطئة؟" }, lang)}</div>
+          <p style={sx("font-size:13.5px;color:var(--text-body);margin-top:6px;text-wrap:pretty")}>
+            {pk({
+              tr: "Dükkân burada değilse ya da kapandıysa bildirin. Üç bildirim kaydı yetkili kuyruğuna düşürür.",
+              en: "If the shop is not here or has closed, tell us. Three reports move the record into the officer queue.",
+              ru: "Если лавки здесь нет — сообщите. Три сообщения отправят запись на проверку.",
+              ar: "إن لم يكن المتجر هنا فأبلغنا. ثلاثة بلاغات تنقل السجل إلى قائمة المسؤول.",
+            }, lang)}
+          </p>
+          <div style={sx("margin-top:12px")}>
+            <Button variant="outline" color="danger" size="md" onClick={onReport}>
+              {pk({ tr: "Burada değil / kapalı bildir", en: "Report closed or moved", ru: "Сообщить: закрыто/переехало", ar: "أبلغ: مغلق أو انتقل" }, lang)}
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      {/* Interactive Han Floor Map right inside Location Tab */}
+      <section>
+        <div style={sx("margin-bottom:8px;font-size:12px;font-weight:800;color:var(--color-primary);text-transform:uppercase;letter-spacing:.05em")}>
+          🏢 {pk({ tr: "Han İçi Kat Planı & Kapı Numarası Rotası (GPS Gerekmez)", en: "Indoor Floor Plan & Door Route (No GPS Needed)" }, lang)}
         </div>
+        <SantralFloorMap
+          placeId={view.rec.place || "santral"}
+          initialFloor={view.rec.floor}
+          highlightDoor={String(view.rec.door)}
+          highlightRecordId={view.rec.id}
+          lang={lang}
+          onSelectRecord={(rid) => router.push(href.store(rid))}
+        />
       </section>
     </div>
   );

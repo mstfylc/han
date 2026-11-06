@@ -116,22 +116,27 @@ AREAS.forEach(a => {
 HANS.forEach(h => {
   if (h.lat == null || route.length) return;
   const p = [h.lat, h.lng]; bounds.push(p);
-  const n = STORES.filter(s => s.han === h.id).length;
-  pins[h.id] = L.marker(p, { icon: icon("pin-han", "▣") }).addTo(map).bindPopup(
+  const n = h.units || STORES.filter(s => s.han === h.id).length;
+  const gmaps = "https://www.google.com/maps/dir/?api=1&destination=" + h.lat + "," + h.lng + "&travelmode=walking";
+  pins[h.id] = L.marker(p, { icon: icon("pin-han", h.id === "santral" ? "★" : "▣") }).addTo(map).bindPopup(
     '<div class="pop"><b>' + h.name + "</b><span>" + n + " " + W.shops + " · " +
-    Math.max(1, Math.round(dist(me, p) / 80)) + " " + W.walk + '</span><button data-kind="han" data-id="' + h.id + '">' + W.open + "</button></div>"
+    Math.max(1, Math.round(dist(me, p) / 80)) + " " + W.walk +
+    '</span><button data-kind="han" data-id="' + h.id + '">🗺️ ' + W.open + ' & Kat Planı</button>' +
+    '<a href="' + gmaps + '" target="_blank" rel="noreferrer" style="display:block;margin-top:5px;text-align:center;line-height:28px;height:28px;border-radius:6px;border:1px solid #1F3864;color:#1F3864;text-decoration:none;font-size:11.5px;font-weight:700">🌍 Google Maps Yürüyüş</a></div>'
   );
 });
 
 if (route.length) {
   L.polyline([me].concat(route.map(r => r.p)), {
-    color: "#1F3864", weight: 4, opacity: .7, dashArray: "7,7"
+    color: "#1F3864", weight: 4, opacity: .85, dashArray: "8,6"
   }).addTo(map);
   route.forEach((r, i) => {
     bounds.push(r.p);
+    const gmaps = "https://www.google.com/maps/dir/?api=1&destination=" + r.p[0] + "," + r.p[1] + "&travelmode=walking";
     L.marker(r.p, { icon: icon(r.risk ? "pin-risk" : "pin-stop", String(i + 1)) }).addTo(map)
       .bindPopup('<div class="pop"><b>' + r.label + "</b><span>" + (i + 1) + ". " + W.stop +
-        (r.risk ? " · " + W.risk : "") + "</span></div>");
+        (r.risk ? " · " + W.risk : "") +
+        '</span><a href="' + gmaps + '" target="_blank" rel="noreferrer" style="display:block;margin-top:8px;text-align:center;line-height:30px;height:30px;border-radius:6px;background:#1F3864;color:#fff;text-decoration:none;font-size:12px;font-weight:700">🌍 Google Maps ile Yürü</a></div>');
   });
 }
 
