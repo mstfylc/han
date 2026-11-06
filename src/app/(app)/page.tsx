@@ -188,7 +188,7 @@ export default function DiscoverPage() {
         photoSrc: st ? storePhoto(st) : "/assets/ph-kampanya.png",
         tagStyle:
           "position:absolute;top:11px;inset-inline-start:11px;display:inline-flex;align-items:center;height:25px;padding:0 11px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-" +
-          (c.tone || "primary") + ");color:var(--color-primary-inverse)",
+          (c.tone || "primary") + ");color:#fff",
         go: st ? () => router.push(href.store(st.id)) : () => router.push(href.search(areaCatWord(c.area as string))),
       };
     });
@@ -280,7 +280,7 @@ export default function DiscoverPage() {
             </span>
           </div>
 
-          <h1 style={sx("font-size:38px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.025em;line-height:1.1;margin-top:14px;max-width:19ch;text-wrap:pretty")}>
+          <h1 style={sx("font-size:38px;font-weight:700;color:#fff;letter-spacing:-.025em;line-height:1.1;margin-top:14px;max-width:19ch;text-wrap:pretty")}>
             {pk({
               tr: "Hangi hana, hangi kata, hangi kapıya gideceğinizi söyleriz",
               en: "We tell you which han, which floor, which door",
@@ -326,7 +326,7 @@ export default function DiscoverPage() {
                 key={p.label}
                 type="button"
                 onClick={() => goSearch(p.value)}
-                style={sx("height:30px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.08);color:var(--color-primary-inverse);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer")}
+                style={sx("height:30px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.08);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer")}
               >
                 {p.label}
               </button>
@@ -336,7 +336,7 @@ export default function DiscoverPage() {
           <div style={sx("display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.16)")}>
             {heroStats.map((s) => (
               <div key={s.label} style={sx("font-size:14px;color:rgba(255,255,255,.72)")}>
-                <span style={sx("font-weight:700;color:var(--color-primary-inverse)")}>{s.n}</span> {s.label}
+                <span style={sx("font-weight:700;color:#fff")}>{s.n}</span> {s.label}
               </div>
             ))}
           </div>
@@ -353,10 +353,10 @@ export default function DiscoverPage() {
                   onClick={d.go}
                   style={sx("display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:14px 15px;border-radius:13px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);font-family:inherit;text-align:start;cursor:pointer")}
                 >
-                  <span style={sx("display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.16);color:var(--color-primary-inverse)")}>
+                  <span style={sx("display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.16);color:#fff")}>
                     <Icon name={d.icon} size={18} />
                   </span>
-                  <span style={sx("display:block;font-size:15px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.01em;line-height:1.25;text-wrap:pretty")}>{d.title}</span>
+                  <span style={sx("display:block;font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.25;text-wrap:pretty")}>{d.title}</span>
                   <span style={sx("display:block;font-size:12.5px;color:rgba(255,255,255,.68);line-height:1.4;text-wrap:pretty")}>{d.sub}</span>
                 </button>
               ))}
@@ -439,7 +439,7 @@ export default function DiscoverPage() {
         <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap")}>
           <div>
             <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
-              <span style={sx("display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--color-accent);color:var(--color-accent-inverse)")}>
+              <span style={sx("display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--color-accent);color:#fff")}>
                 {pk({ tr: "CANLI DİJİTAL HAN REHBERİ · PİLOT VİTRİN", en: "LIVE DIGITAL HAN DIRECTORY · PILOT SHOWCASE", ru: "ЦИФРОВОЙ СПРАВОЧНИК ХАНА", ar: "دليل الخان الرقمي المباشر" }, lang)}
               </span>
               <span style={sx("font-size:12.5px;font-weight:700;color:var(--color-primary)")}>
@@ -696,7 +696,7 @@ export default function DiscoverPage() {
                 onClick={() => router.push(href.events())}
                 style={sx("display:flex;align-items:stretch;gap:0;padding:0;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);overflow:hidden;font-family:inherit;text-align:start;cursor:pointer")}
               >
-                <span style={sx("flex:none;width:74px;background:var(--color-primary);color:var(--color-primary-inverse);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0")}>
+                <span style={sx("flex:none;width:74px;background:var(--color-primary);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0")}>
                   <span style={sx("font-size:26px;font-weight:700;line-height:1;letter-spacing:-.02em")}>{e.day}</span>
                   <span style={sx("font-size:11.5px;font-weight:700;letter-spacing:.08em;margin-top:4px;opacity:.8")}>{e.month}</span>
                 </span>
@@ -714,20 +714,20 @@ export default function DiscoverPage() {
         </section>
 
         <section style={sx("background:var(--color-primary);border-radius:16px;padding:26px 28px;box-shadow:0 3px 8px rgba(0,0,0,.07)")}>
-          <h2 style={sx("font-size:22px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.015em;line-height:1.2;text-wrap:pretty")}>{td("pitchTitle")}</h2>
+          <h2 style={sx("font-size:22px;font-weight:700;color:#fff;letter-spacing:-.015em;line-height:1.2;text-wrap:pretty")}>{td("pitchTitle")}</h2>
           <p style={sx("font-size:14.5px;color:rgba(255,255,255,.8);margin-top:10px;text-wrap:pretty")}>{td("pitchBody")}</p>
           <div style={sx("display:flex;flex-wrap:wrap;gap:10px;margin-top:20px")}>
             <button
               type="button"
               onClick={() => router.push(href.plan())}
-              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid var(--color-primary-inverse);background:var(--color-primary-inverse);color:var(--color-primary-accent);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer")}
+              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid #fff;background:#fff;color:var(--color-primary-accent);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer")}
             >
               {td("pitchList")}
             </button>
             <button
               type="button"
               onClick={() => router.push(href.work("talep"))}
-              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:transparent;color:var(--color-primary-inverse);font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer")}
+              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer")}
             >
               {td("pitchReq")}
             </button>
@@ -739,7 +739,7 @@ export default function DiscoverPage() {
               { icon: "verify", label: pk({ tr: "Gelen teklifleri karşılaştırıp doğrudan anlaşırsınız.", en: "Compare the offers that come back and close directly.", ru: "Сравниваете предложения и договариваетесь напрямую.", ar: "قارن العروض الواردة وأتمم الاتفاق مباشرة." }, lang) },
             ].map((p) => (
               <span key={p.icon} style={sx("display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);padding:12px 14px")}>
-                <span style={sx("flex:none;display:flex;color:var(--color-primary-inverse);opacity:.85")}>
+                <span style={sx("flex:none;display:flex;color:#fff;opacity:.85")}>
                   <Icon name={p.icon} size={17} />
                 </span>
                 <span style={sx("font-size:13.5px;color:rgba(255,255,255,.9);text-wrap:pretty")}>{p.label}</span>

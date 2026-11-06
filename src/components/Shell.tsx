@@ -27,13 +27,13 @@ const navBtn = (on: boolean, compact: boolean) =>
   (compact ? "14px" : "14.5px") +
   ";font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid " +
   (on
-    ? "var(--color-primary-inverse);background:var(--color-primary-inverse);color:var(--color-primary-accent)"
+    ? "#fff;background:#fff;color:var(--color-primary-accent)"
     : "transparent;background:rgba(255,255,255,.10);color:rgba(255,255,255,.86)");
 
 const selStyle =
-  "flex:none;height:32px;max-width:132px;padding:0 8px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:var(--color-primary-inverse)";
+  "flex:none;height:32px;max-width:132px;padding:0 8px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff";
 const selStyleNarrow =
-  "flex:none;height:32px;min-width:104px;padding:0 8px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:var(--color-primary-inverse)";
+  "flex:none;height:32px;min-width:104px;padding:0 8px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { state, save, toast, loading } = useApp();
@@ -160,7 +160,7 @@ export function Shell({ children }: { children: ReactNode }) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/assets/han-mark.svg" alt="" width={30} height={30} style={sx("display:block;border-radius:8px")} />
-            <span style={sx("font-size:20px;font-weight:800;color:var(--color-primary-inverse);letter-spacing:.02em")}>HAN</span>
+            <span style={sx("font-size:20px;font-weight:800;color:#fff;letter-spacing:.02em")}>HAN</span>
           </button>
 
           <div data-han-nav="1" style={sx("flex:1;min-width:0;display:flex;align-items:center;gap:5px;overflow-x:auto")}>
@@ -174,8 +174,8 @@ export function Shell({ children }: { children: ReactNode }) {
                       style={sx(
                         "display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;font-size:11.5px;font-weight:700;" +
                           (on
-                            ? "background:var(--color-primary);color:var(--color-primary-inverse)"
-                            : "background:rgba(255,255,255,.22);color:var(--color-primary-inverse)"),
+                            ? "background:var(--color-primary);color:#fff"
+                            : "background:rgba(255,255,255,.22);color:#fff"),
                       )}
                     >
                       {s.count}
@@ -191,7 +191,7 @@ export function Shell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => router.push("/yer/santral")}
               style={sx(
-                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.34);background:rgba(255,255,255,.16);color:var(--color-primary-inverse);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
+                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.34);background:rgba(255,255,255,.16);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
               )}
             >
               🏛️ Santral Han
@@ -200,7 +200,7 @@ export function Shell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => router.push("/esnaf/yonet")}
               style={sx(
-                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:var(--color-primary-inverse);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
+                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
               )}
             >
               {lang === "tr" ? "Esnaf" : "Trader"}
@@ -209,7 +209,7 @@ export function Shell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => router.push("/panel/ozet")}
               style={sx(
-                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:var(--color-primary-inverse);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
+                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
               )}
             >
               {lang === "tr" ? "Han Yönetimi" : "Admin"}
@@ -223,7 +223,7 @@ export function Shell({ children }: { children: ReactNode }) {
               style={sx(selStyle)}
             >
               {modeOpts.map((o) => (
-                <option key={o.id} value={o.id}>
+                <option key={o.id} value={o.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
                   {o.label}
                 </option>
               ))}
@@ -236,7 +236,7 @@ export function Shell({ children }: { children: ReactNode }) {
               style={sx(selStyleNarrow)}
             >
               {curOpts.map((o) => (
-                <option key={o.id} value={o.id}>
+                <option key={o.id} value={o.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
                   {o.label}
                 </option>
               ))}
@@ -249,7 +249,7 @@ export function Shell({ children }: { children: ReactNode }) {
               style={sx(selStyle)}
             >
               {langOpts.map((o) => (
-                <option key={o.id} value={o.id}>
+                <option key={o.id} value={o.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
                   {o.label}
                 </option>
               ))}
@@ -260,7 +260,7 @@ export function Shell({ children }: { children: ReactNode }) {
               aria-label={W(lang, "copyLink")}
               title={W(lang, "copyLink")}
               style={sx(
-                "flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:var(--color-primary-inverse);cursor:pointer",
+                "flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;cursor:pointer",
               )}
             >
               <Icon name={copied ? "check-circle" : "share"} size={16} />
@@ -291,7 +291,7 @@ export function Shell({ children }: { children: ReactNode }) {
           role="status"
           aria-live="polite"
           style={sx(
-            "position:fixed;inset-inline-start:50%;transform:translateX(-50%);bottom:24px;z-index:60;background:var(--color-primary-accent);color:var(--color-primary-inverse);font-size:14px;font-weight:600;padding:11px 18px;border-radius:10px;box-shadow:0 10px 35px rgba(0,0,0,.10)",
+            "position:fixed;inset-inline-start:50%;transform:translateX(-50%);bottom:24px;z-index:60;background:var(--color-primary-accent);color:#fff;font-size:14px;font-weight:600;padding:11px 18px;border-radius:10px;box-shadow:0 10px 35px rgba(0,0,0,.10)",
           )}
         >
           {state.toast}

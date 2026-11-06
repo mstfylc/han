@@ -89,16 +89,21 @@
 
   /* Text */
   --text-heading:    var(--color-coal-900);
+  --text-primary:    var(--color-coal-900);
   --text-body:       var(--color-coal-600);
   --text-muted:      var(--color-coal-500);
   --text-placeholder:var(--color-coal-400);
   --text-disabled:   var(--color-grey-500);
   --text-inverse:    #ffffff;
+  --color-primary-inverse: #ffffff;
+  --color-accent-inverse:  #ffffff;
   --text-link:       var(--color-primary);
 
   /* Surfaces */
   --surface-page:    #fcfcfc;
   --surface-muted:   var(--color-grey-50);
+  --surface-subtle:  var(--color-grey-50);
+  --surface-elevated:var(--color-grey-100);
   --surface-card:    #ffffff;
   --surface-hover:   var(--color-grey-100);
   --surface-active:  var(--color-grey-200);
@@ -153,12 +158,18 @@
   --color-white:       #ffffff;
 
   --text-heading:     #f5f5f5;
+  --text-primary:     #f5f5f5;
   --text-body:        #b5b7c8;
   --text-muted:       #808290;
   --text-placeholder: #636674;
+  --text-inverse:     #ffffff;
+  --color-primary-inverse: #ffffff;
+  --color-accent-inverse:  #ffffff;
 
   --surface-page:    #07080a;
   --surface-muted:   #141419;
+  --surface-subtle:  #141419;
+  --surface-elevated:#1c1d24;
   --surface-card:    #141419;
   --surface-hover:   #1c1d24;
   --surface-active:  #26272f;
