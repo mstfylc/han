@@ -212,7 +212,7 @@ function MapScreen() {
             color="accent"
             variant="solid"
             size="md"
-            leadingIcon="locate"
+            iconStart="locate"
             onClick={() => {
               setMobileTab("map");
               post({ kind: "locate" });
@@ -247,7 +247,7 @@ function MapScreen() {
                   color="accent"
                   variant="solid"
                   size="sm"
-                  leadingIcon="floor-layer"
+                  iconStart="floor-layer"
                   onClick={() => router.push(href.place(geofenceHan.id))}
                 >
                   {lang === "tr" ? "🗺️ Kat Planını Aç" : "🗺️ Open Floor Plan"}
@@ -256,7 +256,7 @@ function MapScreen() {
                   color="primary"
                   variant="light"
                   size="sm"
-                  leadingIcon="camera"
+                  iconStart="camera"
                   onClick={() => router.push(`/tarif/roza?han=${encodeURIComponent(geofenceHan.id)}&ar=1`)}
                 >
                   {lang === "tr" ? "📷 Kamera & Koridor Rehberi" : "📷 Camera & Corridor Guide"}
@@ -332,7 +332,7 @@ function MapScreen() {
                 </div>
                 <div style={sx("display:flex;gap:8px;margin-top:12px;flex-wrap:wrap")}>
                   {(focusInfo.kind === "place" || focusInfo.kind === "han") && (
-                    <Button variant="solid" color="accent" size="sm" leadingIcon="floor-layer" onClick={() => router.push(href.place(focusInfo.id))}>
+                    <Button variant="solid" color="accent" size="sm" iconStart="floor-layer" onClick={() => router.push(href.place(focusInfo.id))}>
                       {pk({ tr: "Kat Planı & Yer Sayfası", en: "Floor Plan & Place Page", ru: "План этажа и место", ar: "مخطط الطابق والمكان" }, lang)}
                     </Button>
                   )}

@@ -628,7 +628,7 @@ export function Shell({ children }: { children: ReactNode }) {
               variant="solid"
               size="lg"
               fullWidth
-              leadingIcon="camera"
+              iconStart="camera"
               onClick={() => {
                 setDoorOpen(false);
                 router.push(`/tarif/roza?han=${encodeURIComponent(qPlace)}&kat=${qFloor}&kapi=${encodeURIComponent(qDoor || "228")}&ar=1`);
@@ -643,7 +643,7 @@ export function Shell({ children }: { children: ReactNode }) {
               variant="outline"
               size="lg"
               fullWidth
-              leadingIcon="floor-layer"
+              iconStart="floor-layer"
               onClick={() => {
                 setDoorOpen(false);
                 router.push(`/yer/${encodeURIComponent(qPlace)}?kat=${qFloor}&kapi=${encodeURIComponent(qDoor || "228")}`);
@@ -738,7 +738,7 @@ export function Shell({ children }: { children: ReactNode }) {
               >
                 {THEMES.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.title + " — " + t.mood}
+                    {t.title + " — " + t.desc}
                   </option>
                 ))}
               </select>
@@ -746,7 +746,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 color="primary"
                 variant="outline"
                 size="md"
-                leadingIcon={dark ? "sun" : "moon"}
+                iconStart={dark ? "sun" : "moon"}
                 onClick={() => updateTheme(theme, !dark)}
               >
                 {dark ? "Açık" : "Koyu"}
@@ -756,17 +756,17 @@ export function Shell({ children }: { children: ReactNode }) {
 
           {/* Quick Tools & Panels */}
           <div style={sx("display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px;border-top:1px solid var(--border-default)")}>
-            <Button color="primary" variant="light" size="md" leadingIcon="calculator" onClick={() => go("arac")}>
+            <Button color="primary" variant="light" size="md" iconStart="calculator" onClick={() => go("arac")}>
               {F(lang, "secTools")}
             </Button>
-            <Button color="primary" variant="light" size="md" leadingIcon="share" onClick={copyLink}>
+            <Button color="primary" variant="light" size="md" iconStart="share" onClick={copyLink}>
               {W(lang, "copyLink")}
             </Button>
             <Button
               color="primary"
               variant="outline"
               size="md"
-              leadingIcon="shop"
+              iconStart="shop"
               onClick={() => {
                 setMenuOpen(false);
                 router.push("/esnaf/yonet");
@@ -778,7 +778,7 @@ export function Shell({ children }: { children: ReactNode }) {
               color="primary"
               variant="outline"
               size="md"
-              leadingIcon="setting-2"
+              iconStart="setting-2"
               onClick={() => {
                 setMenuOpen(false);
                 router.push("/panel/ozet");
@@ -795,7 +795,7 @@ export function Shell({ children }: { children: ReactNode }) {
               variant="solid"
               size="lg"
               fullWidth
-              leadingIcon="download"
+              iconStart="download"
               onClick={handleInstallPwa}
             >
               {lang === "tr" ? "📲 Ana Ekrana Ekle (Çevrimdışı Kat Planı)" : "📲 Add to Home Screen (Offline Ready)"}

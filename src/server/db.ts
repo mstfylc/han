@@ -57,7 +57,7 @@ export function pool(): Pool {
 export function ready(): Promise<void> {
   if (!globalForDb.hanReady) {
     globalForDb.hanReady = (async () => {
-      const sql = readFileSync(schemaPath(), "utf8");
+      const sql = readFileSync(/*turbopackIgnore: true*/ schemaPath(), "utf8");
       const client = await pool().connect();
       try {
         await client.query("SELECT pg_advisory_lock(hashtext('han-schema'))");
@@ -88,7 +88,7 @@ function schemaPath(): string {
     path.join(process.cwd(), ".next", "server", "db", "schema.sql"),
   ];
   for (const p of candidates) {
-    try { readFileSync(p); return p; } catch { /* try the next one */ }
+    try { readFileSync(/*turbopackIgnore: true*/ p); return p; } catch { /* try the next one */ }
   }
   throw new Error(
     "db/schema.sql not found at runtime. On Vercel this means the build did " +

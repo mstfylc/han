@@ -319,7 +319,7 @@ function SearchScreen() {
                 className="mtinput mtinput--md"
                 style={sx("flex:1;min-width:0;height:42px")}
               />
-              <Button type="submit" color="accent" variant="solid" size="md" leadingIcon="magnifier">
+              <Button type="submit" color="accent" variant="solid" size="md" iconStart="magnifier">
                 {W(lang, "secSearch")}
               </Button>
             </form>
