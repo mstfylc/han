@@ -12,11 +12,12 @@ import type { ReactNode } from "react";
 
 import * as D from "@/data/han-data";
 import type { Currency, Lang, Mode } from "@/data/types";
-import { Icon } from "@/ds";
+import { Alert, Icon, Toast } from "@/ds";
 import { F, W } from "@/lib/copy";
 import { dirOf } from "@/lib/i18n";
 import { pathOfSection, sectionOf, shareUrl } from "@/lib/routes";
 import { sx } from "@/lib/sx";
+import { THEMES, type BrandThemeId, useThemePref } from "@/lib/theme";
 import { useApp } from "@/state/AppState";
 
 /** Section pill. Compact screens lose a little padding, never a section. */
@@ -27,7 +28,7 @@ const navBtn = (on: boolean, compact: boolean) =>
   (compact ? "14px" : "14.5px") +
   ";font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid " +
   (on
-    ? "#fff;background:#fff;color:var(--color-primary-accent)"
+    ? "#fff;background:#fff;color:var(--surface-brand, #14233f)"
     : "transparent;background:rgba(255,255,255,.10);color:rgba(255,255,255,.86)");
 
 const selStyle =
@@ -37,6 +38,7 @@ const selStyleNarrow =
 
 export function Shell({ children }: { children: ReactNode }) {
   const { state, save, toast, loading } = useApp();
+  const { theme, dark, updateTheme } = useThemePref();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -149,7 +151,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <div
         style={sx(
-          "position:sticky;top:0;z-index:30;background:radial-gradient(circle at 1px 1px, rgba(255,255,255,.13) 1px, transparent 0) 0 0/16px 16px, var(--color-primary);box-shadow:0 4px 14px rgba(0,0,0,.12)",
+          "position:sticky;top:0;z-index:30;background:radial-gradient(circle at 1px 1px, rgba(255,255,255,.11) 1px, transparent 0) 0 0/16px 16px, var(--surface-brand, var(--color-primary));box-shadow:0 4px 14px rgba(0,0,0,.14)",
         )}
       >
         <div style={sx(hdrStyle)}>
@@ -245,6 +247,35 @@ export function Shell({ children }: { children: ReactNode }) {
                 </option>
               ))}
             </select>
+            <select
+              value={theme}
+              onChange={(e) => {
+                const next = e.target.value as BrandThemeId;
+                updateTheme(next, dark);
+                const found = THEMES.find((t) => t.id === next);
+                if (found) toast(found.title + " teması aktif");
+              }}
+              aria-label={lang === "tr" ? "Tema seçimi" : "Theme"}
+              title={lang === "tr" ? "Marka teması" : "Brand theme"}
+              style={sx(selStyleNarrow)}
+            >
+              {THEMES.map((t) => (
+                <option key={t.id} value={t.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
+                  {"Tema · " + t.title}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => updateTheme(theme, !dark)}
+              aria-label={dark ? "Açık görünüm" : "Koyu görünüm"}
+              title={dark ? "Açık görünüme geç" : "Koyu görünüme geç"}
+              style={sx(
+                "flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;cursor:pointer",
+              )}
+            >
+              <Icon name={dark ? "sun" : "moon"} size={15} />
+            </button>
             <button
               type="button"
               onClick={copyLink}
@@ -263,13 +294,10 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* The promise the copy makes — "saved shops open offline" — has to be
           visible when it matters. */}
       {!state.online && (
-        <div
-          style={sx(
-            "background:var(--color-warning-soft);color:var(--color-warning-accent);font-size:13px;font-weight:600;padding:9px 24px;text-align:center;text-wrap:pretty",
-          )}
-          role="status"
-        >
-          {W(lang, "offline")}
+        <div style={sx("max-width:1480px;margin:10px auto 0;padding:0 24px")}>
+          <Alert color="warning" variant="light">
+            {W(lang, "offline")}
+          </Alert>
         </div>
       )}
 
@@ -277,17 +305,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       {loading ? <ShellSkeleton /> : children}
 
-      {state.toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={sx(
-            "position:fixed;inset-inline-start:50%;transform:translateX(-50%);bottom:24px;z-index:60;background:var(--color-primary-accent);color:#fff;font-size:14px;font-weight:600;padding:11px 18px;border-radius:10px;box-shadow:0 10px 35px rgba(0,0,0,.10)",
-          )}
-        >
-          {state.toast}
-        </div>
-      )}
+      <Toast message={state.toast} tone="primary" />
     </div>
   );
 }

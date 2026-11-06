@@ -364,7 +364,7 @@ export default function DiscoverPage() {
         {/* ── hero ───────────────────────────────────────────────────────── */}
         <div
           style={sx(
-            "position:relative;overflow:hidden;background:var(--color-primary);background-image:radial-gradient(120% 130% at 100% 0%, rgba(224,138,43,.34) 0%, rgba(224,138,43,0) 46%), radial-gradient(90% 120% at 0% 100%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 55%);border-radius:16px;padding:30px 32px 26px;box-shadow:0 3px 8px rgba(0,0,0,.07)",
+            "position:relative;overflow:hidden;background:var(--surface-brand, #14233f);background-image:radial-gradient(120% 130% at 100% 0%, rgba(224,138,43,.34) 0%, rgba(224,138,43,0) 46%), radial-gradient(90% 120% at 0% 100%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 55%);border-radius:16px;padding:30px 32px 26px;box-shadow:0 3px 8px rgba(0,0,0,.07)",
           )}
         >
           <div style={sx("display:flex;align-items:center;gap:9px")}>
@@ -533,7 +533,8 @@ export default function DiscoverPage() {
         <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap")}>
           <div>
             <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
-              <span style={sx("display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--color-accent);color:#fff")}>
+              <span style={sx("display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--color-accent);color:var(--color-accent-inverse, #fff)")}>
+                <Icon name="building" size={12} />
                 {pk({ tr: "TARİHİ YARIMADA · 39 HAN & ÇARŞI İÇ MEKAN REHBERİ", en: "HISTORIC PENINSULA · 39 HANS & BAZAARS INDOOR GUIDE", ru: "ИСТОРИЧЕСКИЙ ПОЛУОСТРОВ · 39 ХАНОВ И БАЗАРОВ", ar: "شبه الجزيرة التاريخية · دليل ٣٩ خانًا وسوقًا" }, lang)}
               </span>
               <span style={sx("font-size:12.5px;font-weight:700;color:var(--color-primary)")}>
@@ -600,12 +601,14 @@ export default function DiscoverPage() {
               <span style={sx("font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--color-primary-soft);color:var(--color-primary)")}>
                 {selectedHan.badge}
               </span>
-              <span style={sx("font-size:12px;color:var(--text-muted)")}>📍 {selectedHan.addr}</span>
+              <span style={sx("font-size:12px;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px")}>
+                <Icon name="pin" size={12} /> {selectedHan.addr}
+              </span>
             </div>
             <div style={sx("font-size:13px;color:var(--text-body);margin-top:4px")}>{selectedHan.desc}</div>
           </div>
           <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
-            <Button color="primary" size="md" onClick={() => router.push("/yer/" + selectedHan.id)}>
+            <Button color="primary" size="md" iconStart="floor-layer" onClick={() => router.push("/yer/" + selectedHan.id)}>
               {selectedHan.name} {pk({ tr: "Kat Planını & Rehberini Aç", en: "Floor Plan & Directory", ru: "План этажей", ar: "مخطط الطوابق" }, lang)}
             </Button>
             <a
@@ -614,7 +617,7 @@ export default function DiscoverPage() {
               rel="noreferrer"
               style={sx("text-decoration:none")}
             >
-              <Button variant="outline" color="accent" size="md" iconStart="map">
+              <Button variant="outline" color="primary" size="md" iconStart="globe">
                 {pk({ tr: "Google Maps ile Kapıya Yürü", en: "Walk to Gate", ru: "Маршрут до входа", ar: "المشي إلى البوابة" }, lang)}
               </Button>
             </a>
@@ -846,14 +849,14 @@ export default function DiscoverPage() {
           </div>
         </section>
 
-        <section style={sx("background:var(--color-primary);border-radius:16px;padding:26px 28px;box-shadow:0 3px 8px rgba(0,0,0,.07)")}>
+        <section style={sx("background:var(--surface-brand, #14233f);border-radius:16px;padding:26px 28px;box-shadow:0 3px 8px rgba(0,0,0,.07)")}>
           <h2 style={sx("font-size:22px;font-weight:700;color:#fff;letter-spacing:-.015em;line-height:1.2;text-wrap:pretty")}>{td("pitchTitle")}</h2>
           <p style={sx("font-size:14.5px;color:rgba(255,255,255,.8);margin-top:10px;text-wrap:pretty")}>{td("pitchBody")}</p>
           <div style={sx("display:flex;flex-wrap:wrap;gap:10px;margin-top:20px")}>
             <button
               type="button"
               onClick={() => router.push(href.plan())}
-              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid #fff;background:#fff;color:var(--color-primary-accent);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer")}
+              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid #fff;background:#fff;color:#0f1d35;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer")}
             >
               {td("pitchList")}
             </button>

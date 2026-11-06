@@ -7,7 +7,7 @@ import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import type { CuratedStore, Lang, ShopRecord } from "@/data/types";
 import SantralFloorMap from "@/components/SantralFloorMap";
-import { Badge, Button, Drawer, EmptyState, Icon } from "@/ds";
+import { Alert, Badge, Button, Drawer, EmptyState, Icon } from "@/ds";
 import { W } from "@/lib/copy";
 import { tx } from "@/lib/i18n";
 import { href } from "@/lib/routes";
@@ -148,16 +148,17 @@ export default function DirectionsPage() {
         </div>
 
         <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
-          <Button size="sm" color="secondary" variant="outline" onClick={speakFullRoute}>
-            🔊 {pk({ tr: "Yol Tarifini Sesli Oku", en: "Read Directions Aloud" }, lang)}
+          <Button size="sm" color="secondary" variant="outline" iconStart="volume" onClick={speakFullRoute}>
+            {pk({ tr: "Yol Tarifini Sesli Oku", en: "Read Directions Aloud" }, lang)}
           </Button>
-          <Button size="sm" color="accent" variant="solid" onClick={() => setAskTraderOpen(true)}>
-            🗣️ {pk({ tr: "Esnafa Göster (Tam Ekran Türkçe Kart)", en: "Show to Trader (Turkish Card)" }, lang)}
+          <Button size="sm" color="accent" variant="solid" iconStart="qr" onClick={() => setAskTraderOpen(true)}>
+            {pk({ tr: "Esnafa Göster (Tam Ekran Türkçe Kart)", en: "Show to Trader (Turkish Card)" }, lang)}
           </Button>
           <Button
             size="sm"
             color="primary"
             variant="outline"
+            iconStart="plus-squared"
             onClick={() => {
               const item = { id: `dir_${Date.now()}`, name: title, qty: "1", target: "" };
               const activeTrip = (state.trips || [])[0];
@@ -174,7 +175,7 @@ export default function DirectionsPage() {
               router.push("/plan");
             }}
           >
-            ➕ {pk({ tr: "Bu Durağı Günlük Rotama Ekle", en: "Add Stop to My Route" }, lang)}
+            {pk({ tr: "Bu Durağı Günlük Rotama Ekle", en: "Add Stop to My Route" }, lang)}
           </Button>
         </div>
       </div>
@@ -185,7 +186,7 @@ export default function DirectionsPage() {
           <div>
             <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
               <Badge color="primary" variant="solid">
-                🧭 {pk({ tr: "2 Katmanlı Hibrit Navigasyon (Dış GPS + Han İçi Kat Planı)", en: "2-Layer Hybrid Navigation (Outdoor GPS + Indoor Floor Plan)" }, lang)}
+                <Icon name="compass" size={12} /> {pk({ tr: "2 Katmanlı Hibrit Navigasyon (Dış GPS + Han İçi Kat Planı)", en: "2-Layer Hybrid Navigation (Outdoor GPS + Indoor Floor Plan)" }, lang)}
               </Badge>
               <Badge color="accent" variant="solid">
                 {place.name} · {flLbl} {door ? `· Kapı No: ${door}` : ""}
@@ -201,13 +202,13 @@ export default function DirectionsPage() {
 
           <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
             <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none")}>
-              <Button size="md" color="primary" variant="solid" iconStart="map">
-                🌍 {pk({ tr: "1. Adım: Google Maps ile Han Kapısına Yürü", en: "Step 1: Walk to Han Gate (Google Maps)" }, lang)}
+              <Button size="md" color="primary" variant="solid" iconStart="globe">
+                {pk({ tr: "1. Adım: Google Maps ile Han Kapısına Yürü", en: "Step 1: Walk to Han Gate (Google Maps)" }, lang)}
               </Button>
             </a>
             {target.kind === "shop" && (
-              <Button size="md" color="secondary" variant="outline" onClick={() => router.push(href.store(target.id))}>
-                🏪 {pk({ tr: "Dükkân Sayfasına Dön", en: "Back to Shop Page" }, lang)}
+              <Button size="md" color="secondary" variant="outline" iconStart="shop" onClick={() => router.push(href.store(target.id))}>
+                {pk({ tr: "Dükkân Sayfasına Dön", en: "Back to Shop Page" }, lang)}
               </Button>
             )}
           </div>
@@ -233,8 +234,8 @@ export default function DirectionsPage() {
             <div style={sx("font-size:11px;font-weight:800;color:var(--color-accent);text-transform:uppercase")}>
               2. KATMAN · HAN GİRİŞİ & DİKEY ERİŞİM
             </div>
-            <div style={sx("font-size:14px;font-weight:800;color:var(--text-heading);margin-top:4px")}>
-              Hedef Kat: {flLbl} ({acc.lift ? "🛗 Asansör & Merdiven Var" : "🪜 Merdiven ile Çıkış"})
+            <div style={sx("font-size:14px;font-weight:800;color:var(--text-heading);margin-top:4px;display:inline-flex;align-items:center;gap:6px")}>
+              Hedef Kat: {flLbl} (<Icon name={acc.lift ? "elevator" : "stairs"} size={14} /> {acc.lift ? "Asansör & Merdiven Var" : "Merdiven ile Çıkış"})
             </div>
             <div style={sx("font-size:12.5px;color:var(--text-body);margin-top:4px;line-height:1.45")}>
               Han içerisine girdiğinizde GPS sinyali kesilir. Girişteki kat panosundan veya {acc.lift ? "sol/orta asansör ve merdivenlerden" : "ana taş merdivenden"} <b>{flLbl}</b> seviyesine geçin.
@@ -259,13 +260,17 @@ export default function DirectionsPage() {
       <div style={sx("display:grid;grid-template-columns:1fr;gap:18px")}>
         {/* Layer 2: Interactive Indoor Floor Map */}
         <section>
-          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap")}>
-            <div style={sx(KICKER)}>
-              🏢 {pk({ tr: "İnteraktif Han İçi Kat Planı & Kapıdan Kapıya Rota", en: "Interactive Indoor Floor Plan & Door-to-Door Route" }, lang)}
-            </div>
-            <span style={sx("font-size:12px;color:var(--text-muted);font-weight:600")}>
-              💡 {pk({ tr: "Haritadaki merdivenlere veya herhangi bir kapıya tıklayarak başlangıç noktanızı değiştirebilirsiniz", en: "Click any staircase or door to change your starting point" }, lang)}
-            </span>
+          <div style={sx("margin-bottom:10px")}>
+            <Alert
+              color="info"
+              variant="light"
+              title={pk({ tr: "Han İçinde GPS Sinyali Kesilir — Kapıdan Kapıya Kat Planını Kullanın", en: "GPS Signal Drops Indoors — Use the Door-to-Door Floor Plan" }, lang)}
+            >
+              {pk({
+                tr: "Haritadaki merdivenlere (Sol / Orta / Sağ) veya bulunduğunuz herhangi bir dükkân kapısına tıklayarak başlangıç noktanızı seçebilir, hedef dükkâna koridor yürüyüş hattını canlı görebilirsiniz.",
+                en: "Click any staircase or door number on the plan below to set your current position and trace the indoor corridor route.",
+              }, lang)}
+            </Alert>
           </div>
           <SantralFloorMap
             placeId={place.id}
@@ -281,16 +286,16 @@ export default function DirectionsPage() {
         <section style={sx(CARD)}>
           <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap")}>
             <div>
-              <div style={sx(KICKER)}>
-                🌍 {pk({ tr: "Dış Mekân Sokak & Çarşı Konumu (Han Giriş Kapısı)", en: "Outdoor Street & Bazaar Location (Han Gate)" }, lang)}
+              <div style={sx(KICKER + ";display:inline-flex;align-items:center;gap:6px")}>
+                <Icon name="globe" size={14} /> {pk({ tr: "Dış Mekân Sokak & Çarşı Konumu (Han Giriş Kapısı)", en: "Outdoor Street & Bazaar Location (Han Gate)" }, lang)}
               </div>
               <div style={sx("font-size:14px;font-weight:700;color:var(--text-heading);margin-top:2px")}>
                 {place.name} · {place.address || "Tarihi Yarımada, Fatih / İstanbul"}
               </div>
             </div>
             <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none")}>
-              <Button size="sm" color="primary" variant="outline" iconStart="map">
-                Google Maps&apos;te Tam Ekran Aç ↗
+              <Button size="sm" color="primary" variant="outline" iconStart="map" iconEnd="external-link">
+                Google Maps&apos;te Tam Ekran Aç
               </Button>
             </a>
           </div>

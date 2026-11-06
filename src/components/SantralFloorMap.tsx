@@ -579,6 +579,7 @@ export function SantralFloorMap({
               size="sm"
               color={viewMode === "interactive" ? "primary" : "secondary"}
               variant={viewMode === "interactive" ? "solid" : "outline"}
+              iconStart="map"
               onClick={() => setViewMode("interactive")}
             >
               {lang === "tr" ? "İnteraktif Kat Planı" : "Interactive Map"}
@@ -587,13 +588,14 @@ export function SantralFloorMap({
               size="sm"
               color={viewMode === "official" ? "primary" : "secondary"}
               variant={viewMode === "official" ? "solid" : "outline"}
+              iconStart="floor-layer"
               onClick={() => setViewMode("official")}
             >
               {lang === "tr" ? "Resmi Mimari Pafta" : "Official Blueprint"}
             </Button>
             <Button
               size="sm"
-              color={viewMode === "split" ? "accent" : "secondary"}
+              color={viewMode === "split" ? "primary" : "secondary"}
               variant={viewMode === "split" ? "solid" : "outline"}
               onClick={() => setViewMode("split")}
             >
@@ -683,7 +685,10 @@ export function SantralFloorMap({
           )}
         >
           <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text-primary);font-weight:700")}>
-            <span>🪜 {lang === "tr" ? "Katlar Arası Dikey Rota Aktif:" : "Cross-Floor Vertical Route:"}</span>
+            <span style={sx("display:inline-flex;align-items:center;gap:5px;color:var(--color-primary)")}>
+              <Icon name="stairs" size={15} />
+              {lang === "tr" ? "Katlar Arası Dikey Rota Aktif:" : "Cross-Floor Vertical Route:"}
+            </span>
             <span style={sx("padding:2px 8px;border-radius:6px;background:var(--surface-card);border:1px solid var(--border-subtle)")}>
               1. {entryFloorLabel}
             </span>
@@ -715,8 +720,9 @@ export function SantralFloorMap({
         )}
       >
         <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
-          <span style={sx("font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
-            📍 {lang === "tr" ? "Başlangıç Noktam (Haritadan veya Buradan Seçin):" : "My Start Point (Click Map or Select):"}
+          <span style={sx("display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
+            <Icon name="pin" size={14} />
+            {lang === "tr" ? "Başlangıç Noktam (Haritadan veya Buradan Seçin):" : "My Start Point (Click Map or Select):"}
           </span>
           {ANCHORS.map((a) => {
             const on = !startCell && a.id === anchor;
@@ -748,7 +754,8 @@ export function SantralFloorMap({
                 "display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:6px;background:var(--color-accent);color:var(--color-accent-inverse);font-size:11.5px;font-weight:800",
               )}
             >
-              📍 {lang === "tr" ? `Başlangıç: Kapı ${startCell.door}` : `Start: Door ${startCell.door}`}
+              <Icon name="pin" size={13} />
+              {lang === "tr" ? `Başlangıç: Kapı ${startCell.door}` : `Start: Door ${startCell.door}`}
               <button
                 type="button"
                 onClick={() => setStartDoor(null)}
@@ -764,6 +771,7 @@ export function SantralFloorMap({
         <div style={sx("min-width:220px;flex:1;max-width:310px")}>
           <Input
             size="sm"
+            iconLead="magnifier"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             placeholder={
@@ -782,8 +790,9 @@ export function SantralFloorMap({
             "padding:8px 14px;background:var(--color-warning-soft);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:8px;flex-wrap:wrap",
           )}
         >
-          <span style={sx("font-size:11.5px;font-weight:800;color:var(--text-primary)")}>
-            🔎 {lang === "tr" ? "Diğer katlarda bulundu (Tıklayıp o kata geçin):" : "Found on other floors (Click to jump):"}
+          <span style={sx("display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:var(--text-primary)")}>
+            <Icon name="magnifier" size={13} />
+            {lang === "tr" ? "Diğer katlarda bulundu (Tıklayıp o kata geçin):" : "Found on other floors (Click to jump):"}
           </span>
           {otherFloorHits.map((r) => (
             <button
@@ -812,19 +821,20 @@ export function SantralFloorMap({
         )}
       >
         <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
-          <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em")}>
-            🎯 {lang === "tr" ? "Kat Radarı:" : "Floor Radar:"}
+          <span style={sx("display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em")}>
+            <Icon name="compass" size={13} />
+            {lang === "tr" ? "Kat Radarı:" : "Floor Radar:"}
           </span>
           {(
             [
-              ["all", lang === "tr" ? "Tümü" : "All"],
-              ["vitrin", lang === "tr" ? "⭐ Vitrin & Aktif" : "⭐ Active"],
-              ["bijuteri", lang === "tr" ? "💎 Bijuteri & Takı" : "💎 Jewelry"],
-              ["elektronik", lang === "tr" ? "📱 Telefon & Elektronik" : "📱 Electronics"],
-              ["saat", lang === "tr" ? "⌚ Saat & Gözlük" : "⌚ Watch & Optics"],
-              ["bos", lang === "tr" ? "🟢 Boş / Kiralık" : "🟢 Vacant"],
+              ["all", null, lang === "tr" ? "Tümü" : "All"],
+              ["vitrin", "star", lang === "tr" ? "Vitrin & Aktif" : "Active"],
+              ["bijuteri", "diamond", lang === "tr" ? "Bijuteri & Takı" : "Jewelry"],
+              ["elektronik", "smartphone", lang === "tr" ? "Telefon & Elektronik" : "Electronics"],
+              ["saat", "watch", lang === "tr" ? "Saat & Gözlük" : "Watch & Optics"],
+              ["bos", "door", lang === "tr" ? "Boş / Kiralık" : "Vacant"],
             ] as const
-          ).map(([id, label]) => {
+          ).map(([id, ic, label]) => {
             const on = radarCat === id;
             return (
               <button
@@ -832,7 +842,7 @@ export function SantralFloorMap({
                 type="button"
                 onClick={() => setRadarCat(id)}
                 style={sx(
-                  "height:26px;padding:0 9px;border-radius:999px;border:1px solid " +
+                  "display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;border:1px solid " +
                     (on ? "var(--color-primary)" : "var(--border-subtle)") +
                     ";background:" +
                     (on ? "var(--color-primary)" : "var(--surface-muted)") +
@@ -841,6 +851,7 @@ export function SantralFloorMap({
                     ";font-family:inherit;font-size:11px;font-weight:700;cursor:pointer",
                 )}
               >
+                {ic && <Icon name={ic} size={12} />}
                 {label}
               </button>
             );
@@ -848,8 +859,9 @@ export function SantralFloorMap({
         </div>
 
         <div style={sx("display:flex;align-items:center;gap:4px")}>
-          <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted);margin-inline-end:4px")}>
-            🔍 {lang === "tr" ? "Yakınlaştır:" : "Zoom:"}
+          <span style={sx("display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--text-muted);margin-inline-end:4px")}>
+            <Icon name="zoom-in" size={13} />
+            {lang === "tr" ? "Yakınlaştır:" : "Zoom:"}
           </span>
           {[1, 1.35, 1.75].map((z) => (
             <button
@@ -1300,10 +1312,11 @@ export function SantralFloorMap({
                 {lang === "tr" ? "Boş / Kiralık Birim" : "Vacant / For Rent"}
               </span>
             </div>
-            <span>
+            <span style={sx("display:inline-flex;align-items:center;gap:5px")}>
+              <Icon name="info-circle" size={14} />
               {lang === "tr"
-                ? "💡 Haritadaki merdivenlere/kapılara tıklayarak 'Buradayım' seçebilir, kapıdan kapıya canlı rota çizebilirsiniz."
-                : "💡 Click any stair/gate or door to set your start point and draw a live door-to-door route."}
+                ? "Haritadaki merdivenlere/kapılara tıklayarak 'Buradayım' seçebilir, kapıdan kapıya canlı rota çizebilirsiniz."
+                : "Click any stair/gate or door to set your start point and draw a live door-to-door route."}
             </span>
           </div>
         </div>
@@ -1317,16 +1330,18 @@ export function SantralFloorMap({
           )}
         >
           <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap")}>
-            <div style={sx("font-size:12.5px;font-weight:700;color:var(--text-primary)")}>
-              📐 {place.name} · {currentFloorLabel} {lang === "tr" ? "Resmi Mimari Kat Planı Paftası" : "Official Architectural Floor Plan"}
+            <div style={sx("display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text-primary)")}>
+              <Icon name="floor-layer" size={15} />
+              {place.name} · {currentFloorLabel} {lang === "tr" ? "Resmi Mimari Kat Planı Paftası" : "Official Architectural Floor Plan"}
             </div>
             <a
               href={officialPlanUrl}
               target="_blank"
               rel="noreferrer"
-              style={sx("font-size:12px;font-weight:700;color:var(--color-primary);text-decoration:none")}
+              style={sx("display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--color-primary);text-decoration:none")}
             >
-              {lang === "tr" ? "Tam Boyutlu Paftayı Yeni Sekmede Aç ↗" : "Open Full Resolution Blueprint ↗"}
+              {lang === "tr" ? "Tam Boyutlu Paftayı Yeni Sekmede Aç" : "Open Full Resolution Blueprint"}
+              <Icon name="external-link" size={13} />
             </a>
           </div>
           <div
@@ -1354,15 +1369,15 @@ export function SantralFloorMap({
           <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
             <div>
               <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
-                <Badge color="accent" variant="solid">
-                  🎯 {currentFloorLabel} · Kapı No: {activeCell.door}
+                <Badge color="primary" variant="solid">
+                  <Icon name="pin" size={12} /> {currentFloorLabel} · Kapı No: {activeCell.door}
                 </Badge>
                 <Badge color="secondary" variant="light">
                   {activeCell.corridor} Koridor
                 </Badge>
                 {routeMetrics && (
                   <Badge color="primary" variant="light">
-                    🚶 ~{routeMetrics.meters} m · {routeMetrics.secs} sn yürüyüş
+                    <Icon name="walk" size={12} /> ~{routeMetrics.meters} m · {routeMetrics.secs} sn yürüyüş
                   </Badge>
                 )}
                 {activeCell.record ? (
@@ -1398,11 +1413,12 @@ export function SantralFloorMap({
                 size="sm"
                 color={startDoor === activeCell.door ? "success" : "secondary"}
                 variant={startDoor === activeCell.door ? "solid" : "outline"}
+                iconStart="pin"
                 onClick={() => {
                   setStartDoor(startDoor === activeCell.door ? null : activeCell.door);
                 }}
               >
-                📍 {startDoor === activeCell.door
+                {startDoor === activeCell.door
                   ? lang === "tr"
                     ? "Başlangıç Kapısı Seçildi"
                     : "Selected as Start Door"
@@ -1436,11 +1452,12 @@ export function SantralFloorMap({
               )}
               <Button
                 size="sm"
-                color="accent"
+                color="primary"
                 variant="outline"
+                iconStart="qr"
                 onClick={() => setAskTraderOpen(true)}
               >
-                🗣️ {lang === "tr" ? "Esnafa Göster (Tam Ekran)" : "Show to Trader"}
+                {lang === "tr" ? "Esnafa Göster (Tam Ekran)" : "Show to Trader"}
               </Button>
             </div>
           </div>
@@ -1453,7 +1470,8 @@ export function SantralFloorMap({
           >
             <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
               <div style={sx("font-size:12.5px;font-weight:800;color:var(--color-primary);display:flex;align-items:center;gap:6px")}>
-                <span>🧭 {lang === "tr" ? "İnteraktif Han İçi Adım Adım Rota:" : "Interactive Turn-by-Turn Indoor Route:"}</span>
+                <Icon name="compass" size={16} />
+                <span>{lang === "tr" ? "İnteraktif Han İçi Adım Adım Rota:" : "Interactive Turn-by-Turn Indoor Route:"}</span>
                 <span style={sx("font-size:11.5px;font-weight:600;color:var(--text-muted)")}>
                   ({startPoint.label} ➔ Kapı No: {activeCell.door})
                 </span>
@@ -1461,20 +1479,21 @@ export function SantralFloorMap({
               <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
                 <Button
                   size="sm"
-                  color={liveStepIdx !== null ? "accent" : "primary"}
-                  variant={liveStepIdx !== null ? "solid" : "outline"}
+                  color="accent"
+                  variant="solid"
+                  iconStart="walk"
                   onClick={() => setLiveStepIdx(liveStepIdx === null ? 0 : null)}
                 >
                   {liveStepIdx !== null
                     ? lang === "tr"
-                      ? "⏹️ Adım Modunu Kapat"
-                      : "⏹️ Exit Step Mode"
+                      ? "Adım Modunu Kapat"
+                      : "Exit Step Mode"
                     : lang === "tr"
-                      ? "▶️ Adım Adım Yürüyüşü Başlat"
-                      : "▶️ Start Step-by-Step Walk"}
+                      ? "Adım Adım Yürüyüşü Başlat"
+                      : "Start Step-by-Step Walk"}
                 </Button>
-                <Button size="sm" color="secondary" variant="outline" onClick={speakDirections}>
-                  🔊 {lang === "tr" ? "Sesli Tarif" : "Voice Guide"}
+                <Button size="sm" color="secondary" variant="outline" iconStart="volume" onClick={speakDirections}>
+                  {lang === "tr" ? "Sesli Tarif" : "Voice Guide"}
                 </Button>
               </div>
             </div>

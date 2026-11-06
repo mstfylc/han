@@ -27,7 +27,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
 import type { ApprovalVia, RecordStatus, ShopRecord } from "@/data/types";
-import { Button, EmptyState, Icon, Textarea } from "@/ds";
+import { Alert, Button, EmptyState, Icon, Textarea, Toast } from "@/ds";
 import { PanelShell, usePanelSession } from "@/components/PanelShell";
 import type { PanelTab } from "@/components/PanelShell";
 import { KEYS, readKey, writeKey } from "@/services/storage";
@@ -302,6 +302,11 @@ function PanelScreen() {
         />
       ) : (
         <>
+          {SC.isReadOnly(role) && (
+            <Alert color="info" variant="light" title="Salt okuma yetkisi" style={sx("margin-bottom:14px")}>
+              Oturumunuz salt okuma rolündedir ({SC.ROLES[role]?.tr || role}). Kuyrukları, denetim izini ve istatistikleri inceleyebilirsiniz; kayıt onaylama ve askıya alma butonları devre dışıdır.
+            </Alert>
+          )}
           {tab === "ozet" && (
             <Ozet queue={queue} claims={pendingClaims.length} suspended={suspended.length} reports={reportCounts} />
           )}
@@ -385,16 +390,7 @@ function PanelScreen() {
         </>
       )}
 
-      {toast && (
-        <div
-          role="status"
-          style={sx("position:fixed;inset-inline:0;bottom:22px;display:flex;justify-content:center;z-index:60;pointer-events:none")}
-        >
-          <span style={sx("background:var(--color-primary);color:#fff;font-size:14px;font-weight:600;padding:11px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22)")}>
-            {toast}
-          </span>
-        </div>
-      )}
+      <Toast message={toast} tone="success" onClose={() => setToast(null)} />
     </PanelShell>
   );
 }

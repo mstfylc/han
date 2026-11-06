@@ -7,49 +7,17 @@
 // (uyanik · han · mansis · okyanus); seçim tüm arayüze anında uygulanır ve
 // prototipteki anahtarla (`han-panel-theme`) depoya yazılır.
 
-import { useEffect, useState } from "react";
-
-import { Alert, Badge, Button } from "@/ds";
+import { Alert, Badge, Button, Icon, StatusBadge } from "@/ds";
 import { sx } from "@/lib/sx";
-import { readKey, writeKey } from "@/services/storage";
+import { THEMES, type BrandThemeId, useThemePref } from "@/lib/theme";
 
 import { H1, SUB, type PanelTabProps } from "./shared";
 
-const THEME_KEY = "han-panel-theme";
-
-const THEMES = [
-  { id: "uyanik", title: "Uyanık", desc: "Lacivert + turuncu · kanonik", primary: "#1F3864", accent: "#E08A2B" },
-  { id: "han", title: "HAN", desc: "Lacivert + altın · han keşif", primary: "#14304F", accent: "#C9A227" },
-  { id: "mansis", title: "Mansis", desc: "Navy + cyan · premium SaaS", primary: "#1B3A6B", accent: "#22B8CF" },
-  { id: "okyanus", title: "Okyanus", desc: "Teal + mercan · örnek", primary: "#0E7490", accent: "#FB7185" },
-];
-
-function applyTheme(theme: string, dark: boolean) {
-  const el = document.documentElement;
-  el.setAttribute("data-theme", theme);
-  el.classList.toggle("dark", !!dark);
-  if (document.body) document.body.classList.toggle("dark", !!dark);
-}
-
 export default function Temalar(props: PanelTabProps) {
-  const [theme, setTheme] = useState("han");
-  const [dark, setDark] = useState(false);
+  const { theme, dark, updateTheme } = useThemePref();
 
-  // Tercih depodan gelir ve mount sonrası uygulanır — SSR html'i han/açık ile
-  // gelir, seçim varsa ilk karede üstüne oturur.
-  useEffect(() => {
-    const v = readKey<{ theme?: string; dark?: boolean }>(THEME_KEY, {});
-    const t = v.theme && THEMES.some((x) => x.id === v.theme) ? v.theme : "han";
-    setTheme(t);
-    setDark(!!v.dark);
-    applyTheme(t, !!v.dark);
-  }, []);
-
-  const pick = (t: string, d: boolean, msg: string) => {
-    setTheme(t);
-    setDark(d);
-    applyTheme(t, d);
-    writeKey(THEME_KEY, { theme: t, dark: d });
+  const pick = (t: BrandThemeId, d: boolean, msg: string) => {
+    updateTheme(t, d);
     props.refresh();
     props.say(msg);
   };
@@ -149,22 +117,34 @@ export default function Temalar(props: PanelTabProps) {
       </div>
 
       <div style={sx("background:var(--surface-card);border:1px solid var(--border-default);border-radius:12px;box-shadow:0 3px 4px rgba(0,0,0,.03);padding:20px")}>
-        <div style={sx("font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:16px")}>Bileşen önizlemesi — aktif tema</div>
-        <div style={sx("display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px")}>
-          <Button color="primary">Kaydet</Button>
-          <Button color="accent">Tek CTA</Button>
-          <Button variant="outline" color="dark">İkincil</Button>
+        <div style={sx("font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:16px")}>Bileşen, İkon ve Semantik Uyarı Önizlemesi — Aktif Tema</div>
+        <div style={sx("display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px")}>
+          <Button color="accent" iconStart="compass">Tek Accent CTA</Button>
+          <Button color="primary" iconStart="shop">Kaydet / Birincil</Button>
+          <Button variant="light" color="primary" iconStart="route">Yumuşak Eylem</Button>
+          <Button variant="outline" color="dark" iconStart="map">İkincil Çerçeveli</Button>
           <Button variant="ghost" color="dark">Vazgeç</Button>
-          <Badge color="success" variant="light">Doğrulanmış</Badge>
-          <Badge color="warning" variant="light">Beklemede</Badge>
-          <Badge color="secondary" variant="outline" pill>Telefon kılıfı</Badge>
         </div>
-        <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:18px")}>
-          <Alert color="info" variant="light" title="Bilgi">
-            Yapısal token&apos;lar (grey / surface / text / border) tüm temalarca paylaşılır.
+        <div style={sx("display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px")}>
+          <StatusBadge status="verified" />
+          <StatusBadge status="open" />
+          <StatusBadge status="pending" />
+          <StatusBadge status="objected" />
+          <StatusBadge status="suspended" />
+          <Badge color="secondary" variant="outline" pill><Icon name="pin" size={12} /> Santral Han · A Katı</Badge>
+        </div>
+        <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px")}>
+          <Alert color="info" variant="light" title="Bilgi (info-circle)">
+            Yapısal token&apos;lar (grey / surface / text / border) tüm yüzeylerce paylaşılır.
           </Alert>
-          <Alert color="warning" variant="light" title="Kontrast notu">
-            Accent&apos;i açık olan temalarda dolu accent buton metni koyulaştırılır.
+          <Alert color="warning" variant="light" title="Kontrast ve Uyarı (warning-triangle)">
+            Accent&apos;i açık olan temalarda (HAN altın) dolu buton metni otomatik koyulaştırılır.
+          </Alert>
+          <Alert color="success" variant="light" title="Onay (check-circle)">
+            Seçilen tema ve şema Alıcı, Esnaf ve Yönetim yüzeylerinde kalıcı olarak senkronize edilir.
+          </Alert>
+          <Alert color="danger" variant="light" title="Kritik Alarm (cross-circle)">
+            3 bağımsız bildirim alan kayıtlar otomatik askıya alınır ve 7 gün itiraz süresi başlar.
           </Alert>
         </div>
       </div>

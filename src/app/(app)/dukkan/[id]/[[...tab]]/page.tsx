@@ -20,7 +20,7 @@ import * as D from "@/data/han-data";
 import * as OF from "@/data/han-offers";
 import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
-import { Badge, Button, EmptyState, Icon, Textarea } from "@/ds";
+import { Alert, Badge, Button, EmptyState, Icon, Textarea } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
 import SantralFloorMap from "@/components/SantralFloorMap";
 import { F, W } from "@/lib/copy";
@@ -255,6 +255,7 @@ export default function ShopPage() {
             <Button
               color="accent"
               size="lg"
+              iconStart="plus-squared"
               fullWidth
               onClick={() => {
                 const item = { id: "b" + Date.now(), name: view.name, qty: "1", target: "" };
@@ -271,31 +272,34 @@ export default function ShopPage() {
                 toast(W(lang, "addPlan"));
               }}
             >
-              ➕ {W(lang, "addPlan")}
+              {W(lang, "addPlan")}
             </Button>
             <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
               <Button
                 variant="solid"
                 color="primary"
                 size="md"
+                iconStart="compass"
                 style={{ flex: 1 }}
                 onClick={() => router.push(href.directions(view.id))}
               >
-                🧭 {W(lang, "directions")}
+                {W(lang, "directions")}
               </Button>
               <Button
                 variant="outline"
                 color="primary"
                 size="md"
+                iconStart="map"
                 style={{ flex: 1 }}
                 onClick={() => router.push(href.store(view.id, "konum"))}
               >
-                🗺️ {pk({ tr: "Kat Planı & Kapı", en: "Floor Plan & Door" }, lang)}
+                {pk({ tr: "Kat Planı & Kapı", en: "Floor Plan & Door" }, lang)}
               </Button>
               <Button
                 variant="outline"
                 color="dark"
                 size="md"
+                iconStart="heart"
                 style={{ flex: 1 }}
                 onClick={() => {
                   const had = state.saved.includes(view.id);
@@ -601,12 +605,12 @@ function LocationTab({
           )}
 
           <div style={sx("display:flex;gap:8px;flex-wrap:wrap;margin-top:14px")}>
-            <Button size="sm" color="primary" variant="solid" onClick={() => router.push(href.directions(view.id))}>
-              🧭 {pk({ tr: "Tam Ekran Adım Adım Yol Tarifi", en: "Full-Screen Turn-by-Turn Guide" }, lang)}
+            <Button size="sm" color="primary" variant="solid" iconStart="compass" onClick={() => router.push(href.directions(view.id))}>
+              {pk({ tr: "Tam Ekran Adım Adım Yol Tarifi", en: "Full-Screen Turn-by-Turn Guide" }, lang)}
             </Button>
             <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none")}>
-              <Button size="sm" color="accent" variant="outline" iconStart="map">
-                🌍 {pk({ tr: "Google Maps ile Han Kapısına Yürü", en: "Walk to Han Gate (Google Maps)" }, lang)}
+              <Button size="sm" color="primary" variant="outline" iconStart="globe">
+                {pk({ tr: "Google Maps ile Han Kapısına Yürü", en: "Walk to Han Gate (Google Maps)" }, lang)}
               </Button>
             </a>
           </div>
@@ -646,8 +650,17 @@ function LocationTab({
 
       {/* Interactive Han Floor Map right inside Location Tab */}
       <section>
-        <div style={sx("margin-bottom:8px;font-size:12px;font-weight:800;color:var(--color-primary);text-transform:uppercase;letter-spacing:.05em")}>
-          🏢 {pk({ tr: "Han İçi Kat Planı & Kapı Numarası Rotası (GPS Gerekmez)", en: "Indoor Floor Plan & Door Route (No GPS Needed)" }, lang)}
+        <div style={sx("margin-bottom:10px")}>
+          <Alert
+            color="info"
+            variant="light"
+            title={pk({ tr: "Han İçi Kat Planı & Kapı Numarası Rotası (GPS Gerekmez)", en: "Indoor Floor Plan & Door Route (No GPS Needed)" }, lang)}
+          >
+            {pk({
+              tr: "Han içerisindeki taş koridorlarda telefon GPS'i çekmez. Aşağıdaki kat planından merdivenleri ve koridor hattını takip ederek kapı numarasına ulaşabilirsiniz.",
+              en: "GPS drops inside multi-floor stone hans. Follow the staircase and corridor line on the floor plan below.",
+            }, lang)}
+          </Alert>
         </div>
         <SantralFloorMap
           placeId={view.rec.place || "santral"}

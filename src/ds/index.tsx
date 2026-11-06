@@ -33,7 +33,7 @@ export interface IconProps {
 /** Inline SVG glyph. Uses `fill="currentColor"`, so it takes the colour of
  *  whatever it sits in and needs no dark-mode variant. */
 export function Icon({ name, size = 20, color, style = {}, className = "", ...rest }: IconProps) {
-  const markup = MT_ICONS[name] || "";
+  const markup = MT_ICONS[name] || MT_ICONS["info-circle"] || "";
   const dim = typeof size === "number" ? size + "px" : size;
   return (
     <span
@@ -170,15 +170,110 @@ export function Badge({
   );
 }
 
-// ── Alert ─────────────────────────────────────────────────────────────────
+// ── StatusBadge ───────────────────────────────────────────────────────────
+
+export type SemanticStatus =
+  | "open"
+  | "closed"
+  | "verified"
+  | "pending"
+  | "objected"
+  | "suspended"
+  | "offline";
+
+const STATUS_META: Record<
+  SemanticStatus,
+  { color: Tone; dot: boolean; icon?: string; labelTr: string; labelEn: string }
+> = {
+  open: { color: "success", dot: true, labelTr: "Açık", labelEn: "Open" },
+  closed: { color: "danger", dot: true, labelTr: "Kapalı", labelEn: "Closed" },
+  verified: { color: "success", dot: false, icon: "verify", labelTr: "Onaylı", labelEn: "Verified" },
+  pending: { color: "warning", dot: true, labelTr: "Beklemede", labelEn: "Pending" },
+  objected: { color: "warning", dot: true, labelTr: "İtirazda (7g)", labelEn: "Objected" },
+  suspended: { color: "danger", dot: true, labelTr: "Askıda", labelEn: "Suspended" },
+  offline: { color: "warning", dot: true, labelTr: "Çevrimdışı", labelEn: "Offline" },
+};
+
+export interface StatusBadgeProps {
+  status: SemanticStatus;
+  lang?: string;
+  size?: Size;
+  pill?: boolean;
+  children?: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}
+
+export function StatusBadge({
+  status,
+  lang = "tr",
+  size = "md",
+  pill = true,
+  children,
+  className = "",
+  style,
+}: StatusBadgeProps) {
+  const meta = STATUS_META[status] || STATUS_META.pending;
+  return (
+    <Badge
+      variant="light"
+      color={meta.color}
+      size={size}
+      dot={meta.dot}
+      pill={pill}
+      className={className}
+      style={style}
+    >
+      {meta.icon && <Icon name={meta.icon} size={size === "sm" ? 11 : 13} />}
+      {children ?? (lang === "tr" ? meta.labelTr : meta.labelEn)}
+    </Badge>
+  );
+}
+
+// ── Alert & Toast ─────────────────────────────────────────────────────────
 
 const DEFAULT_ALERT_ICON: Record<string, string> = {
   primary: "shield-search",
   success: "check-circle",
   danger: "cross-circle",
-  warning: "shield-search",
-  info: "shield-search",
+  warning: "warning-triangle",
+  info: "info-circle",
+  accent: "sparkle",
+  secondary: "info-circle",
+  dark: "info-circle",
 };
+
+export interface ToastProps {
+  message: ReactNode;
+  tone?: "primary" | "success" | "warning" | "danger" | "info";
+  onClose?: () => void;
+}
+
+/** Floating semantic notification bar shared across Buyer, Trader & Admin surfaces. */
+export function Toast({ message, tone = "primary", onClose }: ToastProps) {
+  if (!message) return null;
+  const ic =
+    tone === "success"
+      ? "check-circle"
+      : tone === "warning"
+        ? "warning-triangle"
+        : tone === "danger"
+          ? "cross-circle"
+          : tone === "info"
+            ? "info-circle"
+            : "check-circle";
+  return (
+    <div className={`mttoast mttoast--${tone}`} role="status" aria-live="polite">
+      <Icon className="mttoast__icon" name={ic} size={18} />
+      <span className="mttoast__text">{message}</span>
+      {onClose && (
+        <button type="button" className="mttoast__close" onClick={onClose} aria-label="Kapat">
+          <Icon name="cross-circle" size={16} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export interface AlertProps {
   children?: ReactNode;

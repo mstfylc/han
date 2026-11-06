@@ -30,6 +30,7 @@ import type { ReactNode } from "react";
 import * as SC from "@/data/han-scale";
 import { Icon } from "@/ds";
 import { sx } from "@/lib/sx";
+import { THEMES, type BrandThemeId, useThemePref } from "@/lib/theme";
 
 export interface PanelTab {
   id: string;
@@ -82,6 +83,7 @@ export function PanelShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { theme, dark, updateTheme } = useThemePref();
   const role = user.role;
   const readOnly = SC.isReadOnly(role);
 
@@ -112,7 +114,7 @@ export function PanelShell({
         }
       `}</style>
 
-      <header style={sx("position:sticky;top:0;z-index:30;background:var(--color-primary);box-shadow:0 4px 14px rgba(0,0,0,.12)")}>
+      <header style={sx("position:sticky;top:0;z-index:30;background:var(--surface-brand, var(--color-primary));box-shadow:0 4px 14px rgba(0,0,0,.14)")}>
         <div data-panel-head="1" style={sx("max-width:1600px;margin:0 auto;padding:0 22px;height:56px;display:flex;align-items:center;gap:16px")}>
           <button
             type="button"
@@ -136,6 +138,30 @@ export function PanelShell({
           <span style={sx("font-size:12.5px;color:rgba(255,255,255,.78)")}>
             {(user.name || user.tel) + " · " + (SC.ROLES[role]?.tr || role)}
           </span>
+
+          <select
+            value={theme}
+            onChange={(e) => updateTheme(e.target.value as BrandThemeId, dark)}
+            aria-label="Marka teması"
+            title="Marka teması"
+            style={sx("height:32px;padding:0 8px;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff")}
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
+                {"Tema: " + t.title}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={() => updateTheme(theme, !dark)}
+            aria-label={dark ? "Açık görünüme geç" : "Koyu görünüme geç"}
+            title={dark ? "Açık görünüme geç" : "Koyu görünüme geç"}
+            style={sx("display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.10);color:#fff;cursor:pointer")}
+          >
+            <Icon name={dark ? "sun" : "moon"} size={15} />
+          </button>
 
           <button
             type="button"

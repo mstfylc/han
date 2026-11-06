@@ -6,11 +6,13 @@
    ============================================================ */
 
 :root {
+  color-scheme: light;
   /* ---- Brand / Primary (Uyanık navy) ---- */
   --color-primary:             #1f3864;
   --color-primary-active:      #162a4c;
   --color-primary-soft:        #eaeef4;
   --color-primary-accent:      #14233f;
+  --surface-brand:             #14233f;
   --color-primary-transparent: rgba(31,56,100,0.20);
 
   /* ---- Success (green) ---- */
@@ -121,11 +123,13 @@
 
 /* ---- Dark theme (opt-in via [data-theme="dark"] or .dark) ---- */
 :root[data-theme="dark"], .dark {
-  --color-primary:             #3f5d92;
-  --color-primary-active:      #52719f;
+  color-scheme: dark;
+  --color-primary:             #4b79b6;
+  --color-primary-active:      #628ec9;
   --color-primary-soft:        #18233a;
   --color-primary-accent:      #b6c4dc;
-  --color-primary-transparent: rgba(63,93,146,0.24);
+  --surface-brand:             #0f1d35;
+  --color-primary-transparent: rgba(75,121,182,0.24);
   --color-orange:              #eb9c45;
   --color-orange-active:       #e08a2b;
   --color-orange-soft:         #2a2113;
