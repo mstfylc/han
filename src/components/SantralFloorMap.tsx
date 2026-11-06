@@ -877,7 +877,7 @@ export function SantralFloorMap({
               {activeCell.record && (
                 <>
                   <Link
-                    href={`/magaza/${activeCell.record.curated || activeCell.record.id}`}
+                    href={`/dukkan/${activeCell.record.curated || activeCell.record.id}`}
                     style={sx("text-decoration:none")}
                   >
                     <Button size="sm" color="primary" variant="solid" iconStart="shop">

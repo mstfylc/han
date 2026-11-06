@@ -383,7 +383,7 @@ function RequestsView({
                 <div style={sx("font-size:14.5px;font-weight:700;color:var(--text-heading)")}>{sh.name}</div>
                 <div style={sx("font-size:12px;color:var(--text-muted)")}>{sh.cat}</div>
                 <div style={sx("display:flex;gap:6px;margin-top:4px;flex-wrap:wrap")}>
-                  <Button size="sm" variant="outline" color="primary" onClick={() => router.push(`/magaza/${sh.id}`)}>
+                  <Button size="sm" variant="outline" color="primary" onClick={() => router.push(`/dukkan/${sh.id}`)}>
                     {lang === "tr" ? "Mağaza & Katalog" : "Shop"}
                   </Button>
                   <a

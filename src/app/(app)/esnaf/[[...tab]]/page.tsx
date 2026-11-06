@@ -807,7 +807,7 @@ function TraderScreen() {
                       variant="outline"
                       color="primary"
                       size="lg"
-                      onClick={() => router.push(`/magaza/${mRec.curated || mRec.id}`)}
+                      onClick={() => router.push(`/dukkan/${mRec.curated || mRec.id}`)}
                     >
                       {t({ tr: "Canlı Mağaza Sayfamı Gör", en: "View My Live Shop Page" })}
                     </Button>
@@ -855,14 +855,14 @@ function TraderScreen() {
                         {floorLabel(mRec.floor, mRec.place)} · Kapı No: {mRec.door}
                       </div>
                       <div style={sx("font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);padding:6px 10px;border-radius:6px;background:var(--surface-card);border:1px solid var(--border-default)")}>
-                        han.mansis.com.tr/magaza/{mRec.curated || mRec.id}
+                        han.mansis.com.tr/dukkan/{mRec.curated || mRec.id}
                       </div>
                       <Button
                         size="sm"
                         variant="outline"
                         color="primary"
                         onClick={() => {
-                          const url = `${window.location.origin}/magaza/${mRec.curated || mRec.id}`;
+                          const url = `${window.location.origin}/dukkan/${mRec.curated || mRec.id}`;
                           void navigator.clipboard?.writeText(url);
                           toast(t({ tr: "Mağaza kapı bağlantısı kopyalandı: " + url, en: "Shop door link copied" }));
                         }}
