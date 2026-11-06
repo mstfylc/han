@@ -33,10 +33,15 @@ interface ScopeSel { officer: string; place: string }
 
 function useScope(role: string) {
   const scope = (SC.ROLES[role] || {}).scope || null;
-  const [sel, setSel] = useState<ScopeSel>({ officer: "", place: "" });
+  const [sel, setSel] = useState<ScopeSel>({ officer: "", place: role === "han" ? "santral" : "" });
   useEffect(() => {
-    setSel(readKey<ScopeSel>(SCOPE_KEY, { officer: "", place: "" }));
-  }, []);
+    const stored = readKey<ScopeSel>(SCOPE_KEY, { officer: "", place: "" });
+    if (role === "han" && !stored.place) {
+      setSel({ ...stored, place: "santral" });
+    } else {
+      setSel(stored);
+    }
+  }, [role]);
   const save = (next: ScopeSel) => {
     setSel(next);
     writeKey(SCOPE_KEY, next);

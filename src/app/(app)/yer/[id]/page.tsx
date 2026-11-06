@@ -15,6 +15,7 @@ import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
 import { Badge, Button, EmptyState, Icon } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
+import { SantralFloorMap } from "@/components/SantralFloorMap";
 import { F, W } from "@/lib/copy";
 import { money, num, tx } from "@/lib/i18n";
 import { href } from "@/lib/routes";
@@ -57,9 +58,11 @@ export default function PlacePage() {
 
   const byFloor = place.floors.map((f) => ({
     floor: f,
-    rows: records.filter((r) => r.floor === f).slice(0, 40),
+    rows: records.filter((r) => r.floor === f).slice(0, 90),
     total: records.filter((r) => r.floor === f).length,
   }));
+
+  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}&travelmode=walking`;
 
   return (
     <div style={sx("max-width:1480px;margin:0 auto;padding:18px 24px 48px")}>
@@ -96,7 +99,12 @@ export default function PlacePage() {
             {place.name}
           </h1>
           <div style={sx("font-size:14px;color:var(--text-muted);margin-top:5px")}>
-            {[semt ? tx(semt, lang) : "", place.floors.length + " " + pk({ tr: "kat", en: "floors", ru: "этажей", ar: "طوابق" }, lang)]
+            {[
+              semt ? tx(semt, lang) : "",
+              place.address || "",
+              place.floors.length + " " + pk({ tr: "kat", en: "floors", ru: "этажей", ar: "طوابق" }, lang),
+              place.tel ? `Tel: ${place.tel}` : "",
+            ]
               .filter(Boolean)
               .join(" · ")}
           </div>
@@ -142,12 +150,43 @@ export default function PlacePage() {
             <Button color="primary" size="md" onClick={() => router.push("/ara?yer=" + encodeURIComponent(place.id))}>
               {pk({ tr: "Buradaki dükkânları ara", en: "Search shops here", ru: "Искать лавки здесь", ar: "ابحث عن متاجر هنا" }, lang)}
             </Button>
+            <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none")}>
+              <Button variant="outline" color="accent" size="md" iconStart="map">
+                {pk({ tr: "Google Maps Yürüyüş Rotası", en: "Google Maps Walking Route", ru: "Маршрут в Google Maps", ar: "مسار المشي على خرائط جوجل" }, lang)}
+              </Button>
+            </a>
             <Button variant="outline" color="primary" size="md" onClick={() => router.push(href.map())}>
               {W(lang, "seeOnMap")}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Interactive Indoor Floor Map & Official Architectural Blueprints */}
+      {place.floors.length > 1 && (
+        <section style={sx("margin-top:26px")}>
+          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap")}>
+            <div>
+              <div style={sx(KICKER)}>
+                {pk({
+                  tr: "DİJİTAL HAN REHBERİ · İNTERAKTİF KAT KROKİSİ VE KAPI DİZİNİ",
+                  en: "DIGITAL HAN DIRECTORY · INTERACTIVE FLOOR PLAN & DOOR INDEX",
+                  ru: "ЦИФРОВОЙ СПРАВОЧНИК ХАНА · ИНТЕРАКТИВНЫЙ ПЛАН ЭТАЖЕЙ",
+                  ar: "دليل الخان الرقمي · مخطط الطوابق التفاعلي",
+                }, lang)}
+              </div>
+              <h2 style={sx("font-size:20px;font-weight:800;color:var(--text-heading);margin:3px 0 0")}>
+                {place.name} · {pk({ tr: "Kat Planı & Kapı Numarasıyla Dükkân Bul", en: "Find Any Shop by Floor & Door Number", ru: "Поиск лавки по этажу и номеру двери", ar: "ابحث عن أي متجر حسب الطابق ورقم الباب" }, lang)}
+              </h2>
+            </div>
+          </div>
+          <SantralFloorMap
+            placeId={place.id}
+            lang={lang}
+            onSelectRecord={(rid) => router.push(href.store(rid))}
+          />
+        </section>
+      )}
 
       {/* what is traded here */}
       {stats.topCats.length > 0 && (
@@ -181,7 +220,7 @@ export default function PlacePage() {
           {byFloor.map((f) => (
             <div key={f.floor} style={sx(CARD)}>
               <div style={sx("display:flex;align-items:baseline;gap:10px")}>
-                <div style={sx("font-size:15.5px;font-weight:700;color:var(--text-heading)")}>{floorLabel(f.floor, lang)}</div>
+                <div style={sx("font-size:15.5px;font-weight:700;color:var(--text-heading)")}>{floorLabel(f.floor, lang, place)}</div>
                 <div style={sx("font-size:13px;color:var(--text-muted)")}>{F(lang, "shopCount", f.total)}</div>
               </div>
 

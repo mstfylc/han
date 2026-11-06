@@ -337,11 +337,69 @@ function RequestsView({
           {pk({ tr: "Önce numune istiyorum", en: "I want a sample first", ru: "Сначала образец", ar: "أريد عينة أولًا" }, lang)}
         </label>
 
-        <div style={sx("margin-top:18px")}>
+        <div style={sx("margin-top:18px;display:flex;gap:10px;flex-wrap:wrap")}>
           {/* The one filled-orange button on this screen. */}
           <Button color="accent" size="lg" onClick={submit}>
             {pk({ tr: "Talebi gönder", en: "Send the request", ru: "Отправить заявку", ar: "أرسل الطلب" }, lang)}
           </Button>
+          <Button variant="outline" color="primary" size="lg" onClick={() => router.push("/yer/santral")}>
+            🏛️ {pk({ tr: "Santral Han Kat Rehberinden Dükkân Seç", en: "Pick Shop from Santral Han Floor Guide", ru: "Выбрать лавку в Santral Han", ar: "اختر متجرًا من دليل خان سنترال" }, lang)}
+          </Button>
+        </div>
+
+        {/* Han Kapı Pasaportu · Sonradan İletişim ve Tekrar Sipariş Hafızası */}
+        <div style={sx("margin-top:24px;padding-top:20px;border-top:1px solid var(--border-default)")}>
+          <div style={sx(KICKER)}>
+            {pk({
+              tr: "HAN KAPI PASAPORTU · HANDAN AYRILDIKTAN SONRA DOĞRUDAN İLETİŞİM & TEKRAR SİPARİŞ",
+              en: "HAN DOOR PASSPORT · RECONNECT & REORDER AFTER LEAVING THE HAN",
+              ru: "ПАСПОРТ ДВЕРЕЙ ХАНА · СВЯЗЬ И ПОВТОРНЫЙ ЗАКАЗ",
+              ar: "جواز أبواب الخان · التواصل وإعادة الطلب بعد مغادرة الخان",
+            }, lang)}
+          </div>
+          <p style={sx("font-size:13px;color:var(--text-muted);margin-top:4px;text-wrap:pretty")}>
+            {pk({
+              tr: "Santral Han içinde gezdiğiniz veya kapı QR kodunu okuttuğunuz dükkânlar kat ve kapı numarasıyla burada saklanır; handan ayrıldıktan aylar sonra bile doğrudan WhatsApp ile yazabilir veya tek tıkla yeni talep gönderebilirsiniz.",
+              en: "Shops you visited or scanned inside Santral Han stay saved here with their exact floor and door number so you can message them on WhatsApp or reorder anytime.",
+              ru: "Лавки, которые вы посетили в Santral Han, сохраняются с этажом и номером двери для связи в WhatsApp и повторного заказа.",
+              ar: "المتاجر التي زرتها في خان سنترال تُحفظ هنا مع الطابق ورقم الباب للتواصل عبر واتساب أو إعادة الطلب.",
+            }, lang)}
+          </p>
+          <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;margin-top:12px")}>
+            {[
+              { id: "roza", name: "Roza Aksesuar", fl: "A Kat · No: 8", cat: "Çelik Takı & Bijuteri (B2B + B2C)", tel: "905324001001" },
+              { id: "yilmazbijuteri", name: "Yılmaz Bijuteri", fl: "A Kat · No: 61", cat: "925 Gümüş & Zirkon (B2B + B2C)", tel: "905324001061" },
+              { id: "klcbijuteri", name: "KLC Consept Bijuteri", fl: "B Kat · No: 228", cat: "Toka · Doğaltaş · Tesbih", tel: "905324001228" },
+              { id: "zentaelektronik", name: "Zenta Elektronik", fl: "C Kat · No: 367", cat: "Telefon Kılıfı & Powerbank", tel: "905324001367" },
+              { id: "pildunyasi", name: "Pil Dünyası & Batarya", fl: "D Kat · No: 412", cat: "Saat Pili · Kumanda & Batarya", tel: "905324001412" },
+            ].map((sh) => (
+              <div
+                key={sh.id}
+                style={sx("padding:12px;border-radius:11px;border:1px solid var(--border-default);background:var(--surface-muted);display:flex;flex-direction:column;gap:6px")}
+              >
+                <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:6px")}>
+                  <span style={sx("font-size:11.5px;font-weight:800;color:var(--color-primary)")}>Santral Han · {sh.fl}</span>
+                </div>
+                <div style={sx("font-size:14.5px;font-weight:700;color:var(--text-heading)")}>{sh.name}</div>
+                <div style={sx("font-size:12px;color:var(--text-muted)")}>{sh.cat}</div>
+                <div style={sx("display:flex;gap:6px;margin-top:4px;flex-wrap:wrap")}>
+                  <Button size="sm" variant="outline" color="primary" onClick={() => router.push(`/magaza/${sh.id}`)}>
+                    {lang === "tr" ? "Mağaza & Katalog" : "Shop"}
+                  </Button>
+                  <a
+                    href={`https://wa.me/${sh.tel}?text=${encodeURIComponent(`Merhaba ${sh.name}, Santral Han (${sh.fl}) mağazanız için HAN üzerinden ulaşıyorum.`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={sx("text-decoration:none")}
+                  >
+                    <Button size="sm" variant="light" color="success">
+                      WhatsApp
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );

@@ -32,7 +32,7 @@ import { F } from "@/lib/copy";
 import { money, tonePair, upper } from "@/lib/i18n";
 import { CARD_BOX, STICKY_TOP, areaOn, breaks, searchGrid } from "@/lib/layout";
 import { PARAM, getStr, href } from "@/lib/routes";
-import { recordName } from "@/lib/shop";
+import { floorLabel as shopFloorLabel, recordName } from "@/lib/shop";
 import { sx } from "@/lib/sx";
 import { allRequests, useApp } from "@/state/AppState";
 import type { Claim, OverrideEntry } from "@/state/types";
@@ -78,12 +78,9 @@ function TraderScreen() {
 
   // ── naming a unit the way a trader says it out loud ──────────────────────
   const placeName = (id: string) => (SC.PLACES.find((p) => p.id === id) || { name: "" }).name;
-  const floorLabel = (n: number) =>
-    n === 0
-      ? t({ tr: "Zemin", en: "Ground", ru: "Первый", ar: "الأرضي" })
-      : t({ tr: n + ". kat", en: "Floor " + n, ru: n + " этаж", ar: "الطابق " + n });
+  const floorLabel = (n: number, placeId?: string) => shopFloorLabel(n, lang, placeId);
   const whereOf = (r: ShopRecord) =>
-    [placeName(r.place), floorLabel(r.floor), t({ tr: "No", en: "No", ru: "№", ar: "رقم" }) + " " + r.door].join(" · ");
+    [placeName(r.place), floorLabel(r.floor, r.place), t({ tr: "No", en: "No", ru: "№", ar: "رقم" }) + " " + r.door].join(" · ");
 
   // ── finder ───────────────────────────────────────────────────────────────
   // The place and door live in the URL so "is it yours?" on a search hit can
@@ -675,9 +672,21 @@ function TraderScreen() {
                     onChange={(e) => setLoginCode(e.target.value)}
                   />
                 </div>
-                <div style={sx("margin-top:14px")}>
+                <div style={sx("margin-top:14px;display:flex;gap:10px;flex-wrap:wrap")}>
                   <Button color="accent" size="lg" onClick={doLogin}>
                     {t({ tr: "Giriş yap", en: "Sign in", ru: "Войти", ar: "دخول" })}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    color="primary"
+                    size="lg"
+                    onClick={() => {
+                      save({ esSession: { tel: "05550000012", at: Date.now() } });
+                      router.replace(href.trader("yonet", { record: "r-santral-000" }));
+                      toast(t({ tr: "Santral Han · Roza Aksesuar (A Kat No: 8) olarak giriş yapıldı", en: "Signed in as Roza Aksesuar (Santral Han)" }));
+                    }}
+                  >
+                    ⚡ {t({ tr: "Santral Han Demo Esnaf Girişi (Roza Aksesuar · No: 8)", en: "Santral Han Demo Trader Login (No: 8)" })}
                   </Button>
                 </div>
               </div>
@@ -716,13 +725,13 @@ function TraderScreen() {
                     <div style={sx("font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.68)")}>
                       {t({ tr: "Bu ay kaçırdığınız iş", en: "Work you missed this month", ru: "Упущенная работа за месяц", ar: "أعمال فاتتك هذا الشهر" })}
                     </div>
-                    <div style={sx("font-size:19px;font-weight:700;color:#fff;letter-spacing:-.015em;margin-top:6px")}>{recordName(mRec, lang)}</div>
+                    <div style={sx("font-size:19px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.015em;margin-top:6px")}>{recordName(mRec, lang)}</div>
                     <div style={sx("font-size:13px;color:rgba(255,255,255,.75);margin-top:3px")}>{whereOf(mRec)}</div>
                     <p style={sx("font-size:14px;color:rgba(255,255,255,.9);margin-top:12px;text-wrap:pretty")}>
                       {missedLine(mRec, inbox, t)}
                     </p>
                     <div style={sx("display:flex;align-items:baseline;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18)")}>
-                      <span style={sx("font-size:32px;font-weight:700;color:#fff;letter-spacing:-.02em")}>{score}</span>
+                      <span style={sx("font-size:32px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.02em")}>{score}</span>
                       <span style={sx("font-size:13px;color:rgba(255,255,255,.7)")}>/ 100</span>
                     </div>
                   </div>
@@ -790,10 +799,77 @@ function TraderScreen() {
                     ))}
                   </div>
 
-                  <div style={sx("margin-top:16px")}>
+                  <div style={sx("margin-top:16px;display:flex;gap:10px;flex-wrap:wrap")}>
                     <Button color="accent" size="lg" onClick={saveRecord}>
                       {t({ tr: "Kaydet ve yayına al", en: "Save and publish", ru: "Сохранить и опубликовать", ar: "احفظ وانشر" })}
                     </Button>
+                    <Button
+                      variant="outline"
+                      color="primary"
+                      size="lg"
+                      onClick={() => router.push(`/magaza/${mRec.curated || mRec.id}`)}
+                    >
+                      {t({ tr: "Canlı Mağaza Sayfamı Gör", en: "View My Live Shop Page" })}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* QR Kapı Kartviziti & B2C/B2B Hibrit Müşteri Bağlılık Kartı */}
+                <div style={sx("margin-top:16px;" + CARD)}>
+                  <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap")}>
+                    <div style={sx("flex:1;min-width:240px")}>
+                      <div style={sx(KICKER)}>
+                        {t({ tr: "HAN DİJİTAL KAPI KARTVİZİTİ · SONRADAN SİPARİŞ & B2C/B2B ERİŞİM", en: "DIGITAL DOOR CARD · REPEAT ORDER & B2C/B2B ACCESS" })}
+                      </div>
+                      <div style={sx("font-size:17px;font-weight:800;color:var(--text-heading);margin-top:4px")}>
+                        {recordName(mRec, lang)} · {whereOf(mRec)}
+                      </div>
+                      <p style={sx("font-size:13.5px;color:var(--text-muted);margin-top:6px;text-wrap:pretty")}>
+                        {t({
+                          tr: "Han içinden geçen turist, perakende (B2C) müşteri veya toptancı (B2B) kapınızdaki QR etiketi okuttuğunda dükkânınız telefonuna kaydedilir; handan ayrıldıktan sonra bile size WhatsApp'tan ulaşır veya tekrar sipariş verir.",
+                          en: "Visitors and wholesale buyers who scan your door QR save your shop to their phone and can reorder or message you on WhatsApp anytime after leaving the han.",
+                        })}
+                      </p>
+                      <div style={sx("display:flex;gap:8px;flex-wrap:wrap;margin-top:12px")}>
+                        <span style={sx("display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-success-soft);color:var(--color-success)")}>
+                          ✓ B2C Perakende &amp; Turist Satışı Açık
+                        </span>
+                        <span style={sx("display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-primary-soft);color:var(--color-primary)")}>
+                          ✓ B2B Toptan Teklif &amp; Koli Siparişi Açık
+                        </span>
+                        <span style={sx("display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-accent-soft);color:var(--text-primary)")}>
+                          ✓ Han İçi Kat Planında Pinli (No: {mRec.door})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      style={sx(
+                        "padding:14px 16px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-muted);display:flex;flex-direction:column;align-items:center;gap:8px;min-width:210px;text-align:center",
+                      )}
+                    >
+                      <div style={sx("font-size:11px;font-weight:800;color:var(--color-primary);letter-spacing:.06em")}>
+                        SANTRAL HAN KAPI ETİKETİ
+                      </div>
+                      <div style={sx("font-size:16px;font-weight:800;color:var(--text-heading)")}>
+                        {floorLabel(mRec.floor, mRec.place)} · Kapı No: {mRec.door}
+                      </div>
+                      <div style={sx("font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);padding:6px 10px;border-radius:6px;background:var(--surface-card);border:1px solid var(--border-default)")}>
+                        han.mansis.com.tr/magaza/{mRec.curated || mRec.id}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        color="primary"
+                        onClick={() => {
+                          const url = `${window.location.origin}/magaza/${mRec.curated || mRec.id}`;
+                          void navigator.clipboard?.writeText(url);
+                          toast(t({ tr: "Mağaza kapı bağlantısı kopyalandı: " + url, en: "Shop door link copied" }));
+                        }}
+                      >
+                        📋 {t({ tr: "Kapı QR Bağlantısını Kopyala", en: "Copy Door QR Link" })}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

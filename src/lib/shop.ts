@@ -94,7 +94,29 @@ export function openPill(s: CuratedStore, lang: Lang): BadgeSpec {
   };
 }
 
-export function floorLabel(n: number, lang: Lang): string {
+export function floorLabel(
+  n: number,
+  lang: Lang,
+  placeOrId?: import("@/data/types").Place | string | null,
+): string {
+  const pid = typeof placeOrId === "string" ? placeOrId : placeOrId?.id;
+  const placeObj =
+    typeof placeOrId === "object" && placeOrId
+      ? placeOrId
+      : pid
+        ? SC.PLACES.find((x) => x.id === pid)
+        : null;
+  const custom =
+    placeObj?.floorLabels?.[n] ||
+    (pid && (D.HAN_EXT as Record<string, { floorNames?: Record<number, string> }>)[pid]?.floorNames?.[n]);
+  if (custom) {
+    if (lang === "tr") return custom;
+    const code = custom.replace(/\s*Kat$/i, "").trim();
+    if (lang === "en") return code === "Z" ? "Ground (Z)" : `${code} Floor`;
+    if (lang === "ru") return `${code} этаж`;
+    if (lang === "ar") return `طابق ${code}`;
+    return custom;
+  }
   return n > 0 ? F(lang, "hanFloor", n) : F(lang, "hanGround");
 }
 
@@ -102,14 +124,14 @@ export function floorLabel(n: number, lang: Lang): string {
 export function whereOf(s: CuratedStore, lang: Lang): string {
   const h = D.HANS.find((x) => x.id === s.han);
   const a = D.AREAS.find((x) => x.id === L.areaOf(D, s));
-  return (h ? (h.name as string) : tx(a, lang)) + " · " + floorLabel(s.floor || 0, lang);
+  return (h ? (h.name as string) : tx(a, lang)) + " · " + floorLabel(s.floor || 0, lang, s.han);
 }
 
 /** Same, for a scale record: place · floor · door. The address backbone is the
  *  product's real asset, so it is always spelled out. */
 export function whereOfRecord(r: ShopRecord, lang: Lang): string {
   const p = SC.PLACES.find((x) => x.id === r.place);
-  const parts = [p ? p.name : r.place, floorLabel(r.floor || 0, lang)];
+  const parts = [p ? p.name : r.place, floorLabel(r.floor || 0, lang, p || r.place)];
   if (r.door) parts.push(F(lang, "kDoor", r.door));
   return parts.filter(Boolean).join(" · ");
 }

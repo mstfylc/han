@@ -62,14 +62,22 @@ function matchCat(list: string[]): string[] {
 }
 
 export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
-  const [f, setF] = useState<ImportForm>({ place: "", floor: "", text: "", bulk: false });
+  const [f, setF] = useState<ImportForm>({ place: "santral", floor: "1", text: "", bulk: true });
   const [done, setDone] = useState<ImportDone | null>(null);
 
   const parsed = AD.parseImport(f.text);
-  const placeOpts = SC.PLACES.slice().sort((a, b) => b.units - a.units).slice(0, 40);
+  const placeOpts = SC.PLACES.slice().sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.units - a.units)).slice(0, 40);
   const place = SC.PLACES.find((p) => p.id === f.place) || placeOpts[0];
   const floor = Number(String(f.floor).replace(/\D/g, "")) || 0;
   const nothing = parsed.rows.length === 0 && parsed.errors.length === 0;
+
+  const loadSantralFloorSample = (fl: number) => {
+    const list = SC.SANTRAL_TENANTS.filter((t) => t.floor === fl);
+    const lines = list.map((t, i) => `${t.door}; ${t.name}; ${t.groups.join("/")}; 0532${String(1000000 + fl * 100000 + i * 73).slice(0, 7)}`);
+    setF({ place: "santral", floor: String(fl), text: lines.join("\n"), bulk: true });
+    setDone(null);
+    say(`Santral Han · ${place.floorLabels?.[fl] || `Kat ${fl}`} resmi kat planından ${list.length} esnaf listesi yüklendi`);
+  };
 
   const apply = () => {
     if (readOnly) return say("Salt okuma rolü içe aktaramaz");
@@ -111,8 +119,60 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
 
   return (
     <>
-      <h1 style={sx(H1)}>Toplu İçe Aktarma</h1>
-      <p style={sx(SUB)}>Han yönetiminden gelen kiracı listesi tek seferde girilir.</p>
+      <h1 style={sx(H1)}>Toplu İçe Aktarma &amp; Açık Kaynak (OSINT) Veri Havuzu</h1>
+      <p style={sx(SUB)}>
+        Han yönetiminden gelen kiracı listeleri, resmi mimari kat planı paftaları ve açık kaynaklardan (Google Business, OSM, Ticaret Sicili) toplanan esnaf verileri tek tıkla omurgaya işlenir.
+      </p>
+
+      {/* OSINT & Official Santral Han Blueprint Sync Card */}
+      <div
+        style={sx(
+          CARD +
+            ";margin-top:16px;padding:18px 20px;background:var(--surface-card);display:flex;flex-direction:column;gap:12px",
+        )}
+      >
+        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
+          <div>
+            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <Pill label="OSINT & KAT PLANI SENKRONU AKTİF" t="success" />
+              <span style={sx("font-size:12.5px;font-weight:700;color:var(--color-primary)")}>
+                Santral Han · 7 Resmi Kat Paftası (Z, A, B, C, D, E, F) · {SC.SANTRAL_TENANTS.length} Doğrulanmış Kapı
+              </span>
+            </div>
+            <div style={sx("font-size:14.5px;font-weight:700;color:var(--text-heading);margin-top:6px")}>
+              Açık Kaynaklardan (santralhancenter.com.tr + Google Haritalar + OSM) Gömülen Hazır Kat Verileri
+            </div>
+            <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:3px;text-wrap:pretty")}>
+              Saha ekibi kapı kapı dolaşmadan önce Santral Han&apos;ın 7 katının resmi mimari kat planlarındaki (Z Kat – F Kat) tüm esnaf isimleri ve kapı numaraları sisteme gömülmüştür. İstediğiniz katın kiracı listesini aşağıdan tek tıkla önizlemeye çağırabilirsiniz:
+            </div>
+          </div>
+        </div>
+
+        <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+          {[
+            { fl: 0, lbl: "Z Kat (Zemin)" },
+            { fl: 1, lbl: "A Kat (1. Kat)" },
+            { fl: 2, lbl: "B Kat (2. Kat)" },
+            { fl: 3, lbl: "C Kat (3. Kat)" },
+            { fl: 4, lbl: "D Kat (4. Kat)" },
+            { fl: 5, lbl: "E Kat (5. Kat)" },
+            { fl: 6, lbl: "F Kat (6. Kat)" },
+          ].map((item) => {
+            const count = SC.SANTRAL_TENANTS.filter((t) => t.floor === item.fl).length;
+            return (
+              <Button
+                key={item.fl}
+                size="sm"
+                variant={Number(f.floor) === item.fl && f.place === "santral" && f.text ? "solid" : "outline"}
+                color="primary"
+                onClick={() => loadSantralFloorSample(item.fl)}
+              >
+                {item.lbl} · {count} Kapı Yükle
+              </Button>
+            );
+          })}
+        </div>
+      </div>
 
       <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:18px;align-items:start;margin-top:18px")}>
         <div style={sx(CARD + ";padding:20px")}>

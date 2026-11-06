@@ -188,7 +188,7 @@ export default function DiscoverPage() {
         photoSrc: st ? storePhoto(st) : "/assets/ph-kampanya.png",
         tagStyle:
           "position:absolute;top:11px;inset-inline-start:11px;display:inline-flex;align-items:center;height:25px;padding:0 11px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-" +
-          (c.tone || "primary") + ");color:#fff",
+          (c.tone || "primary") + ");color:var(--color-primary-inverse)",
         go: st ? () => router.push(href.store(st.id)) : () => router.push(href.search(areaCatWord(c.area as string))),
       };
     });
@@ -252,7 +252,10 @@ export default function DiscoverPage() {
     },
   ];
 
-  const popularQ = (D.CATS || []).slice(0, 6).map((c) => ({ label: tx(c, lang), value: tx(c, lang) }));
+  const popularQ = [
+    { label: "🏛️ Santral Han", value: "Santral Han" },
+    ...(D.CATS || []).slice(0, 6).map((c) => ({ label: tx(c, lang), value: tx(c, lang) })),
+  ];
   const knowRows = (D.KNOW || []).slice(0, 4);
   const areaMini = D.AREAS.map((a) => ({
     id: a.id as string,
@@ -277,7 +280,7 @@ export default function DiscoverPage() {
             </span>
           </div>
 
-          <h1 style={sx("font-size:38px;font-weight:700;color:#fff;letter-spacing:-.025em;line-height:1.1;margin-top:14px;max-width:19ch;text-wrap:pretty")}>
+          <h1 style={sx("font-size:38px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.025em;line-height:1.1;margin-top:14px;max-width:19ch;text-wrap:pretty")}>
             {pk({
               tr: "Hangi hana, hangi kata, hangi kapıya gideceğinizi söyleriz",
               en: "We tell you which han, which floor, which door",
@@ -323,7 +326,7 @@ export default function DiscoverPage() {
                 key={p.label}
                 type="button"
                 onClick={() => goSearch(p.value)}
-                style={sx("height:30px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.08);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer")}
+                style={sx("height:30px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.08);color:var(--color-primary-inverse);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer")}
               >
                 {p.label}
               </button>
@@ -333,7 +336,7 @@ export default function DiscoverPage() {
           <div style={sx("display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.16)")}>
             {heroStats.map((s) => (
               <div key={s.label} style={sx("font-size:14px;color:rgba(255,255,255,.72)")}>
-                <span style={sx("font-weight:700;color:#fff")}>{s.n}</span> {s.label}
+                <span style={sx("font-weight:700;color:var(--color-primary-inverse)")}>{s.n}</span> {s.label}
               </div>
             ))}
           </div>
@@ -350,10 +353,10 @@ export default function DiscoverPage() {
                   onClick={d.go}
                   style={sx("display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:14px 15px;border-radius:13px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);font-family:inherit;text-align:start;cursor:pointer")}
                 >
-                  <span style={sx("display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.16);color:#fff")}>
+                  <span style={sx("display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.16);color:var(--color-primary-inverse)")}>
                     <Icon name={d.icon} size={18} />
                   </span>
-                  <span style={sx("display:block;font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.25;text-wrap:pretty")}>{d.title}</span>
+                  <span style={sx("display:block;font-size:15px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.01em;line-height:1.25;text-wrap:pretty")}>{d.title}</span>
                   <span style={sx("display:block;font-size:12.5px;color:rgba(255,255,255,.68);line-height:1.4;text-wrap:pretty")}>{d.sub}</span>
                 </button>
               ))}
@@ -426,6 +429,82 @@ export default function DiscoverPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Santral Han Live Digital Floor Directory Showcase ────────────── */}
+      <section
+        style={sx(
+          "margin-top:20px;border-radius:16px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 6px rgba(0,0,0,.04);padding:18px 20px;display:flex;flex-direction:column;gap:14px",
+        )}
+      >
+        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap")}>
+          <div>
+            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <span style={sx("display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--color-accent);color:var(--color-accent-inverse)")}>
+                {pk({ tr: "CANLI DİJİTAL HAN REHBERİ · PİLOT VİTRİN", en: "LIVE DIGITAL HAN DIRECTORY · PILOT SHOWCASE", ru: "ЦИФРОВОЙ СПРАВОЧНИК ХАНА", ar: "دليل الخان الرقمي المباشر" }, lang)}
+              </span>
+              <span style={sx("font-size:12.5px;font-weight:700;color:var(--color-primary)")}>
+                📍 Tahtakale Cd. No: 7, Fatih / İstanbul · Tel: 0552 744 79 38
+              </span>
+            </div>
+            <h2 style={sx("font-size:21px;font-weight:800;color:var(--text-heading);margin:6px 0 0;letter-spacing:-.015em")}>
+              {pk({
+                tr: "Santral Han · 7 Kat (Z, A, B, C, D, E, F) · 256 Birim Kapı Numarası ve İnteraktif Kat Krokisi",
+                en: "Santral Han · 7 Floors (Z, A, B, C, D, E, F) · 256 Units Door Index & Interactive Floor Plan",
+                ru: "Santral Han · 7 этажей (Z–F) · 256 павильонов и интерактивный план",
+                ar: "خان سنترال · ٧ طوابق (Z–F) · ٢٥٦ وحدة ومخطط تفاعلي",
+              }, lang)}
+            </h2>
+            <p style={sx("font-size:13.5px;color:var(--text-muted);margin:4px 0 0;text-wrap:pretty")}>
+              {pk({
+                tr: "Han içinde GPS çekmese bile Z Kat'tan F Kat'a kadar tüm koridorları, merdiven çapalarını, resmi mimari kat paftalarını ve 200+ esnafı kapı numarasıyla görüntüleyin.",
+                en: "Even without indoor GPS, explore every corridor from Ground (Z) to F Floor with official architectural blueprints and 200+ verified doors.",
+                ru: "Даже без GPS внутри хана: все коридоры с этажа Z до F, официальные планы и более 200 лавок.",
+                ar: "حتى بدون إشارة GPS داخل الخان: تصفح جميع الممرات من طابق Z إلى F مع المخططات الرسمية.",
+              }, lang)}
+            </p>
+          </div>
+          <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+            <Button color="primary" size="md" onClick={() => router.push("/yer/santral")}>
+              {pk({ tr: "Santral Han Kat Planını Aç", en: "Open Santral Han Floor Map", ru: "Открыть план Santral Han", ar: "افتح مخطط خان سنترال" }, lang)}
+            </Button>
+            <a
+              href="https://www.google.com/maps/dir/?api=1&destination=41.01518,28.96845&travelmode=walking"
+              target="_blank"
+              rel="noreferrer"
+              style={sx("text-decoration:none")}
+            >
+              <Button variant="outline" color="accent" size="md" iconStart="map">
+                {pk({ tr: "Google Maps ile Kapıya Yürü", en: "Walk to Gate via Google Maps", ru: "Маршрут до входа", ar: "المشي إلى البوابة" }, lang)}
+              </Button>
+            </a>
+          </div>
+        </div>
+
+        <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:8px")}>
+          {[
+            { fl: "Z Kat", title: "Kuyumcu Atölye · Saat · Kafe", ex: "Nadir · Hasgül · Çağlar (No: 21-101)" },
+            { fl: "A Kat", title: "Gümüş · Çelik · Bijuteri · Aksesuar", ex: "Roza No:8 · Yılmaz No:61 · Kardeşler No:152" },
+            { fl: "B Kat", title: "Bijuteri · Doğaltaş · Toka · Tesbih", ex: "KLC No:228 · Zümrüt No:229 · Ema No:225" },
+            { fl: "C Kat", title: "Telefon Aksesuar · Saat · Elektronik", ex: "Zenta No:367 · Asır Saat No:350 · Asya No:322" },
+            { fl: "D Kat", title: "Pil · Batarya · Şarj · Saat Tamir", ex: "Pil Dünyası No:412 · Saatçi Murat No:402" },
+            { fl: "E Kat", title: "İthalat · İhracat · Lojistik · Ofis", ex: "Aydın Tic. No:501 · Öztürk No:514 · Huzur No:558" },
+            { fl: "F Kat", title: "Toptan Depo · Atölye · Yönetim", ex: "Kaya Depo No:601 · Yönetim · Zirve No:612" },
+          ].map((item) => (
+            <button
+              key={item.fl}
+              type="button"
+              onClick={() => router.push("/yer/santral")}
+              style={sx(
+                "display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-default);background:var(--surface-muted);font-family:inherit;text-align:start;cursor:pointer",
+              )}
+            >
+              <span style={sx("font-size:12px;font-weight:800;color:var(--color-primary)")}>{item.fl}</span>
+              <span style={sx("font-size:13px;font-weight:700;color:var(--text-heading);line-height:1.25")}>{item.title}</span>
+              <span style={sx("font-size:11.5px;color:var(--text-muted);line-height:1.3")}>{item.ex}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* ── where you left off ───────────────────────────────────────────── */}
       <section style={sx("margin-top:20px")}>
@@ -617,7 +696,7 @@ export default function DiscoverPage() {
                 onClick={() => router.push(href.events())}
                 style={sx("display:flex;align-items:stretch;gap:0;padding:0;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);overflow:hidden;font-family:inherit;text-align:start;cursor:pointer")}
               >
-                <span style={sx("flex:none;width:74px;background:var(--color-primary);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0")}>
+                <span style={sx("flex:none;width:74px;background:var(--color-primary);color:var(--color-primary-inverse);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0")}>
                   <span style={sx("font-size:26px;font-weight:700;line-height:1;letter-spacing:-.02em")}>{e.day}</span>
                   <span style={sx("font-size:11.5px;font-weight:700;letter-spacing:.08em;margin-top:4px;opacity:.8")}>{e.month}</span>
                 </span>
@@ -635,20 +714,20 @@ export default function DiscoverPage() {
         </section>
 
         <section style={sx("background:var(--color-primary);border-radius:16px;padding:26px 28px;box-shadow:0 3px 8px rgba(0,0,0,.07)")}>
-          <h2 style={sx("font-size:22px;font-weight:700;color:#fff;letter-spacing:-.015em;line-height:1.2;text-wrap:pretty")}>{td("pitchTitle")}</h2>
+          <h2 style={sx("font-size:22px;font-weight:700;color:var(--color-primary-inverse);letter-spacing:-.015em;line-height:1.2;text-wrap:pretty")}>{td("pitchTitle")}</h2>
           <p style={sx("font-size:14.5px;color:rgba(255,255,255,.8);margin-top:10px;text-wrap:pretty")}>{td("pitchBody")}</p>
           <div style={sx("display:flex;flex-wrap:wrap;gap:10px;margin-top:20px")}>
             <button
               type="button"
               onClick={() => router.push(href.plan())}
-              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid #fff;background:#fff;color:var(--color-primary-accent);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer")}
+              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid var(--color-primary-inverse);background:var(--color-primary-inverse);color:var(--color-primary-accent);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer")}
             >
               {td("pitchList")}
             </button>
             <button
               type="button"
               onClick={() => router.push(href.work("talep"))}
-              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer")}
+              style={sx("height:42px;padding:0 18px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:transparent;color:var(--color-primary-inverse);font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer")}
             >
               {td("pitchReq")}
             </button>
@@ -660,7 +739,7 @@ export default function DiscoverPage() {
               { icon: "verify", label: pk({ tr: "Gelen teklifleri karşılaştırıp doğrudan anlaşırsınız.", en: "Compare the offers that come back and close directly.", ru: "Сравниваете предложения и договариваетесь напрямую.", ar: "قارن العروض الواردة وأتمم الاتفاق مباشرة." }, lang) },
             ].map((p) => (
               <span key={p.icon} style={sx("display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);padding:12px 14px")}>
-                <span style={sx("flex:none;display:flex;color:#fff;opacity:.85")}>
+                <span style={sx("flex:none;display:flex;color:var(--color-primary-inverse);opacity:.85")}>
                   <Icon name={p.icon} size={17} />
                 </span>
                 <span style={sx("font-size:13.5px;color:rgba(255,255,255,.9);text-wrap:pretty")}>{p.label}</span>

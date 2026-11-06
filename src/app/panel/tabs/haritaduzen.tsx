@@ -11,7 +11,9 @@ import { useEffect, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
+import { SantralFloorMap } from "@/components/SantralFloorMap";
 import { Button, Input, Select, Textarea } from "@/ds";
+import { floorLabel } from "@/lib/shop";
 import { sx } from "@/lib/sx";
 
 import { H1, SUB, num, type PanelTabProps } from "./shared";
@@ -26,14 +28,14 @@ export default function HaritaDuzen(props: PanelTabProps) {
     setReady(true);
   }, []);
 
-  const [gp, setGp] = useState<{ place: string; lat: string; lng: string; ent: string; note: string }>({ place: "", lat: "", lng: "", ent: "", note: "" });
+  const [gp, setGp] = useState<{ place: string; lat: string; lng: string; ent: string; note: string }>({ place: "santral", lat: "", lng: "", ent: "", note: "" });
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [savedName, setSavedName] = useState<string | null>(null);
   const [errs, setErrs] = useState<{ lat?: string; lng?: string }>({});
 
   const locked = props.readOnly;
-  const places = SC.PLACES.slice().sort((a, b) => b.units - a.units);
-  const pid = gp.place || places[0]?.id || "";
+  const places = SC.PLACES.slice().sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.units - a.units));
+  const pid = gp.place || "santral";
   const place = SC.PLACES.find((p) => p.id === pid) || null;
   const saved = (ready ? AD.geoOf(pid) : null) || {};
   const geo = ready ? AD.allGeo() : {};
@@ -78,8 +80,14 @@ export default function HaritaDuzen(props: PanelTabProps) {
 
   return (
     <>
-      <h1 style={sx(H1)}>Harita &amp; Kat Planı</h1>
-      <p style={sx(SUB)}>Yer konumu, giriş kapıları ve koridor adları.</p>
+      <h1 style={sx(H1)}>Harita &amp; Kat Planı · Dijital Han Yönetimi</h1>
+      <p style={sx(SUB)}>
+        Hanınızın 7 katlı (Z–F) kapı-kapı doluluk matrisi, boş/kiralık birimleri, resmi mimari kat paftaları ve dış giriş kapısı koordinatları.
+      </p>
+
+      <div style={sx("margin-top:18px")}>
+        <SantralFloorMap placeId={pid} adminMode={true} lang="tr" />
+      </div>
 
       <div style={sx("margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:18px;align-items:start")}>
         <div style={sx("background:var(--surface-card);border:1px solid var(--border-default);border-radius:12px;box-shadow:0 3px 4px rgba(0,0,0,.03);padding:20px")}>
@@ -160,7 +168,7 @@ export default function HaritaDuzen(props: PanelTabProps) {
                 return (
                   <div key={f} style={sx("display:flex;align-items:center;gap:11px;flex-wrap:wrap")}>
                     <span style={sx("flex:none;min-width:66px;font-size:13px;font-weight:600;color:var(--text-heading)")}>
-                      {f === 0 ? "Zemin" : "Kat " + f}
+                      {floorLabel(f, "tr", place)}
                     </span>
                     <div style={sx("flex:1;min-width:150px")}>
                       <input

@@ -207,6 +207,22 @@ const P = (id: string, name: string, kind: PlaceKind, semt: string, floors: numb
   ({ id, name, kind, semt, floors, units, mix, lat, lng, sector });
 
 export const PLACES: Place[] = [
+  // Santral Han · Tahtakale Santral Center (7 Kat: Z, A, B, C, D, E, F)
+  {
+    id: "santral",
+    name: "Santral Han",
+    kind: "han",
+    semt: "tahtakale",
+    floors: [0, 1, 2, 3, 4, 5, 6],
+    floorLabels: { 0: "Z Kat", 1: "A Kat", 2: "B Kat", 3: "C Kat", 4: "D Kat", 5: "E Kat", 6: "F Kat" },
+    units: 256,
+    mix: ["bijuteri", "kilif", "sarj", "taki", "hediyelik"],
+    lat: 41.01518,
+    lng: 28.96845,
+    sector: "toptan",
+    address: "Tahtakale Cd. No: 7, Fatih / İstanbul",
+    tel: "0552 744 79 38",
+  },
   // Kapalıçarşı ve çevresi
   P("kapalicarsi-carsi", "Kapalıçarşı", "carsi", "kapalicarsi", [0], 3600, ["taki", "hali", "hediyelik", "deri", "bijuteri"], 41.0106, 28.9681, "perakende"),
   P("zincirli", "Zincirli Han", "han", "kapalicarsi", [0, 1], 42, ["taki", "hali"], 41.0111, 28.9689, "perakende"),
@@ -257,7 +273,307 @@ export const PLACES: Place[] = [
 ];
 
 // Han yönetimiyle anlaşma yapılan yerlerde kapsama tek günde kapanır.
-export const BULK_APPROVED: string[] = ["yildiz", "buyukvalide", "kurkcu", "laleli-tekstil", "imc", "sultan", "hidayet", "zincirli", "misir-carsisi", "arasta"];
+export const BULK_APPROVED: string[] = ["santral", "yildiz", "buyukvalide", "kurkcu", "laleli-tekstil", "imc", "sultan", "hidayet", "zincirli", "misir-carsisi", "arasta"];
+
+export interface SantralTenantSeed {
+  floor: number;
+  door: string;
+  name: string;
+  cat: string;
+  corridor: "Üst" | "Orta" | "Alt";
+  curated?: string;
+}
+
+/**
+ * Santral Han (Tahtakale Santral Center · Tahtakale Cd. No: 7) resmi kat
+ * planlarından (Z, A, B, C, D, E, F Kat) çıkarılmış gerçek kapı ve esnaf dizini.
+ */
+export const SANTRAL_TENANTS: SantralTenantSeed[] = [
+  // Z Kat (floor 0)
+  { floor: 0, door: "1002", name: "Ergün Taşpınar", cat: "bijuteri", corridor: "Orta" },
+  { floor: 0, door: "1003", name: "Ergün Taşpınar Showroom", cat: "bijuteri", corridor: "Orta" },
+  { floor: 0, door: "1004", name: "Vedat Akıcı", cat: "bijuteri", corridor: "Alt" },
+  { floor: 0, door: "1005", name: "Zabit Karakurt", cat: "kilif", corridor: "Alt" },
+  { floor: 0, door: "1006", name: "Murat Arpacı · Gökay Altınsoy", cat: "kilif", corridor: "Alt" },
+  { floor: 0, door: "1007", name: "Gökay Altınsoy Z Kat", cat: "sarj", corridor: "Alt" },
+
+  // A Kat (floor 1) — Üst Koridor (1..27)
+  { floor: 1, door: "1", name: "VOS Bijuteri & Aksesuar", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "2", name: "Metin Kurdaş", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "3", name: "Ahmet Türkgenç · Üç Yıldız", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "5", name: "Özkan Özağaç", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "6", name: "Talha Hasan Turgut", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "7", name: "Mehmet Kılıç", cat: "taki", corridor: "Üst" },
+  { floor: 1, door: "8", name: "Roza Aksesuar", cat: "bijuteri", corridor: "Üst", curated: "roza" },
+  { floor: 1, door: "9", name: "Orhan Birgül 1", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "10", name: "Yunus Niyazi", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "11", name: "Aydın Başar", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "12", name: "Emre Yıldız", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "13", name: "Mehmet Fatih Demir (Zeynel Demir)", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "15", name: "Numan Tekin", cat: "taki", corridor: "Üst" },
+  { floor: 1, door: "17", name: "Süleyman Soso 1", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "20", name: "Hasan Gönül 1", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "22", name: "Mehmet Melek 1", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "24", name: "Tevhid Hancı · Muhammed Kızılyar (Malzeme)", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "25", name: "Caner Yuca (Takı Malzeme)", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "26", name: "Tom Flash (Aksesuar Malzeme)", cat: "bijuteri", corridor: "Üst" },
+  { floor: 1, door: "27", name: "Ahmet Önal", cat: "bijuteri", corridor: "Üst" },
+
+  // A Kat (floor 1) — Orta Ada (51..61, 112..131)
+  { floor: 1, door: "51", name: "Aziz Demir", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "52", name: "Hasan Gönül 3-4", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "57", name: "Murtaza Demir (Aslan Barman)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "58", name: "Salih Demir (Mahmut Aksakal)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "59", name: "Sultan Gold · Kheir Fut Dina", cat: "taki", corridor: "Orta" },
+  { floor: 1, door: "60", name: "Ercan Aydın (Birgül Aydın)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "61", name: "Yılmaz Bijuteri", cat: "bijuteri", corridor: "Orta", curated: "yilmazbijuteri" },
+  { floor: 1, door: "112", name: "Şükrü Kuş (Takı Malzeme)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "113", name: "Turkuaz Aksesuar · Doğan Karaca", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "114", name: "Turkuaz Aksesuar Showroom", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "115", name: "Emre Sülükçüler", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "116", name: "Süleyman Arıkan", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "117", name: "Fırat Çıtır", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "122", name: "Batuhan Şahin", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "123", name: "Emre Yıldız Orta Koridor", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "125", name: "Cemalettin Işıktaş (Malzeme)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "126", name: "Levent Başeren (Malzeme)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "127", name: "Alpaslan Taşkale", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "128", name: "Gündüz Kıran (Malzeme)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "129", name: "Bekir Karataş (Malzeme)", cat: "bijuteri", corridor: "Orta" },
+  { floor: 1, door: "131", name: "Mehmet Çalışkan A Kat", cat: "bijuteri", corridor: "Orta" },
+
+  // A Kat (floor 1) — Alt Koridor (28..50)
+  { floor: 1, door: "28", name: "Mehmet Aktaş", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "29", name: "Şerif Akşahin", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "30", name: "Uzakışıklar A Kat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "32", name: "Bayram Barışık", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "33", name: "Şemsettin Günay", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "34", name: "Hasan Güleç", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "35", name: "Taha Aksesuar", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "37", name: "Kumsal Aksesuar · Hasan Tarhan", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "38", name: "Çetin Özen", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "39", name: "Salih Demir", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "40", name: "Hekim Demir", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "41", name: "Semih Demir", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "42", name: "Ramazan Demir", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "43", name: "Onur Tarhan", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "44", name: "Metin Demir A Kat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "46", name: "Mert Altınay (Esra Yıldız)", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "47", name: "Fatih Şidim", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "48", name: "Dilek Altınay", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "49", name: "İsmail Gür", cat: "bijuteri", corridor: "Alt" },
+  { floor: 1, door: "50", name: "Aziz Vidinli · Soner Erenkul Vidinli", cat: "bijuteri", corridor: "Alt" },
+
+  // B Kat (floor 2) — Üst Koridor (201..227)
+  { floor: 2, door: "201", name: "İlyas Özmen", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "202", name: "İdris Koçaslan B Kat", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "203", name: "Erdal Söylemez", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "205", name: "Süleyman Soso 2", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "206", name: "Ahmet Yalçın", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "208", name: "Santral Han B Kat Çay Ocağı", cat: "hizmet", corridor: "Üst" },
+  { floor: 2, door: "209", name: "Metin Demir B Kat", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "210", name: "Ümit Can Kırlı", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "211", name: "Loyal Çelik · Sadık", cat: "taki", corridor: "Üst" },
+  { floor: 2, door: "212", name: "Orhan Birgül 2", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "213", name: "Sema Kalkan", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "214", name: "Seyhun Evbekler", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "215", name: "Hasan Gönül 2", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "216", name: "Menderes Bozkurt", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "217", name: "Gökay Altınsoy B Kat", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "219", name: "Vaiz Demir", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "220", name: "Polo Aksesuar · Seçkin Dinçkol", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "222", name: "Adem Atayolu", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "223", name: "Fatih Granada", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "225", name: "Enis Aydın", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "226", name: "Yüksel Yiğit", cat: "bijuteri", corridor: "Üst" },
+  { floor: 2, door: "227", name: "Sabri Genç", cat: "bijuteri", corridor: "Üst" },
+
+  // B Kat (floor 2) — Orta Ada (251..267)
+  { floor: 2, door: "251", name: "Barış Mavituna", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "254", name: "Zeynep Zengin", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "255", name: "Erkan Kabadayı", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "256", name: "Ceyhun Evbekler", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "257", name: "Özge Urin", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "258", name: "Serkan Yılmaz", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "259", name: "Metin Yavuz", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "260", name: "Mehmet Çalışkan B Kat", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "262", name: "Mehmet Sinan Yılmaz · Yiğit Han Bozkurt", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "263", name: "Abdulkerim Eryıldız", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "264", name: "Sevim Çakmak", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "265", name: "Ufuk Güçlü", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "266", name: "Hilmi Yaslı", cat: "bijuteri", corridor: "Orta" },
+  { floor: 2, door: "267", name: "Seyhun Evbekler · Uğur Erdoğan", cat: "bijuteri", corridor: "Orta" },
+
+  // B Kat (floor 2) — Alt Koridor (228..250)
+  { floor: 2, door: "228", name: "KLC Consept Bijuteri", cat: "bijuteri", corridor: "Alt", curated: "klcbijuteri" },
+  { floor: 2, door: "229", name: "Muhammed Demir (Hüseyin Özer)", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "230", name: "İbrahim Toksoy", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "231", name: "Deniz Özvarış", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "232", name: "Ahmet İdin · Ferdi Koç", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "233", name: "Nevzat Filiz Eroğlu", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "234", name: "Salih Güzey", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "235", name: "Hao Wang İthalat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "236", name: "Ah-Nur İthalat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "237", name: "Mehmet Karakurt", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "238", name: "Pir Nazar Nazaroğlu", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "239", name: "Aynur Köksal", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "240", name: "Ümit Bijuteri", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "242", name: "Uzakışıklar (Yılmaz Almars)", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "243", name: "Uzakışıklar B Kat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "246", name: "Taner Tunca", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "247", name: "Nuh Şahin", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "248", name: "Özgür Şahin", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "249", name: "Mohammed Kanzau", cat: "bijuteri", corridor: "Alt" },
+  { floor: 2, door: "250", name: "Mihrap Kazan", cat: "bijuteri", corridor: "Alt" },
+
+  // C Kat (floor 3) — Üst Koridor (301..329)
+  { floor: 3, door: "301", name: "Mustafa Eraslan", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "303", name: "Abell Teknoloji · Numan Yeşilmen", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "304", name: "Şahmed Hasan", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "305", name: "Ertel Ertan", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "308", name: "Seyfi Doğan", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "309", name: "Bekir Demir", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "311", name: "İsmail Mergen", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "312", name: "Muhammed Koçak C Kat", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "313", name: "Mehmet Kılınçer", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "314", name: "Alim Akdemir C Kat", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "315", name: "Ömer İlmek", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "316", name: "Bilal İbrahimoğlu", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "317", name: "Mahmut Turan", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "318", name: "Mustafa Koçak", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "319", name: "Talip Mutlu (Şahin Bulduk)", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "320", name: "Mustafa Üstünel", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "321", name: "Serhat Karabulut", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "322", name: "Sedat Halitoğlu C Kat", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "323", name: "Cüneyt Koçaslan", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "324", name: "Mustafa Yaprak", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "325", name: "Ömer Oktay · Ömer Şah", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "327", name: "Ercan Yaprak", cat: "kilif", corridor: "Üst" },
+  { floor: 3, door: "328", name: "Hıdır Bey Özel İletişim", cat: "sarj", corridor: "Üst" },
+  { floor: 3, door: "329", name: "Mesut Yaprak", cat: "kilif", corridor: "Üst" },
+
+  // C Kat (floor 3) — Orta Ada (355..381)
+  { floor: 3, door: "355", name: "Avrasya Mobil", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "357", name: "Link Elektronik · Enes", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "359", name: "Ramazan Koçaslan C Kat", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "360", name: "Atilla Karaşen", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "361", name: "Mehmet Akyüz", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "362", name: "Yavuz Çelik", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "363", name: "Mustafa Çevik · Şahin Bulduk", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "364", name: "Ömer Faruk Durak", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "366", name: "Yunus Emre Kesgin", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "367", name: "Zenta Elektronik", cat: "kilif", corridor: "Orta", curated: "zentaelektronik" },
+  { floor: 3, door: "368", name: "Zenta Elektronik 2", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "369", name: "Ahmet Baytaş C Kat", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "370", name: "Emrah Uğur", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "371", name: "Muhittin Çanak", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "372", name: "Ahmet Deveci", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "373", name: "Kadir Uçak", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "374", name: "Hasan Özer", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "376", name: "Mustafa Yavuz Pilli", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "377", name: "İlyas İlkyaz", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "379", name: "Aziz Arık C Kat", cat: "kilif", corridor: "Orta" },
+  { floor: 3, door: "380", name: "Cebrayil Canik", cat: "sarj", corridor: "Orta" },
+  { floor: 3, door: "381", name: "Can Bulduk", cat: "kilif", corridor: "Orta" },
+
+  // C Kat (floor 3) — Alt Koridor (330..354)
+  { floor: 3, door: "330", name: "Gür Teknik · Enes Yılmaz & Yusuf Akgün", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "331", name: "Burhan Bişaret", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "333", name: "Mustafa Fakı", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "335", name: "Türk Telekom Santral Noktası", cat: "hizmet", corridor: "Alt" },
+  { floor: 3, door: "336", name: "Santral Han C Kat Çay Ocağı", cat: "hizmet", corridor: "Alt" },
+  { floor: 3, door: "337", name: "Ahmet Emekçi", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "338", name: "İsmail Erdem", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "339", name: "Hamza Yardımcı", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "340", name: "Muhammed Al Ahmar", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "341", name: "Ela Dursun Güven", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "342", name: "Muhammed Wanly", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "343", name: "Mehmet Salim Çalış", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "344", name: "Abdullah Yurdakul", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "345", name: "Ufuk Güneş", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "346", name: "Trend Telekomünikasyon ve Bilgisayar", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "347", name: "Muhammed Yahya Dönmez", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "348", name: "Yusuf Kangal", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "349", name: "Ersan Yücedağ", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "350", name: "Powermax · Sait Devir", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "351", name: "Fırat Türker C Kat", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "352", name: "Sabron · Ömer Faruk", cat: "sarj", corridor: "Alt" },
+  { floor: 3, door: "353", name: "Mehmet Tuncel", cat: "kilif", corridor: "Alt" },
+  { floor: 3, door: "354", name: "Mahsun Acar", cat: "kilif", corridor: "Alt" },
+
+  // D Kat (floor 4)
+  { floor: 4, door: "403", name: "Müslüm Özen", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "404", name: "Bayram Can Tağman", cat: "sarj", corridor: "Üst" },
+  { floor: 4, door: "406", name: "Trio Teknik Servis", cat: "hizmet", corridor: "Üst" },
+  { floor: 4, door: "407", name: "Emin Koçak", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "408", name: "Hardgon Teknoloji Ürünleri", cat: "sarj", corridor: "Üst" },
+  { floor: 4, door: "411", name: "Yakup Kürşat Özcan", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "412", name: "Pil Dünyası & Batarya Merkezi", cat: "sarj", corridor: "Üst", curated: "pildunyasi" },
+  { floor: 4, door: "413", name: "Bien Mobil", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "414", name: "Muhammed Koçak D Kat", cat: "sarj", corridor: "Üst" },
+  { floor: 4, door: "418", name: "Burak Elbir", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "419", name: "Şahin Bulduk D Kat", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "423", name: "Tayfun Çinli D Kat", cat: "sarj", corridor: "Üst" },
+  { floor: 4, door: "427", name: "Nihat Yeşilmen", cat: "kilif", corridor: "Üst" },
+  { floor: 4, door: "428", name: "Ahmet Şaşmaz", cat: "sarj", corridor: "Alt" },
+  { floor: 4, door: "437", name: "Şeniz Tufan", cat: "bijuteri", corridor: "Alt" },
+  { floor: 4, door: "438", name: "Sedat Halitoğlu D Kat", cat: "kilif", corridor: "Alt" },
+  { floor: 4, door: "459", name: "Marmara Lüx Toptan Depo", cat: "bijuteri", corridor: "Orta" },
+  { floor: 4, door: "460", name: "Mahmut Tanrıkulu", cat: "kilif", corridor: "Orta" },
+  { floor: 4, door: "463", name: "Ahmet Kemal Akgün D Kat", cat: "sarj", corridor: "Orta" },
+  { floor: 4, door: "465", name: "Yılmaz Bijuteri Toptan Showroom", cat: "bijuteri", corridor: "Orta" },
+
+  // E Kat (floor 5)
+  { floor: 5, door: "501", name: "Serdar Karakaş E Kat", cat: "bijuteri", corridor: "Üst" },
+  { floor: 5, door: "503", name: "Ahmet Kemal Akgün E Kat", cat: "sarj", corridor: "Üst" },
+  { floor: 5, door: "504", name: "Sedat Halitoğlu E Kat", cat: "kilif", corridor: "Üst" },
+  { floor: 5, door: "507", name: "İdris Koçaslan Lojistik Depo", cat: "bijuteri", corridor: "Üst" },
+  { floor: 5, door: "508", name: "Salih Özer", cat: "kilif", corridor: "Üst" },
+  { floor: 5, door: "511", name: "Meral Özyurt · Osep Hagaswer", cat: "taki", corridor: "Üst" },
+  { floor: 5, door: "516", name: "Tayfun Çinli E Kat", cat: "sarj", corridor: "Üst" },
+  { floor: 5, door: "521", name: "Emre A12 Toptan", cat: "kilif", corridor: "Üst" },
+  { floor: 5, door: "522", name: "Aziz Arık E Kat Ofis", cat: "kilif", corridor: "Üst" },
+  { floor: 5, door: "523", name: "Hidayet Batmaz", cat: "sarj", corridor: "Üst" },
+  { floor: 5, door: "524", name: "Furkan Demir", cat: "bijuteri", corridor: "Üst" },
+  { floor: 5, door: "525", name: "Hasan Gönül E Kat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 5, door: "528", name: "Fırat Türker E Kat", cat: "kilif", corridor: "Alt" },
+  { floor: 5, door: "529", name: "Hayrettin Ayten", cat: "sarj", corridor: "Alt" },
+  { floor: 5, door: "533", name: "İdris Koçaslan E Kat", cat: "bijuteri", corridor: "Alt" },
+  { floor: 5, door: "535", name: "Fırat Türker Showroom", cat: "kilif", corridor: "Alt" },
+  { floor: 5, door: "537", name: "Bayram Ünaldı", cat: "sarj", corridor: "Alt" },
+  { floor: 5, door: "538", name: "Ahmet Baytaş E Kat", cat: "kilif", corridor: "Alt" },
+  { floor: 5, door: "542", name: "Ramazan Koçaslan E Kat", cat: "kilif", corridor: "Alt" },
+  { floor: 5, door: "543", name: "Selman Dinç", cat: "sarj", corridor: "Alt" },
+  { floor: 5, door: "545", name: "Fatih Urvasızoğlu", cat: "kilif", corridor: "Orta" },
+  { floor: 5, door: "561", name: "Fatih Urvasızoğlu Depo", cat: "kilif", corridor: "Orta" },
+
+  // F Kat (floor 6)
+  { floor: 6, door: "601", name: "Gökay Altınsoy F Kat", cat: "sarj", corridor: "Üst" },
+  { floor: 6, door: "602", name: "Sedat Halitoğlu F Kat", cat: "kilif", corridor: "Üst" },
+  { floor: 6, door: "607", name: "İlyas Özmen F Kat", cat: "bijuteri", corridor: "Üst" },
+  { floor: 6, door: "610", name: "Alim Akdemir F Kat", cat: "kilif", corridor: "Üst" },
+  { floor: 6, door: "611", name: "Emre Sarı", cat: "sarj", corridor: "Üst" },
+  { floor: 6, door: "612", name: "Ajans BS Grup", cat: "hizmet", corridor: "Üst" },
+  { floor: 6, door: "614", name: "Uğur Pehlivan · Özgür Öz", cat: "kilif", corridor: "Üst" },
+  { floor: 6, door: "615", name: "Murat Temeloğlu · Nora", cat: "bijuteri", corridor: "Üst" },
+  { floor: 6, door: "617", name: "Uzakışıklar F Kat", cat: "bijuteri", corridor: "Üst" },
+  { floor: 6, door: "621", name: "Mehmet Melek 2", cat: "bijuteri", corridor: "Alt" },
+  { floor: 6, door: "625", name: "Özgür Asri Han", cat: "kilif", corridor: "Alt" },
+  { floor: 6, door: "627", name: "Mustafa Çevik F Kat", cat: "kilif", corridor: "Alt" },
+  { floor: 6, door: "628", name: "Orhan Bingöl 4", cat: "bijuteri", corridor: "Alt" },
+  { floor: 6, door: "659", name: "Süleyman Soso 3", cat: "bijuteri", corridor: "Orta" },
+];
+
+/** Resmi kat planlarında boş / kiralık veya yönetim rezervinde görünen kapı numaraları. */
+export const SANTRAL_VACANT_DOORS: Record<number, string[]> = {
+  0: ["1001"],
+  1: ["31", "45", "118", "119", "120", "121"],
+  2: ["204", "218", "224", "261"],
+  3: ["302", "307", "310", "332", "358", "365", "378"],
+  4: ["401", "402", "405", "410", "416", "417", "420", "421", "422", "424", "425", "426", "431", "432", "435", "440", "450", "455", "461", "462"],
+  5: ["502", "505", "506", "509", "510", "512", "514", "515", "518", "520", "526", "527", "530", "532", "534", "536", "540", "548", "552"],
+  6: ["603", "604", "605", "606", "608", "609", "613", "616", "626", "632", "635", "640", "645", "650", "655"],
+};
 
 export const PLACE_KINDS: Record<PlaceKind, L10n> = {
   han: { tr: "Han", en: "Han", ru: "Хан", ar: "خان" },
@@ -448,6 +764,78 @@ function build(): { records: ShopRecord[]; unitsByPlace: Dict<UnitRef[]> } {
     const share = Math.max(6, Math.round((place.units / totalUnits) * target));
     const occupied: Dict<number> = {};
     unitsByPlace[place.id] = [];
+
+    if (place.id === "santral") {
+      SANTRAL_TENANTS.forEach((tenant, idx) => {
+        if (tenant.curated) return;
+        const floor = tenant.floor;
+        const door = tenant.door;
+        const cat = tenant.cat;
+        const sector: Sector = cat === "hizmet" ? "hizmet" : (idx % 5 === 0 ? "perakende" : "toptan");
+        const status: RecordStatus = idx % 11 === 0 ? "beyan" : (idx % 3 === 0 ? "aktif" : "onayli");
+        const approvedVia: ApprovalVia | null = status === "beyan" ? null : "han";
+        const rich = status === "aktif";
+        const known = status === "aktif" || status === "onayli";
+        const declared = status === "beyan";
+        const words = GROUP_WORDS[cat] || GROUP_WORDS.hediyelik;
+        const gcount = rich ? 3 : 2;
+        const band = declared ? null : bandFor(r, cat);
+        const id = `st-${floor}-${door.replace(/[^a-zA-Z0-9]/g, "")}`;
+        const groups: GroupEntry[] = [];
+        const skuCount = rich ? int(r, 280, 1800) : int(r, 60, 540);
+        for (let g = 0; g < gcount; g++) {
+          const w = words[(g + idx) % words.length];
+          if (groups.some(x => x.name === w)) continue;
+          const lo = band ? Math.round(band[0] * (0.9 + r() * 0.4)) : 0;
+          groups.push({ name: w, lines: Math.max(12, Math.round(skuCount / gcount)), lo, hi: lo ? Math.round(lo * 1.7) : 0 });
+        }
+        const moq = sector === "toptan" ? pick(r, [6, 10, 12, 24]) : 1;
+        const quoteBased = sector === "hizmet";
+        const sells = quoteBased ? [] : ["toptan", "perakende"];
+        const retailBand = band ? [Math.round(band[0] * 1.7), Math.round(band[1] * 2.1)] : null;
+        records.push({
+          id, place: place.id, semt: place.semt, floor, door,
+          corridor: tenant.corridor,
+          name: tenant.name,
+          cat, cats: [cat],
+          sector, status, approvedVia, bulk: true,
+          trade: {
+            sells, quoteBased,
+            perakende: sells.includes("perakende") ? { band: retailBand as Band | null, moq: 1 } : null,
+            toptan: sells.includes("toptan") ? { band, moq, carton: { inner: moq, unit: "adet" } } : null,
+            scope: quoteBased ? (GROUP_WORDS[cat] || []).slice(0, 3) : null,
+          },
+          src: {
+            band: rich ? "esnaf" : "tahmini", moq: rich ? "esnaf" : "tahmini",
+            groups: rich ? "esnaf" : "tahmini", resp: "yetkili", rating: "yetkili",
+            address: "yetkili",
+          },
+          shipsHotel: true,
+          giftWrap: floor <= 2,
+          officer: OFFICER_OF_SEMT[place.semt] || "of-ayse",
+          langs: floor <= 2 ? ["tr", "en", "ar"] : ["tr", "en", "ru"],
+          moq, moqFlex: true,
+          band, groups, skuCount,
+          isProducer: floor >= 4 || idx % 4 === 0,
+          shipsAbroad: true,
+          taxFree: floor <= 2 && idx % 3 === 0,
+          invoice: true,
+          payments: ["cash", "card", "iban"],
+          respMins: rich ? int(r, 10, 35) : (known ? int(r, 25, 90) : null),
+          respRate: rich ? int(r, 88, 99) : (known ? int(r, 70, 90) : null),
+          rating: rich ? Math.round((4.3 + r() * 0.6) * 10) / 10 : (known ? 4.4 : null),
+          reviews: rich ? int(r, 18, 140) : int(r, 3, 22),
+          updatedDays: rich ? int(r, 1, 12) : int(r, 5, 45),
+          photos: rich ? 5 : 2,
+          tel: "90552744" + String(7900 + (idx % 99)).padStart(4, "0"),
+          distance: 90 + floor * 5,
+          curated: null,
+        });
+        unitsByPlace[place.id].push({ floor, door, recordId: id });
+      });
+      return;
+    }
+
     for (let i = 0; i < share; i++) {
       const floor = pick(r, place.floors);
       const door = String(floor * 100 + int(r, 1, Math.max(12, Math.round(place.units / (place.floors.length || 1) / 6))));
@@ -551,8 +939,8 @@ function build(): { records: ShopRecord[]; unitsByPlace: Dict<UnitRef[]> } {
     }
   });
 
-  // Elle yazılmış 11 dükkân en üst kademe olarak havuza girer; sayfaları zengin veriyle çalışır.
-  const placeOfHan: Dict<string> = { yildiz: "yildiz", buyukvalide: "buyukvalide", zincirli: "zincirli", kurkcu: "kurkcu", sultan: "sultan", sark: "sark" };
+  // Elle yazılmış dükkânlar en üst kademe olarak havuza girer; sayfaları zengin veriyle çalışır.
+  const placeOfHan: Dict<string> = { santral: "santral", yildiz: "yildiz", buyukvalide: "buyukvalide", zincirli: "zincirli", kurkcu: "kurkcu", sultan: "sultan", sark: "sark" };
   const areaPlace: Dict<string> = { kapalicarsi: "kapalicarsi-carsi", misircarsisi: "misir-carsisi", nuruosmaniye: "nuruosmaniye-cd", tahtakale: "tahtakale-cd", mahmutpasa: "mahmutpasa-yokusu" };
   // 11 zengin kaydın çeşit grubu ve fiyat bandı UYDURULMAZ: kendi ürün listesinden türer.
   // Bu olmadan kayıtlar aramada bandsız/gruppsuz görünür, teklif motoru da 40 TL varsayar.
@@ -591,9 +979,10 @@ function build(): { records: ShopRecord[]; unitsByPlace: Dict<UnitRef[]> } {
     const hanRec = s.han ? HANS.find(x => x.id === s.han) : null;
     const place = (s.han && placeOfHan[s.han]) || areaPlace[s.area || (hanRec ? hanRec.area : "")] || "kapalicarsi-carsi";
     const pl = PLACES.find(p => p.id === place);
+    const santralMatch = place === "santral" ? SANTRAL_TENANTS.find(t => t.curated === s.id || (t.floor === (s.floor || 0) && t.door === String(s.no))) : null;
     records.unshift({
       id: s.id, place, semt: pl ? pl.semt : "kapalicarsi", floor: s.floor || 0, door: String(s.no),
-      corridor: null, name: s.name, cat: (s.cats || [])[0], cats: s.cats || [],
+      corridor: santralMatch ? santralMatch.corridor : null, name: s.name, cat: (s.cats || [])[0], cats: s.cats || [],
       sector: s.trade && s.trade.type === "toptan" ? "toptan" : s.trade && s.trade.type === "ikisi" ? "toptan" : "perakende",
       status: "aktif" as const, approvedVia: "saha" as const, bulk: true, officer: OFFICER_OF_SEMT[pl ? pl.semt : "kapalicarsi"] || "of-kemal", langs: (s.commerce || {}).languages || ["tr"],
       moq: ((s.trade || {}).minOrder || {}).qty || 1, moqFlex: !!(s.trade || {}).moqFlexible,
@@ -629,6 +1018,9 @@ function build(): { records: ShopRecord[]; unitsByPlace: Dict<UnitRef[]> } {
       updatedDays: 1, photos: 6, tel: s.tel, distance: s.distance || 200,
       curated: s.id
     });
+    if (unitsByPlace[place] && !unitsByPlace[place].some(u => u.floor === (s.floor || 0) && String(u.door) === String(s.no))) {
+      unitsByPlace[place].unshift({ floor: s.floor || 0, door: String(s.no), recordId: s.id });
+    }
   });
 
   return { records, unitsByPlace };
@@ -1041,8 +1433,8 @@ export const ROLES: Dict<{ tr: string; note: string; can: string[]; scope?: stri
   satis: { tr: "Satış", note: "Sponsorluk", can: ["ozet", "kayitlar", "sponsorluk", "teklifler"] },
   okuma: { tr: "Salt okuma", note: "Rapor erişimi", readOnly: true,
     can: ["ozet", "kayitlar", "yerler", "defter", "talepler", "teklifler"] },
-  han: { tr: "Han yönetimi", note: "Yalnız kendi hanı", scope: "place", readOnly: true,
-    can: ["ozet", "kayitlar", "yerler"] }
+  han: { tr: "Han yönetimi", note: "Santral Han · Dijital Han Yönetimi", scope: "place", readOnly: false,
+    can: ["ozet", "kayitlar", "kayit-ekle", "yerler", "sahiplenme", "kuyruk", "toplu", "harita", "iceaktar", "talepler", "sponsorluk"] }
 };
 export function can(role: string, key: string): boolean {
   const r = ROLES[role] || ROLES.yonetici;
@@ -1128,6 +1520,9 @@ export function openState(place: Place | string | null | undefined, now?: Date |
 
 // Fiziksel erişim yerin kimliğinden türer — kat sayısı ve türü belirler.
 export function accessOf(place: Place): AccessInfo {
+  if (place.id === "santral") {
+    return { lift: true, stairsOnly: false, handcart: true, porter: true, parking: false };
+  }
   const seed = place.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const hasLift = place.floors.length <= 2 ? true : (place.kind === "is-merkezi" || seed % 3 === 0);
   return {

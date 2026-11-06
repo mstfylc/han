@@ -209,6 +209,29 @@ function LoginScreen() {
                 <Button color="accent" size="lg" disabled={busy} onClick={doLogin}>Giriş yap</Button>
                 <Button variant="ghost" color="primary" size="lg" disabled={busy} onClick={askCode}>Şifremi unuttum</Button>
               </div>
+              <div style={sx("margin-top:18px;padding-top:14px;border-top:1px solid var(--border-default);display:flex;flex-direction:column;gap:8px")}>
+                <div style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em")}>
+                  Hızlı Sunum &amp; Demo Hesapları (Tek Tıkla Doldur)
+                </div>
+                <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    color="primary"
+                    onClick={() => { setTel("05550000005"); setPin("1234"); setErr(""); }}
+                  >
+                    🏛️ Santral Han Yönetimi (05550000005 · 1234)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    color="secondary"
+                    onClick={() => { setTel("05550000001"); setPin("1234"); setErr(""); }}
+                  >
+                    ⚡ Genel Yönetici (05550000001 · 1234)
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </div>

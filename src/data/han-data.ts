@@ -360,6 +360,14 @@ export const AREAS: DataRow[] = [
 ];
 
 export const HANS: DataRow[] = [
+  { id: "santral", name: "Santral Han", area: "tahtakale", floors: [0, 1, 2, 3, 4, 5, 6], units: 256,
+    addressTr: "Tahtakale Cd. No: 7, Fatih / İstanbul", addressEn: "Tahtakale St. No: 7, Fatih / Istanbul",
+    addressRu: "ул. Тахтакале 7, Фатих / Стамбул", addressAr: "شارع تحتة قلعة ٧، الفاتح / إسطنبول",
+    aboutTr: "Tahtakale'nin 7 katlı (Z, A, B, C, D, E, F Kat) merkez hanı (Tahtakale Santral Center). A ve B katlarında bijuteri, çelik takı ve aksesuar; C, D, E ve F katlarında elektronik, telefon aksesuarı, teknik servis ve batarya toptancıları yer alır. Çift merdiven, asansör ve çay ocağı mevcuttur.",
+    aboutEn: "Tahtakale's 7-storey (Floors Z, A, B, C, D, E, F) trade hub (Tahtakale Santral Center). Floors A & B specialise in costume jewellery and steel accessories; Floors C, D, E & F house electronics, phone accessories, technical service and battery wholesalers. Equipped with dual staircases and a lift.",
+    aboutRu: "Семиэтажный (этажи Z, A, B, C, D, E, F) торговый центр Тахтакале (Tahtakale Santral Center). На этажах A и B — бижутерия и стальные украшения; на C, D, E и F — электроника, чехлы, сервис и аккумуляторы. Две лестницы и лифт.",
+    aboutAr: "مركز تجارة تحتة قلعة المكون من ٧ طوابق (Z, A, B, C, D, E, F). الطابقان A وB للإكسسوارات والمجوهرات المقلدة؛ والطوابق C وD وE وF للإلكترونيات وإكسسوارات الهواتف والبطاريات. مزود بسلمين ومصعد.",
+    lat: 41.01518, lng: 28.96845 },
   { id: "yildiz", name: "Yıldız Han", area: "tahtakale", floors: [0, 1, 2, 3, 4], units: 142,
     addressTr: "Tahtakale Cd. No 34, Fatih", addressEn: "Tahtakale St. 34, Fatih",
     addressRu: "ул. Тахтакале 34, Фатих", addressAr: "شارع تحتة قلعة ٣٤، الفاتح",
@@ -412,6 +420,73 @@ export const HANS: DataRow[] = [
 
 // mode: "perakende" | "toptan" | "ikisi"
 export const STORES: CuratedStore[] = [
+  { id: "roza", rating: 4.9, reviews: 214, name: "Roza Aksesuar", han: "santral", floor: 1, no: "8", entrance: "A",
+    cats: ["bijuteri", "taki"], mode: "ikisi", verified: true, distance: 85, gun: 1, tel: "905527447938",
+    dirTr: "Tahtakale Cd. No: 7 Santral Han ana girişinden girin, A Kat sağ üst koridor No: 8.",
+    dirEn: "Enter Santral Han at Tahtakale St. No: 7, Floor A upper-right corridor, door No: 8.",
+    dirRu: "Войдите в Santral Han (ул. Тахтакале, 7), этаж A, правый верхний коридор, № 8.",
+    dirAr: "ادخل خان سنترال في شارع تحتة قلعة رقم ٧، الطابق A الممر الأيمن العلوي، رقم ٨.",
+    min: "6", sample: true, cargoKey: "sameDay", deliveryDays: "1–2", card: true, english: true, taxfree: true, ship: true,
+    hours: "08:30 – 19:00",
+    products: [
+      { tr: "316L Çelik altın kaplama kolye", en: "316L Gold-plated steel necklace", ru: "Стальное колье 316L с позолотой", ar: "قلادة ستيل ٣١٦ مطلية بالذهب", note: "Kararmaz seri", retail: 220, wholesale: 68, unit: "perPiece" },
+      { tr: "Zirkon taşlı su yolu bileklik", en: "Zircon tennis bracelet", ru: "Браслет-дорожка с цирконами", ar: "إسوارة تنس بفصوص زركون", note: "Rodyum", retail: 280, wholesale: 85, unit: "perPiece" },
+      { tr: "Sedefli kelebek küpe seti", en: "Mother-of-pearl butterfly earring set", ru: "Набор серёг с перламутром", ar: "طقم أقراط فراشة بالصدف", note: "3'lü", retail: 160, wholesale: 52, unit: "perPack" },
+      { tr: "Doğaltaş dizim bileklik", en: "Natural stone beaded bracelet", ru: "Браслет из натурального камня", ar: "إسوارة حجر طبيعي", note: "El dizimi", retail: 140, wholesale: 44, unit: "perPiece" }
+    ] },
+  { id: "yilmazbijuteri", rating: 4.8, reviews: 178, name: "Yılmaz Bijuteri", han: "santral", floor: 1, no: "61", entrance: "A",
+    cats: ["bijuteri", "taki"], mode: "ikisi", verified: true, distance: 90, gun: 1, tel: "905527447939",
+    dirTr: "Santral Han A Kat orta ada koridoru sonunda No: 61 (D Kat No: 465'te toptan showroom).",
+    dirEn: "Santral Han Floor A central island corridor end, No: 61 (wholesale showroom on Floor D No: 465).",
+    dirRu: "Santral Han, этаж A, конец центрального ряда, № 61 (оптовый шоурум на этаже D № 465).",
+    dirAr: "خان سنترال الطابق A نهاية الممر الأوسط رقم ٦١ (صالة الجملة في الطابق D رقم ٤٦٥).",
+    min: "12", sample: true, cargoKey: "sameDay", deliveryDays: "1–3", card: true, english: true, taxfree: false, ship: true,
+    hours: "08:30 – 19:00",
+    products: [
+      { tr: "Çelik halka küpe standı (36 çift)", en: "Steel hoop earring stand (36 pairs)", ru: "Стенд стальных серёг-колец (36 пар)", ar: "ستاند أقراط دائرية ستيل (٣٦ زوج)", note: "Stand dahil", retail: 1850, wholesale: 980, unit: "perPack" },
+      { tr: "İtalyan zincir çelik bileklik", en: "Italian chain steel bracelet", ru: "Стальной браслет итальянского плетения", ar: "إسوارة ستيل سلسلة إيطالية", note: "Unisex", retail: 190, wholesale: 58, unit: "perPiece" },
+      { tr: "Kristal taşlı broş ve yaka iğnesi", en: "Crystal brooch & lapel pin", ru: "Хрустальная брошь", ar: "بروش ودبوس كريستال", note: "Kutulu", retail: 210, wholesale: 72, unit: "perPiece" }
+    ] },
+  { id: "klcbijuteri", rating: 4.7, reviews: 142, name: "KLC Consept Bijuteri", han: "santral", floor: 2, no: "228", entrance: "A",
+    cats: ["bijuteri", "hediyelik"], mode: "toptan", verified: true, distance: 95, gun: 2, tel: "905527447940",
+    dirTr: "Santral Han'da merdiven veya asansörle B Kata çıkın, alt koridor No: 228 (Serdar Karakaş).",
+    dirEn: "Take the stairs or lift to Floor B in Santral Han, lower corridor No: 228.",
+    dirRu: "Поднимитесь на лифте или по лестнице на этаж B в Santral Han, нижний коридор № 228.",
+    dirAr: "اصعد بالمصعد أو السلم إلى الطابق B في خان سنترال، الممر السفلي رقم ٢٢٨.",
+    min: "12", sample: true, cargoKey: "sameDay", deliveryDays: "1–2", card: true, english: true, taxfree: false, ship: true,
+    hours: "08:30 – 19:00",
+    products: [
+      { tr: "VIP zirkon kolye-küpe takım", en: "VIP zircon necklace & earring set", ru: "Комплект колье и серьги с цирконами VIP", ar: "طقم قلادة وأقراط زركون VIP", note: "Kadife kutulu", retail: 640, wholesale: 245, unit: "perPack" },
+      { tr: "İnci detaylı saç aksesuar serisi", en: "Pearl hair accessory collection", ru: "Жемчужные аксессуары для волос", ar: "مجموعة إكسسوارات شعر باللؤلؤ", note: "12'li paket", retail: 420, wholesale: 165, unit: "perPack" },
+      { tr: "Şahmeran çelik el aksesuarı", en: "Shahmeran steel hand chain", ru: "Стальной браслет-шахмеран", ar: "إسوارة كف شاهميران ستيل", note: "Altın/Gümüş", retail: 240, wholesale: 78, unit: "perPiece" }
+    ] },
+  { id: "zentaelektronik", rating: 4.8, reviews: 195, name: "Zenta Elektronik", han: "santral", floor: 3, no: "367", entrance: "A",
+    cats: ["kilif", "sarj"], mode: "ikisi", verified: true, distance: 100, gun: 1, tel: "905527447941",
+    dirTr: "Santral Han C Kat asansör karşısı orta ada No: 367–368.",
+    dirEn: "Santral Han Floor C, central island opposite the lift, No: 367–368.",
+    dirRu: "Santral Han, этаж C, центральный ряд напротив лифта, № 367–368.",
+    dirAr: "خان سنترال الطابق C، الجزيرة الوسطى مقابل المصعد، رقم ٣٦٧–٣٦٨.",
+    min: "5", sample: true, cargoKey: "sameDay", deliveryDays: "1–2", card: true, english: true, taxfree: true, ship: true,
+    hours: "08:30 – 19:00",
+    products: [
+      { tr: "MagSafe manyetik şeffaf kılıf", en: "MagSafe magnetic clear case", ru: "Магнитный прозрачный чехол MagSafe", ar: "غطاء شفاف مغناطيسي MagSafe", note: "iPhone 14–16 Pro Max", retail: 290, wholesale: 88, unit: "perPiece" },
+      { tr: "45W GaN çift çıkışlı hızlı şarj başlığı", en: "45W GaN dual-port fast charger", ru: "Быстрая зарядка 45W GaN (2 порта)", ar: "شاحن سريع ٤٥ واط GaN بمنفذين", note: "CE belgeli", retail: 540, wholesale: 215, unit: "perPiece" },
+      { tr: "ANC aktif gürültü engelleyici TWS kulaklık", en: "ANC active noise-cancelling TWS earbuds", ru: "TWS-наушники с активным шумоподавлением ANC", ar: "سماعات بلوتوث لاسلكية ANC", note: "Bluetooth 5.3", retail: 890, wholesale: 380, unit: "perPiece" },
+      { tr: "Hayalet (Privacy) temperli ekran koruyucu", en: "Privacy tempered glass screen protector", ru: "Защитное стекло Антишпион (Privacy)", ar: "واقي شاشة زجاجي بخصوصية", note: "10'lu kutu", retail: 650, wholesale: 220, unit: "perPack" }
+    ] },
+  { id: "pildunyasi", rating: 4.7, reviews: 118, name: "Pil Dünyası & Batarya Merkezi", han: "santral", floor: 4, no: "412", entrance: "A",
+    cats: ["sarj", "kilif"], mode: "toptan", verified: true, distance: 105, gun: 2, tel: "905527447942",
+    dirTr: "Santral Han D Kat sağ merdiven çıkışı üst koridor No: 412.",
+    dirEn: "Santral Han Floor D, upper corridor by the right staircase, No: 412.",
+    dirRu: "Santral Han, этаж D, верхний коридор у правой лестницы, № 412.",
+    dirAr: "خان سنترال الطابق D، الممر العلوي بجانب السلم الأيمن، رقم ٤١٢.",
+    min: "10", sample: true, cargoKey: "cutoff", deliveryDays: "1–3", card: false, english: true, taxfree: false, ship: true,
+    hours: "08:30 – 18:30",
+    products: [
+      { tr: "Yüksek kapasiteli telefon bataryası (Deji/Rova muadili)", en: "High-capacity replacement phone battery", ru: "Аккумулятор повышенной ёмкости для смартфона", ar: "بطارية هاتف عالية السعة", note: "12 ay garantili", retail: 680, wholesale: 310, unit: "perPiece" },
+      { tr: "30.000 mAh PD 65W dijital ekranlı powerbank", en: "30,000 mAh PD 65W digital powerbank", ru: "Powerbank 30 000 мА·ч PD 65W с дисплеем", ar: "باور بانك ٣٠٠٠٠ مللي أمبير ٦٥ واط بشاشة", note: "Laptop uyumlu", retail: 1450, wholesale: 790, unit: "perPiece" },
+      { tr: "18650 Li-ion endüstriyel pil hücresi", en: "18650 Li-ion industrial battery cell", ru: "Промышленный аккумулятор 18650 Li-ion", ar: "خلية بطارية صناعية ١٨٦٥٠", note: "3000 mAh", retail: 160, wholesale: 74, unit: "perPiece" }
+    ] },
   { id: "emre", rating: 4.6, reviews: 128, name: "Emre Aksesuar", han: "yildiz", floor: 2, no: "118", entrance: "B",
     cats: ["kilif", "sarj"], mode: "toptan", verified: true, distance: 120, gun: 3, tel: "905320000118",
     dirTr: "B girişinden girip merdivenle 2. kata çıkın, koridorun solunda.",
@@ -605,6 +680,15 @@ export const EVENTS: DataRow[] = [
 
 // anasayfada donen kampanyalar — magaza ya da alan hedefli
 export const CAMPAIGNS: DataRow[] = [
+  { id: "c0", tone: "primary", store: "roza", area: "tahtakale",
+    tagTr: "Santral Han · 7 Kat", tagEn: "Santral Han · 7 Floors", tagRu: "Santral Han · 7 этажей", tagAr: "خان سنترال · ٧ طوابق",
+    tr: "A–B Kat çelik bijuteri ve C–D Kat elektronikte han içi üretici fiyatları",
+    en: "Direct wholesale & retail prices across 7 floors at Santral Han",
+    ru: "Прямые цены на бижутерию (этажи A–B) и электронику (C–D) в Santral Han",
+    ar: "أسعار مباشرة للإكسسوارات (A–B) والإلكترونيات (C–D) في خان سنترال",
+    subTr: "Santral Han · Tahtakale Cd. No: 7 (256 Dükkân)", subEn: "Santral Han · Tahtakale St. No: 7 (256 Units)",
+    subRu: "Santral Han · ул. Тахтакале 7 (256 лавок)", subAr: "خان سنترال · شارع تحتة قلعة ٧ (٢٥٦ متجرًا)",
+    untilTr: "Hafta boyu açık", untilEn: "Open all week", untilRu: "Открыто всю неделю", untilAr: "مفتوح طوال الأسبوع" },
   { id: "c1", tone: "accent", store: "emre", area: "tahtakale",
     tagTr: "Toptan", tagEn: "Wholesale", tagRu: "Опт", tagAr: "جملة",
     tr: "100 adet üzeri kılıfta %20", en: "20% off cases over 100 pcs",
@@ -747,6 +831,13 @@ export const QUICK_MSGS: DataRow[] = [
 
 // yorumlar — ziyaretcinin kendi dilinde, oldugu gibi gosterilir
 export const REVIEWS: Dict = {
+  roza: [{ n: "Selin T.", r: 5, t: "Santral Han A Kat No: 8'i kat planından saniyesinde bulduk. Çelik serileri kararmıyor, hem perakende hem toptan yardımcı oldular.", d: "3 gün önce" },
+         { n: "Elena K.", r: 5, t: "Great 316L steel collection on Floor A! Very easy to find with the floor plan.", d: "1 hafta önce" }],
+  yilmazbijuteri: [{ n: "Murat D.", r: 5, t: "A Kat 61 numarada perakende/numune, D Kat 465'te toptan depoları var. Çeşit çok güçlü.", d: "5 gün önce" }],
+  klcbijuteri: [{ n: "Büşra A.", r: 5, t: "B Kat 228'de kutulu zirkon setler aldık, aynı gün kargoya verdiler.", d: "1 hafta önce" }],
+  zentaelektronik: [{ n: "Керим Б.", r: 5, t: "На этаже C (№ 367) отличный выбор чехлов MagSafe и зарядок GaN.", d: "4 gün önce" },
+                    { n: "Burak Y.", r: 5, t: "C Kat asansör karşısında, faturalı ve garantili ürün veriyorlar.", d: "2 hafta önce" }],
+  pildunyasi: [{ n: "Serhat K.", r: 5, t: "D Kat No: 412'de tüm telefon bataryaları ve endüstriyel piller stokta var.", d: "1 hafta önce" }],
   emre: [{ n: "Mehmet A.", r: 5, t: "Toptan aldık, minimum 10 adet dediler tuttular. Kargo aynı gün çıktı.", d: "2 hafta önce" },
          { n: "Anna K.", r: 4, t: "Хороший выбор чехлов, торгуются нормально.", d: "1 ay önce" }],
   hazer: [{ n: "Sophie L.", r: 5, t: "Let us taste everything before buying. Saffron was the real thing.", d: "5 gün önce" },
@@ -1008,6 +1099,12 @@ export const GATES: DataRow[] = [
     markEn:"The small gate onto the Booksellers' Bazaar; narrow and quiet.",
     markRu:"Небольшие ворота к рынку букинистов; узкие и тихие.",
     markAr:"باب صغير يفتح على سوق الكتب؛ ضيق وهادئ." },
+  { id:"g-santral", han:"santral", lat:41.01518, lng:28.96845, opensTo:"s-tahtakale", hours:"08:30 – 19:00",
+    tr:"Santral Han · Ana Giriş (No: 7)", en:"Santral Han · Main Gate (No: 7)", ru:"Santral Han · Главный вход (№ 7)", ar:"خان سنترال · المدخل الرئيسي (رقم ٧)",
+    markTr:"Tahtakale Caddesi No: 7'de Tahtakale Santral Center tabelalı geniş modern giriş; içeride sağ ve solda iki merdiven ile merkezde asansör bulunur.",
+    markEn:"Wide entrance signed 'Tahtakale Santral Center' at Tahtakale Street No: 7; dual staircases on left/right and a central lift inside.",
+    markRu:"Широкий вход с вывеской «Tahtakale Santral Center» на ул. Тахтакале, 7; внутри две лестницы по бокам и лифт в центре.",
+    markAr:"مدخل واسع بلافتة «Tahtakale Santral Center» في شارع تحتة قلعة رقم ٧؛ بداخله سُلمان على الجانبين ومصعد في الوسط." },
   { id:"g-yildiz", han:"yildiz", lat:41.0165, lng:28.9689, opensTo:"s-tahtakale", hours:"08:00 – 19:00",
     tr:"Yıldız Han · B girişi", en:"Yıldız Han · Door B", ru:"Yıldız Han · вход B", ar:"خان يلدز · المدخل B",
     markTr:"Tahtakale Caddesi'nde, mavi tabelalı kuruyemişçinin hemen yanındaki demir kapı.",
@@ -1142,6 +1239,12 @@ export const LANDMARKS: DataRow[] = [
     descEn:"The big arched entrance facing the square; pigeons always flank it.",
     descRu:"Большой арочный вход к площади; по бокам всегда голуби.",
     descAr:"المدخل المقوس الكبير المطل على الميدان، وحوله الحمام دائمًا." },
+  { id:"lm-santrallobi", type:"tabela", street:"s-tahtakale", han:"santral", lat:41.01518, lng:28.96845,
+    tr:"Santral Han kat panosu ve asansör lobisi", en:"Santral Han floor board & lift lobby", ru:"Табло этажей и лифтовой холл Santral Han", ar:"لوحة طوابق وردهة مصعد خان سنترال",
+    descTr:"Tahtakale Cd. No: 7 girişinden girince A Kat orta koridorundaki kat planı panosu ve çift merdiven/asansör dağılım noktası.",
+    descEn:"Entering from Tahtakale St. No: 7, the floor-plan directory board and dual-staircase/lift hub in the central Floor A spine.",
+    descRu:"При входе с ул. Тахтакале, 7 — схема этажей (Z–F) и узел двух лестниц и лифта.",
+    descAr:"عند الدخول من شارع تحتة قلعة ٧، لوحة مخطط الطوابق (Z–F) ونقطة التوزيع للسلمين والمصعد." },
   { id:"lm-yildizkuruyemis", type:"dukkan", street:"s-tahtakale", han:"yildiz", lat:41.0165, lng:28.9689,
     tr:"Mavi tabelalı kuruyemişçi", en:"The nut shop with the blue sign", ru:"Ореховая лавка с синей вывеской", ar:"محل المكسرات ذو اللافتة الزرقاء",
     descTr:"Yıldız Han'ın B kapısının solundaki köşe dükkânı; kavrulmuş leblebi kokusu gelir.",
@@ -1236,6 +1339,8 @@ export const POI_KINDS: DataRow[] = [
 
 // Han'lara eklenen konum/yapı bilgisi — id ile HANS'a karışır.
 export const HAN_EXT: Dict = {
+  santral:     { entryGate:"g-santral", entryStreet:"s-tahtakale", courtyard:"long", stairs:2, lift:true, wc:true, tea:true,
+                 landmark:"lm-santrallobi", floorNames:{ 0:"Z Kat", 1:"A Kat", 2:"B Kat", 3:"C Kat", 4:"D Kat", 5:"E Kat", 6:"F Kat" } },
   yildiz:      { entryGate:"g-yildiz", entryStreet:"s-tahtakale", courtyard:"rect", stairs:2, lift:false, wc:false, tea:true,
                  landmark:"lm-yildizkuruyemis", floorNames:{ 0:"Zemin", 1:"1", 2:"2", 3:"3", 4:"4" } },
   buyukvalide: { entryGate:"g-buyukvalide", entryStreet:"s-cakmakcilar", courtyard:"double", stairs:3, lift:false, wc:true, tea:true,
@@ -1279,6 +1384,56 @@ export const CARRIERS: DataRow[] = [
 
 // Mağazaların ticaret, konum, üretim ve ihracat bilgisi. id ile STORES'a karışır.
 export const SHOP_EXT: Dict = {
+  roza: {
+    location:{ street:"s-tahtakale", gate:"g-santral", landmark:"lm-santrallobi", side:"right" },
+    trade:{ type:"ikisi", minOrder:{qty:6, amount:1200}, negotiable:true, isProducer:true, moqFlexible:true,
+      tiers:[{from:6,price:68},{from:36,price:58},{from:144,price:49}] },
+    commerce:{ taxFree:true, invoice:true, payments:["cash","card","iban","fx"], currencies:["TRY","USD","EUR"], languages:["tr","en","ru","ar"] },
+    exportInfo:{ shipsAbroad:true, countries:["DE","RU","SA","AE","AZ"], partners:["dhl","ptt","konsolide"], customsSupport:true, consolidation:true },
+    production:{ monthlyCapacity:"45.000 parça", leadTimeDays:"1–3", oem:true, privateLabel:true, certs:["iso9001"] },
+    catalogPdf:true, seasonTr:"Santral Han A Kat No: 8 · Yıl boyu yeni çelik koleksiyon", seasonEn:"Santral Han Floor A No: 8 · Year-round new steel collection",
+    seasonRu:"Santral Han этаж A № 8 · Новая коллекция круглый год", seasonAr:"خان سنترال الطابق A رقم ٨ · تشكيلة جديدة طوال العام"
+  },
+  yilmazbijuteri: {
+    location:{ street:"s-tahtakale", gate:"g-santral", landmark:"lm-santrallobi", side:"right" },
+    trade:{ type:"ikisi", minOrder:{qty:12, amount:1800}, negotiable:true, isProducer:true, moqFlexible:true,
+      tiers:[{from:12,price:58},{from:72,price:48},{from:288,price:41}] },
+    commerce:{ taxFree:false, invoice:true, payments:["cash","card","iban","fx"], currencies:["TRY","USD","EUR"], languages:["tr","en","ar"] },
+    exportInfo:{ shipsAbroad:true, countries:["RU","AZ","IQ","DE"], partners:["ptt","karayolu","konsolide"], customsSupport:true, consolidation:true },
+    production:{ monthlyCapacity:"80.000 parça", leadTimeDays:"1–3", oem:true, privateLabel:true, certs:["iso9001"] },
+    catalogPdf:true, seasonTr:"A Kat No: 61 mağaza & D Kat No: 465 toptan depo", seasonEn:"Floor A No: 61 store & Floor D No: 465 wholesale depot",
+    seasonRu:"Этаж A № 61 магазин и этаж D № 465 оптовый склад", seasonAr:"الطابق A رقم ٦١ متجر والطابق D رقم ٤٦٥ مستودع جملة"
+  },
+  klcbijuteri: {
+    location:{ street:"s-tahtakale", gate:"g-santral", landmark:"lm-santrallobi", side:"left" },
+    trade:{ type:"toptan", minOrder:{qty:12, amount:2400}, negotiable:true, isProducer:false, moqFlexible:true,
+      tiers:[{from:12,price:165},{from:60,price:145},{from:240,price:128}] },
+    commerce:{ taxFree:false, invoice:true, payments:["cash","card","iban"], currencies:["TRY","USD"], languages:["tr","en"] },
+    exportInfo:{ shipsAbroad:true, countries:["AZ","GE","IQ","RU"], partners:["ptt","karayolu"], customsSupport:false, consolidation:true },
+    production:{ monthlyCapacity:"30.000 set", leadTimeDays:"1–2", oem:false, privateLabel:true, certs:[] },
+    catalogPdf:true, seasonTr:"B Kat No: 228 · Düğün ve davet sezonu VIP setler", seasonEn:"Floor B No: 228 · Wedding & evening VIP sets",
+    seasonRu:"Этаж B № 228 · Вечерние и свадебные наборы VIP", seasonAr:"الطابق B رقم ٢٢٨ · أطقم VIP للمناسبات"
+  },
+  zentaelektronik: {
+    location:{ street:"s-tahtakale", gate:"g-santral", landmark:"lm-santrallobi", side:"left" },
+    trade:{ type:"ikisi", minOrder:{qty:5, amount:1500}, negotiable:true, isProducer:false, moqFlexible:true,
+      tiers:[{from:5,price:88},{from:50,price:76},{from:250,price:64}] },
+    commerce:{ taxFree:true, invoice:true, payments:["cash","card","iban","fx"], currencies:["TRY","USD","EUR"], languages:["tr","en","ru"] },
+    exportInfo:{ shipsAbroad:true, countries:["RU","AZ","IQ","DE","UA"], partners:["ptt","karayolu","konsolide"], customsSupport:true, consolidation:true },
+    production:{ monthlyCapacity:"90.000 adet", leadTimeDays:"1–2", oem:true, privateLabel:true, certs:["ce","iso9001"] },
+    catalogPdf:true, seasonTr:"C Kat No: 367–368 · Yeni telefon lansmanlarında stok hazır", seasonEn:"Floor C No: 367–368 · Stock ready on new phone launches",
+    seasonRu:"Этаж C № 367–368 · В наличии к выходу новых моделей", seasonAr:"الطابق C رقم ٣٦٧–٣٦٨ · مخزون جاهز للإصدارات الجديدة"
+  },
+  pildunyasi: {
+    location:{ street:"s-tahtakale", gate:"g-santral", landmark:"lm-santrallobi", side:"right" },
+    trade:{ type:"toptan", minOrder:{qty:10, amount:3000}, negotiable:true, isProducer:false, moqFlexible:false,
+      tiers:[{from:10,price:310},{from:50,price:285},{from:200,price:260}] },
+    commerce:{ taxFree:false, invoice:true, payments:["cash","iban","fx"], currencies:["TRY","USD"], languages:["tr","en"] },
+    exportInfo:{ shipsAbroad:true, countries:["AZ","IQ","GE"], partners:["karayolu","konsolide"], customsSupport:false, consolidation:true },
+    production:{ monthlyCapacity:"50.000 batarya", leadTimeDays:"1–3", oem:false, privateLabel:false, certs:["ce"] },
+    catalogPdf:true, seasonTr:"D Kat No: 412 · Garantili batarya ve hücre merkezi", seasonEn:"Floor D No: 412 · Warranted battery & cell centre",
+    seasonRu:"Этаж D № 412 · Центр аккумуляторов с гарантией", seasonAr:"الطابق D رقم ٤١٢ · مركز البطاريات المضمونة"
+  },
   emre: {
     location:{ street:"s-tahtakale", gate:"g-yildiz", landmark:"lm-yildizkuruyemis", side:"left" },
     trade:{ type:"toptan", minOrder:{qty:10, amount:2500}, negotiable:true, isProducer:false, moqFlexible:true,
@@ -2453,6 +2608,11 @@ export const SP = {
 
 // Ürün başına stok — id'siz ürünlerde indeksle eşlenir.
 export const STOCK = {
+  roza:[ "in","in","in","in" ],
+  yilmazbijuteri:[ "in","in","in" ],
+  klcbijuteri:[ "in","in","low" ],
+  zentaelektronik:[ "in","in","in","in" ],
+  pildunyasi:[ "in","in","in" ],
   emre:[ "in","in","low","in" ],
   hazer:[ "in","in","in","low" ],
   zincirlikuyum:[ "in","low","in" ],
@@ -2494,6 +2654,33 @@ export const CAT2 = {
 // Her dükkânın gerçek çeşit sayısı ve ürün grupları.
 // shown = uygulamada listelenen; rest = depoda olup listelenmeyen.
 export const CATALOG: Dict = {
+  roza: { sku: 1640, groups: [
+    { id:"g-celikkolye", n:540, tr:"316L Çelik kolye", en:"316L Steel necklaces", ru:"Стальные колье 316L", ar:"قلادات ستيل ٣١٦", idx:[0] },
+    { id:"g-suyolu", n:420, tr:"Zirkon bileklik", en:"Zircon bracelets", ru:"Цирконовые браслеты", ar:"أساور زركون", idx:[1] },
+    { id:"g-kupeset", n:380, tr:"Küpe setleri", en:"Earring sets", ru:"Наборы серёг", ar:"أطقم أقراط", idx:[2] },
+    { id:"g-dogaltas", n:300, tr:"Doğaltaş tasarım", en:"Natural stone", ru:"Натуральный камень", ar:"حجر طبيعي", idx:[3] }
+  ] },
+  yilmazbijuteri: { sku: 2200, groups: [
+    { id:"g-stand", n:680, tr:"Standlı küpe & yüzük", en:"Display-stand earrings & rings", ru:"Серьги и кольца на стендах", ar:"أقراط وخواتم مع ستاند", idx:[0] },
+    { id:"g-italyan", n:890, tr:"İtalyan zincir serisi", en:"Italian chain series", ru:"Итальянские цепи", ar:"سلاسل إيطالية", idx:[1] },
+    { id:"g-bros", n:630, tr:"Broş · toka", en:"Brooches · clips", ru:"Броши · заколки", ar:"بروشات · مشابك", idx:[2] }
+  ] },
+  klcbijuteri: { sku: 1180, groups: [
+    { id:"g-vipset", n:440, tr:"VIP takı setleri", en:"VIP jewellery sets", ru:"Наборы VIP", ar:"أطقم مجوهرات VIP", idx:[0] },
+    { id:"g-incisac", n:390, tr:"İnci saç aksesuarı", en:"Pearl hair accessories", ru:"Жемчужные заколки", ar:"إكسسوارات شعر باللؤلؤ", idx:[1] },
+    { id:"g-sahmeran", n:350, tr:"Şahmeran · halhal", en:"Hand chains · anklets", ru:"Шахмеран · анклеты", ar:"شاهميران · خلاخيل", idx:[2] }
+  ] },
+  zentaelektronik: { sku: 1920, groups: [
+    { id:"g-magsafe", n:620, tr:"MagSafe kılıf", en:"MagSafe cases", ru:"Чехлы MagSafe", ar:"أغطية MagSafe", idx:[0] },
+    { id:"g-gan", n:480, tr:"GaN hızlı şarj", en:"GaN fast chargers", ru:"Зарядки GaN", ar:"شواحن GaN السريعة", idx:[1] },
+    { id:"g-tws", n:390, tr:"TWS kulaklık", en:"TWS earbuds", ru:"TWS-наушники", ar:"سماعات TWS", idx:[2] },
+    { id:"g-cam2", n:430, tr:"Hayalet ekran koruyucu", en:"Privacy screen glass", ru:"Защитные стёкла Privacy", ar:"حماية شاشة خصوصية", idx:[3] }
+  ] },
+  pildunyasi: { sku: 940, groups: [
+    { id:"g-batarya", n:480, tr:"Telefon bataryası", en:"Phone batteries", ru:"Аккумуляторы для телефонов", ar:"بطاريات الهواتف", idx:[0] },
+    { id:"g-pdpb", n:260, tr:"PD Powerbank", en:"PD Powerbanks", ru:"Powerbank PD", ar:"باور بانك PD", idx:[1] },
+    { id:"g-hucre", n:200, tr:"Endüstriyel pil hücresi", en:"Industrial cells", ru:"Промышленные элементы", ar:"خلايا صناعية", idx:[2] }
+  ] },
   emre: { sku: 2480, groups: [
     { id:"g-silikon", n:640, tr:"Silikon kılıf", en:"Silicone cases", ru:"Силиконовые чехлы", ar:"أغطية سيليكون", idx:[0] },
     { id:"g-cuzdan", n:310, tr:"Cüzdan · kapaklı", en:"Wallet · flip", ru:"Чехлы-книжки", ar:"محفظة · قلاب", idx:[1] },
@@ -2563,6 +2750,13 @@ export const CATALOG: Dict = {
 // ── Han rehberi · kat kat ne satılıyor ────────────────────────────────────
 // Turist hanı bulur ama içinde kaybolur. Kat listesi + hangi katta ne var.
 export const HAN_DIR = {
+  santral: { famousTr:"7 katlı (Z–F Kat) Tahtakale Santral Center: A–B Kat bijuteri ve çelik takı, C–D–E–F Kat telefon aksesuarı, elektronik, teknik servis ve batarya merkezi.",
+    famousEn:"7-storey (Floors Z–F) Tahtakale Santral Center: Floors A–B costume & steel jewellery; Floors C–F phone accessories, electronics, service & batteries.",
+    famousRu:"7-этажный (этажи Z–F) Tahtakale Santral Center: этажи A–B бижутерия и сталь; этажи C–F электроника, аксессуары, сервис и батареи.",
+    famousAr:"مركز تحتة قلعة سنترال من ٧ طوابق (Z–F): الطابقان A–B للإكسسوارات؛ والطوابق C–F للإلكترونيات والبطاريات.",
+    floors:{ 0:[{c:"bijuteri",n:4},{c:"kilif",n:2}], 1:[{c:"bijuteri",n:48},{c:"taki",n:14}],
+      2:[{c:"bijuteri",n:46},{c:"hediyelik",n:12}], 3:[{c:"kilif",n:44},{c:"sarj",n:28}],
+      4:[{c:"sarj",n:14},{c:"kilif",n:6}], 5:[{c:"kilif",n:16},{c:"sarj",n:6}], 6:[{c:"kilif",n:11},{c:"bijuteri",n:4}] } },
   yildiz: { famousTr:"Telefon aksesuarı ve elektronik toptanının merkezi.", famousEn:"The centre of wholesale phone accessories and electronics.",
     famousRu:"Центр оптовых аксессуаров для телефонов и электроники.", famousAr:"مركز جملة إكسسوارات الهواتف والإلكترونيات.",
     floors:{ 0:[{c:"kilif",n:18},{c:"sarj",n:12}], 1:[{c:"kilif",n:26},{c:"sarj",n:9}],
@@ -2631,6 +2825,21 @@ export const HD = {
 // Yanıt süresi/oranı, işlem sayısı ve tekrar alıcı oranı panelden gelir; burada
 // gerçekçi başlangıç değerleriyle duruyor. tier: kayitli < dogrulanmis < altin
 export const TRUST: Dict = {
+  roza:            { tier:"altin", since:2015, respMins:12, respRate:98, orders12m:640, repeat:48, docs:["vergi","sicil","imza"], photosOk:true,
+                     rep:{ name:"Roza Yönetimi", roleTr:"Mağaza Sorumlusu", roleEn:"Store Manager", roleRu:"Управляющий", roleAr:"مدير المتجر", langs:["tr","en","ru","ar"] },
+                     sample:{ ok:true, paid:false, days:"aynı gün" }, ret:{ days:7, cond:"unused" } },
+  yilmazbijuteri:  { tier:"altin", since:2012, respMins:15, respRate:96, orders12m:510, repeat:45, docs:["vergi","sicil","imza"], photosOk:true,
+                     rep:{ name:"Yılmaz Bey", roleTr:"Sahip", roleEn:"Owner", roleRu:"Владелец", roleAr:"المالك", langs:["tr","en","ar"] },
+                     sample:{ ok:true, paid:false, days:"1–2" }, ret:{ days:7, cond:"unused" } },
+  klcbijuteri:     { tier:"dogrulanmis", since:2017, respMins:19, respRate:94, orders12m:320, repeat:39, docs:["vergi","sicil"], photosOk:true,
+                     rep:{ name:"Serdar Karakaş", roleTr:"Sahip", roleEn:"Owner", roleRu:"Владелец", roleAr:"المالك", langs:["tr","en"] },
+                     sample:{ ok:true, paid:true, days:"1–2" }, ret:{ days:7, cond:"unused" } },
+  zentaelektronik: { tier:"altin", since:2014, respMins:14, respRate:97, orders12m:580, repeat:51, docs:["vergi","sicil","ce"], photosOk:true,
+                     rep:{ name:"Zenta Ekibi", roleTr:"Satış Müdürü", roleEn:"Sales Director", roleRu:"Директор по продажам", roleAr:"مدير المبيعات", langs:["tr","en","ru"] },
+                     sample:{ ok:true, paid:true, days:"aynı gün" }, ret:{ days:14, cond:"defect" } },
+  pildunyasi:      { tier:"dogrulanmis", since:2016, respMins:22, respRate:92, orders12m:290, repeat:43, docs:["vergi","sicil","ce"], photosOk:true,
+                     rep:{ name:"Batarya Teknik", roleTr:"Sahip", roleEn:"Owner", roleRu:"Владелец", roleAr:"المالك", langs:["tr","en"] },
+                     sample:{ ok:true, paid:true, days:"1–3" }, ret:{ days:14, cond:"defect" } },
   emre:            { tier:"altin", since:2009, respMins:18, respRate:96, orders12m:412, repeat:38, docs:["vergi","sicil","imza"], photosOk:true,
                      rep:{ name:"Emre Kaya", roleTr:"Sahip", roleEn:"Owner", roleRu:"Владелец", roleAr:"المالك", langs:["tr","en"] },
                      sample:{ ok:true, paid:true, days:"1–2" }, ret:{ days:7, cond:"unused" } },

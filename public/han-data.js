@@ -341,6 +341,14 @@ export const AREAS = [
 ];
 
 export const HANS = [
+  { id: "santral", name: "Santral Han", area: "tahtakale", floors: [0, 1, 2, 3, 4, 5, 6], units: 256,
+    addressTr: "Tahtakale Cd. No: 7, Fatih / İstanbul", addressEn: "Tahtakale St. No: 7, Fatih / Istanbul",
+    addressRu: "ул. Тахтакале 7, Фатих / Стамбул", addressAr: "شارع تحتة قلعة ٧، الفاتح / إسطنبول",
+    aboutTr: "Tahtakale'nin 7 katlı (Z–F Kat) merkez hanı (Tahtakale Santral Center). A–B Kat bijuteri ve çelik takı, C–F Kat elektronik ve batarya toptancıları.",
+    aboutEn: "Tahtakale's 7-storey (Floors Z–F) trade hub (Tahtakale Santral Center).",
+    aboutRu: "Семиэтажный (этажи Z–F) торговый центр Тахтакале.",
+    aboutAr: "مركز تجارة تحتة قلعة المكون من ٧ طوابق (Z–F).",
+    lat: 41.01518, lng: 28.96845 },
   { id: "yildiz", name: "Yıldız Han", area: "tahtakale", floors: [0, 1, 2, 3, 4], units: 142,
     addressTr: "Tahtakale Cd. No 34, Fatih", addressEn: "Tahtakale St. 34, Fatih",
     addressRu: "ул. Тахтакале 34, Фатих", addressAr: "شارع تحتة قلعة ٣٤، الفاتح",
@@ -393,6 +401,16 @@ export const HANS = [
 
 // mode: "perakende" | "toptan" | "ikisi"
 export const STORES = [
+  { id: "roza", rating: 4.9, reviews: 214, name: "Roza Aksesuar", han: "santral", floor: 1, no: "8", entrance: "A",
+    cats: ["bijuteri", "taki"], mode: "ikisi", verified: true, distance: 85, gun: 1, tel: "905527447938", hours: "08:30 – 19:00", products: [] },
+  { id: "yilmazbijuteri", rating: 4.8, reviews: 178, name: "Yılmaz Bijuteri", han: "santral", floor: 1, no: "61", entrance: "A",
+    cats: ["bijuteri", "taki"], mode: "ikisi", verified: true, distance: 90, gun: 1, tel: "905527447939", hours: "08:30 – 19:00", products: [] },
+  { id: "klcbijuteri", rating: 4.7, reviews: 142, name: "KLC Consept Bijuteri", han: "santral", floor: 2, no: "228", entrance: "A",
+    cats: ["bijuteri", "hediyelik"], mode: "toptan", verified: true, distance: 95, gun: 2, tel: "905527447940", hours: "08:30 – 19:00", products: [] },
+  { id: "zentaelektronik", rating: 4.8, reviews: 195, name: "Zenta Elektronik", han: "santral", floor: 3, no: "367", entrance: "A",
+    cats: ["kilif", "sarj"], mode: "ikisi", verified: true, distance: 100, gun: 1, tel: "905527447941", hours: "08:30 – 19:00", products: [] },
+  { id: "pildunyasi", rating: 4.7, reviews: 118, name: "Pil Dünyası & Batarya Merkezi", han: "santral", floor: 4, no: "412", entrance: "A",
+    cats: ["sarj", "kilif"], mode: "toptan", verified: true, distance: 105, gun: 2, tel: "905527447942", hours: "08:30 – 18:30", products: [] },
   { id: "emre", rating: 4.6, reviews: 128, name: "Emre Aksesuar", han: "yildiz", floor: 2, no: "118", entrance: "B",
     cats: ["kilif", "sarj"], mode: "toptan", verified: true, distance: 120, gun: 3, tel: "905320000118",
     dirTr: "B girişinden girip merdivenle 2. kata çıkın, koridorun solunda.",

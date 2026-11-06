@@ -39,12 +39,16 @@ export interface Place {
   kind: PlaceKind;
   semt: string;
   floors: number[];
+  /** Custom floor naming map (e.g. Santral Han: 0="Z Kat", 1="A Kat" .. 6="F Kat") */
+  floorLabels?: Record<number, string>;
   /** Physical shop units, tenanted or not. The denominator of coverage. */
   units: number;
   mix: string[];
   lat: number;
   lng: number;
   sector: Sector;
+  address?: string;
+  tel?: string;
 }
 
 export interface Semt {
