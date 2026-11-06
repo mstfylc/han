@@ -13,6 +13,7 @@ import { sx } from "@/lib/sx";
 export interface SantralFloorMapProps {
   placeId?: string;
   initialFloor?: number;
+  initialDoor?: string | null;
   highlightDoor?: string | null;
   highlightRecordId?: string | null;
   lang?: Lang;
@@ -171,12 +172,14 @@ interface UnitCell {
 export function SantralFloorMap({
   placeId = "santral",
   initialFloor,
+  initialDoor = null,
   highlightDoor = null,
   highlightRecordId = null,
   lang = "tr",
   onSelectRecord,
   adminMode = false,
 }: SantralFloorMapProps) {
+  const effectiveDoor = highlightDoor ?? initialDoor ?? null;
   const place = useMemo(
     () => SC.PLACES.find((p) => p.id === placeId) || SC.PLACES[0],
     [placeId],
@@ -192,12 +195,12 @@ export function SantralFloorMap({
       const hit = allPlaceRecords.find((r) => r.id === highlightRecordId || r.curated === highlightRecordId);
       if (hit) return hit.floor;
     }
-    if (highlightDoor) {
-      const hit = allPlaceRecords.find((r) => String(r.door) === String(highlightDoor));
+    if (effectiveDoor) {
+      const hit = allPlaceRecords.find((r) => String(r.door) === String(effectiveDoor));
       if (hit) return hit.floor;
     }
     return place.id === "santral" && place.floors.includes(1) ? 1 : (place.floors[0] ?? 0);
-  }, [initialFloor, highlightRecordId, highlightDoor, allPlaceRecords, place]);
+  }, [initialFloor, highlightRecordId, effectiveDoor, allPlaceRecords, place]);
 
   const [floor, setFloor] = useState<number>(resolvedInitialFloor);
   const [viewMode, setViewMode] = useState<"interactive" | "official" | "split">("interactive");
@@ -208,7 +211,7 @@ export function SantralFloorMap({
   const [zoom, setZoom] = useState<number>(1);
   const [liveStepIdx, setLiveStepIdx] = useState<number | null>(null);
   const [filterText, setFilterText] = useState("");
-  const [selectedDoor, setSelectedDoor] = useState<string | null>(highlightDoor);
+  const [selectedDoor, setSelectedDoor] = useState<string | null>(effectiveDoor);
   const [askTraderOpen, setAskTraderOpen] = useState(false);
 
   const isSantral = place.id === "santral";
@@ -376,10 +379,10 @@ export function SantralFloorMap({
       .slice(0, 5);
   }, [allPlaceRecords, floor, filterText]);
 
-  const matchesRadar = (c: UnitCell, rCat: string): boolean => {
+  const matchesRadar = (c: UnitCell, rCat: string = radarCat): boolean => {
     if (rCat === "all") return true;
-    if (rCat === "vacant") return c.vacant;
-    if (rCat === "curated") return !!c.record?.curated || c.record?.status === "aktif";
+    if (rCat === "vacant" || rCat === "bos") return c.vacant;
+    if (rCat === "curated" || rCat === "vitrin") return !!c.record?.curated || c.record?.status === "aktif";
     const catStr = `${c.record?.cat || ""} ${(c.record?.cats || []).join(" ")} ${c.record?.name || ""}`.toLocaleLowerCase("tr");
     if (rCat === "bijuteri") return /bijuteri|taki|takı|gümüş|gumus|çelik|celik|kolye|küpe|tesbih|toka|doğaltaş/.test(catStr);
     if (rCat === "elektronik") return /kilif|kılıf|sarj|şarj|telefon|elektronik|kablo|kulaklık|ses|kamera/.test(catStr);
@@ -903,7 +906,7 @@ export function SantralFloorMap({
               <g
                 onClick={() => {
                   setStartDoor(null);
-                  setAnchor("stair_left");
+                  setAnchor("sol-merdiven");
                 }}
                 style={{ cursor: "pointer" }}
               >
@@ -913,10 +916,10 @@ export function SantralFloorMap({
                   width="108"
                   height="98"
                   rx="8"
-                  fill={!startCell && anchor === "stair_left" ? "var(--color-primary-soft)" : "var(--surface-muted)"}
-                  stroke={!startCell && anchor === "stair_left" ? "var(--color-primary)" : "var(--border-strong)"}
-                  strokeWidth={!startCell && anchor === "stair_left" ? "2.5" : "1.5"}
-                  strokeDasharray={!startCell && anchor === "stair_left" ? undefined : "4 2"}
+                  fill={!startCell && anchor === "sol-merdiven" ? "var(--color-primary-soft)" : "var(--surface-muted)"}
+                  stroke={!startCell && anchor === "sol-merdiven" ? "var(--color-primary)" : "var(--border-strong)"}
+                  strokeWidth={!startCell && anchor === "sol-merdiven" ? "2.5" : "1.5"}
+                  strokeDasharray={!startCell && anchor === "sol-merdiven" ? undefined : "4 2"}
                 />
                 <text
                   x="88"
@@ -946,7 +949,7 @@ export function SantralFloorMap({
                   fontSize="8.5"
                   fontWeight="700"
                 >
-                  {!startCell && anchor === "stair_left" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
+                  {!startCell && anchor === "sol-merdiven" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
                 </text>
               </g>
 
@@ -954,7 +957,7 @@ export function SantralFloorMap({
               <g
                 onClick={() => {
                   setStartDoor(null);
-                  setAnchor("center_hall");
+                  setAnchor("orta-pano");
                 }}
                 style={{ cursor: "pointer" }}
               >
@@ -965,8 +968,8 @@ export function SantralFloorMap({
                   height="106"
                   rx="8"
                   fill={isCourtyard ? "var(--color-accent-soft)" : "var(--color-primary-soft)"}
-                  stroke={!startCell && anchor === "center_hall" ? "var(--color-primary)" : isCourtyard ? "var(--color-accent)" : "var(--color-primary)"}
-                  strokeWidth={!startCell && anchor === "center_hall" ? "2.5" : "1.5"}
+                  stroke={!startCell && anchor === "orta-pano" ? "var(--color-primary)" : isCourtyard ? "var(--color-accent)" : "var(--color-primary)"}
+                  strokeWidth={!startCell && anchor === "orta-pano" ? "2.5" : "1.5"}
                 />
                 <text
                   x="450"
@@ -996,7 +999,7 @@ export function SantralFloorMap({
                   fontSize="8.5"
                   fontWeight="700"
                 >
-                  {!startCell && anchor === "center_hall" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
+                  {!startCell && anchor === "orta-pano" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
                 </text>
               </g>
 
@@ -1004,7 +1007,7 @@ export function SantralFloorMap({
               <g
                 onClick={() => {
                   setStartDoor(null);
-                  setAnchor("stair_right");
+                  setAnchor("sag-merdiven");
                 }}
                 style={{ cursor: "pointer" }}
               >
@@ -1014,10 +1017,10 @@ export function SantralFloorMap({
                   width="108"
                   height="98"
                   rx="8"
-                  fill={!startCell && anchor === "stair_right" ? "var(--color-primary-soft)" : "var(--surface-muted)"}
-                  stroke={!startCell && anchor === "stair_right" ? "var(--color-primary)" : "var(--border-strong)"}
-                  strokeWidth={!startCell && anchor === "stair_right" ? "2.5" : "1.5"}
-                  strokeDasharray={!startCell && anchor === "stair_right" ? undefined : "4 2"}
+                  fill={!startCell && anchor === "sag-merdiven" ? "var(--color-primary-soft)" : "var(--surface-muted)"}
+                  stroke={!startCell && anchor === "sag-merdiven" ? "var(--color-primary)" : "var(--border-strong)"}
+                  strokeWidth={!startCell && anchor === "sag-merdiven" ? "2.5" : "1.5"}
+                  strokeDasharray={!startCell && anchor === "sag-merdiven" ? undefined : "4 2"}
                 />
                 <text
                   x="812"
@@ -1047,7 +1050,7 @@ export function SantralFloorMap({
                   fontSize="8.5"
                   fontWeight="700"
                 >
-                  {!startCell && anchor === "stair_right" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
+                  {!startCell && anchor === "sag-merdiven" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
                 </text>
               </g>
 
@@ -1055,7 +1058,7 @@ export function SantralFloorMap({
               <g
                 onClick={() => {
                   setStartDoor(null);
-                  setAnchor("main_gate");
+                  setAnchor("giris");
                 }}
                 style={{ cursor: "pointer" }}
               >
@@ -1065,7 +1068,7 @@ export function SantralFloorMap({
                   width="150"
                   height="22"
                   rx="6"
-                  fill={!startCell && anchor === "main_gate" ? "var(--color-primary)" : "var(--surface-elevated)"}
+                  fill={!startCell && anchor === "giris" ? "var(--color-primary)" : "var(--surface-elevated)"}
                   stroke="var(--color-primary)"
                   strokeWidth="1.5"
                 />
@@ -1073,11 +1076,11 @@ export function SantralFloorMap({
                   x="450"
                   y="363"
                   textAnchor="middle"
-                  fill={!startCell && anchor === "main_gate" ? "#fff" : "var(--color-primary)"}
+                  fill={!startCell && anchor === "giris" ? "#fff" : "var(--color-primary)"}
                   fontSize="9.5"
                   fontWeight="800"
                 >
-                  🚪 ANA GİRİŞ / DANIŞMA {!startCell && anchor === "main_gate" ? "(AKTİF)" : ""}
+                  🚪 ANA GİRİŞ / DANIŞMA {!startCell && anchor === "giris" ? "(AKTİF)" : ""}
                 </text>
               </g>
 
