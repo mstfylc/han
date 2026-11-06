@@ -12,12 +12,13 @@ import { useMemo, useRef, useState } from "react";
 
 import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
-import { Button, EmptyState, Icon, Input } from "@/ds";
+import SantralFloorMap from "@/components/SantralFloorMap";
+import { Badge, Button, EmptyState, Icon, Input } from "@/ds";
 import { F, W } from "@/lib/copy";
 import { convert, money, tonePair } from "@/lib/i18n";
 import { planGrid } from "@/lib/layout";
 import { href } from "@/lib/routes";
-import { buildPlan, hhmm, moveBefore, reorder } from "@/lib/planEngine";
+import { buildPlan, hhmm, moveBefore, reorder, serializeRoutePts } from "@/lib/planEngine";
 import { sx } from "@/lib/sx";
 import { useApp } from "@/state/AppState";
 import type { Trip } from "@/state/types";
@@ -31,6 +32,102 @@ const chip = (on: boolean) =>
   "height:34px;padding:0 13px;border-radius:8px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid " +
   (on ? "var(--color-primary);background:var(--color-primary);color:#fff" : "var(--border-strong);background:var(--surface-card);color:var(--text-body)");
 
+const ROUTE_TEMPLATES = [
+  {
+    id: "tpl_santral_tahtakale",
+    badge: "⭐ #1 Önerilen · Santral Han Başlangıçlı",
+    title: {
+      tr: "Santral Han & Tahtakale Bijuteri + Elektronik Turu",
+      en: "Santral Han & Tahtakale Jewelry + Electronics Tour",
+    },
+    desc: {
+      tr: "1. Durak: Santral Han (A & B Kat: Roza Bijuteri, Zenta Elektronik, Yıldız Saat) ➔ 2. Durak: Şark Han ➔ 3. Durak: Tahtakale Cad.",
+      en: "Stop 1: Santral Han (Floors A & B) ➔ Stop 2: Şark Han ➔ Stop 3: Tahtakale St.",
+    },
+    hours: 3,
+    intent: "is" as const,
+    carry: "el",
+    items: [
+      { id: "tpl1_1", name: "Roza Bijuteri", qty: "24", target: "95" },
+      { id: "tpl1_2", name: "Zenta Elektronik", qty: "20", target: "85" },
+      { id: "tpl1_3", name: "Emre Aksesuar", qty: "36", target: "45" },
+      { id: "tpl1_4", name: "Demir Poşet", qty: "100", target: "12" },
+    ],
+  },
+  {
+    id: "tpl_turist_kesif",
+    badge: "🧭 Turist & Perakende Keşif Rotası",
+    title: {
+      tr: "Tarihi Yarımada Klasik Hanlar & Çarşı Yürüyüşü",
+      en: "Classic Historic Peninsula Hans & Bazaar Walk",
+    },
+    desc: {
+      tr: "1. Durak: Santral Han (Vitrin katları) ➔ 2. Durak: Mısır Çarşısı (Baharat) ➔ 3. Durak: Kalcılar Han (Gümüş) ➔ 4. Durak: Zincirli Han (Halı)",
+      en: "1. Santral Han ➔ 2. Spice Bazaar ➔ 3. Kalcılar Han (Silver) ➔ 4. Zincirli Han (Carpets)",
+    },
+    hours: 4,
+    intent: "gez" as const,
+    carry: "el",
+    items: [
+      { id: "tpl2_1", name: "Roza Bijuteri", qty: "2", target: "150" },
+      { id: "tpl2_2", name: "Arif Bey Baharat", qty: "1", target: "320" },
+      { id: "tpl2_3", name: "Kaya Gümüş", qty: "1", target: "950" },
+      { id: "tpl2_4", name: "Anadolu Halı", qty: "1", target: "4500" },
+    ],
+  },
+  {
+    id: "tpl_elektronik_b2b",
+    badge: "📱 B2B Toptan Tedarik Rotası",
+    title: {
+      tr: "Telefon Kılıfı, Şarj & Saat Toptan Alım Rotası",
+      en: "Phone Case, Charger & Watch Wholesale Route",
+    },
+    desc: {
+      tr: "Santral Han merkezli elektronik, saat, pil ve ambalaj toptancıları (El arabası ve kargo teslim uyumlu).",
+      en: "Electronics, watch and packaging wholesalers anchored at Santral Han.",
+    },
+    hours: 3,
+    intent: "is" as const,
+    carry: "kargo",
+    items: [
+      { id: "tpl3_1", name: "Zenta Elektronik", qty: "50", target: "80" },
+      { id: "tpl3_2", name: "Yıldız Saat", qty: "25", target: "240" },
+      { id: "tpl3_3", name: "Demir Poşet", qty: "200", target: "10" },
+    ],
+  },
+  {
+    id: "tpl_tekstil_hanlar",
+    badge: "🧵 Tekstil & Tarihi Avlulu Hanlar",
+    title: {
+      tr: "Santral Han, Kürkçü Han & Mahmutpaşa Tekstil Rotası",
+      en: "Santral Han, Kürkçü Han & Mahmutpaşa Textile Route",
+    },
+    desc: {
+      tr: "Santral Han aksesuar turu ardından tarihi Kürkçü Han'da ev tekstili/havlu ve Mercan çanta rotası.",
+      en: "Santral Han accessories followed by Kürkçü Han home textiles and Mercan leather.",
+    },
+    hours: 4,
+    intent: "is" as const,
+    carry: "kargo",
+    items: [
+      { id: "tpl4_1", name: "Roza Bijuteri", qty: "15", target: "95" },
+      { id: "tpl4_2", name: "Sultan Tekstil", qty: "30", target: "180" },
+      { id: "tpl4_3", name: "Mercan Deri", qty: "10", target: "420" },
+    ],
+  },
+];
+
+const QUICK_PICKS = [
+  { label: "+ Santral Han · Roza Bijuteri", name: "Roza Bijuteri", qty: "12", target: "95" },
+  { label: "+ Santral Han · Zenta Elektronik", name: "Zenta Elektronik", qty: "20", target: "85" },
+  { label: "+ Santral Han · Yıldız Saat", name: "Yıldız Saat", qty: "10", target: "240" },
+  { label: "+ Şark Han · Emre Aksesuar", name: "Emre Aksesuar", qty: "24", target: "45" },
+  { label: "+ Mısır Çarşısı · Arif Bey Baharat", name: "Arif Bey Baharat", qty: "2", target: "280" },
+  { label: "+ Zincirli Han · Anadolu Halı", name: "Anadolu Halı", qty: "1", target: "4500" },
+  { label: "+ Kürkçü Han · Sultan Tekstil", name: "Sultan Tekstil", qty: "20", target: "180" },
+  { label: "+ Kalcılar Han · Kaya Gümüş", name: "Kaya Gümüş", qty: "5", target: "750" },
+];
+
 export default function PlanPage() {
   const { state, save, toast } = useApp();
   const router = useRouter();
@@ -38,6 +135,9 @@ export default function PlanPage() {
   const dragged = useRef<string | null>(null);
   const [row, setRow] = useState({ name: "", qty: "", target: "" });
   const [appt, setAppt] = useState({ time: "", title: "", where: "" });
+  const [openFloorPlaceId, setOpenFloorPlaceId] = useState<string | null>("santral");
+  const [selectedShopTarget, setSelectedShopTarget] = useState<{ placeId: string; floor: number; door: string } | null>(null);
+  const [showLiveMap, setShowLiveMap] = useState<boolean>(true);
 
   const trip: Trip | null = (state.trips || []).find((t) => t.id === state.tripId) || (state.trips || [])[0] || null;
 
@@ -150,6 +250,84 @@ export default function PlanPage() {
 
       <div style={sx(planGrid(state.vw))}>
         <main>
+          {/* ── 1-Click Ready-Made Smart Route Templates ───────────────── */}
+          <section style={sx(CARD + ";margin-bottom:16px;border-color:var(--color-primary)")}>
+            <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
+              <div>
+                <div style={sx(KICKER)}>
+                  ⚡ {pk({ tr: "Tek Tıkla Hazır İnteraktif Rota Şablonları", en: "1-Click Interactive Route Templates" }, lang)}
+                </div>
+                <div style={sx("font-size:13.5px;color:var(--text-body);margin-top:3px")}>
+                  {pk(
+                    {
+                      tr: "Tek tek ürün yazmakla uğraşmayın; Santral Han ve Tarihi Yarımada için hazır rotalardan birini seçip anında canlı harita ve kat planıyla yürüyüşe başlayın.",
+                      en: "Skip manual typing — pick a ready-made route starting at Santral Han with live outdoor map and indoor floor plans.",
+                    },
+                    lang,
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:10px;margin-top:12px")}>
+              {ROUTE_TEMPLATES.map((tpl) => (
+                <div
+                  key={tpl.id}
+                  style={sx(
+                    "padding:12px 14px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-muted);display:flex;flex-direction:column;justify-content:space-between;gap:10px",
+                  )}
+                >
+                  <div>
+                    <Badge color="primary" variant="light">
+                      {tpl.badge}
+                    </Badge>
+                    <div style={sx("font-size:14.5px;font-weight:800;color:var(--text-heading);margin-top:6px")}>
+                      {pk(tpl.title, lang)}
+                    </div>
+                    <div style={sx("font-size:12px;color:var(--text-body);margin-top:4px;line-height:1.45")}>
+                      {pk(tpl.desc, lang)}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="solid"
+                    fullWidth
+                    onClick={() => {
+                      const items = tpl.items.map((it, idx) => ({
+                        ...it,
+                        id: `${tpl.id}_${Date.now()}_${idx}`,
+                      }));
+                      patchTrip({
+                        name: pk(tpl.title, lang),
+                        hours: tpl.hours,
+                        intent: tpl.intent,
+                        carry: tpl.carry,
+                        items,
+                        done: [],
+                        order: null,
+                        phase: "rota",
+                      });
+                      save({ buyList: items });
+                      setOpenFloorPlaceId("santral");
+                      toast(
+                        pk(
+                          {
+                            tr: "Canlı rota ve han içi kat planları yüklendi!",
+                            en: "Live route and indoor floor plans loaded!",
+                          },
+                          lang,
+                        ),
+                      );
+                    }}
+                  >
+                    🚀 {pk({ tr: "Bu Rotayı Başlat (Harita + Kat Planı)", en: "Launch This Route" }, lang)}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* ── intent ─────────────────────────────────────────────────── */}
           {trip.phase === "niyet" && (
             <section style={sx(CARD)}>
@@ -215,9 +393,21 @@ export default function PlanPage() {
                       {pk({ tr: "dk", en: "min", ru: "мин", ar: "د" }, lang)}
                     </div>
                   </div>
-                  <Button variant="outline" color="primary" size="sm" onClick={() => router.push(href.map("route"))}>
-                    {W(lang, "seeOnMap")}
-                  </Button>
+                  <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+                    <Button
+                      variant={showLiveMap ? "solid" : "outline"}
+                      color="primary"
+                      size="sm"
+                      onClick={() => setShowLiveMap(!showLiveMap)}
+                    >
+                      🗺️ {showLiveMap
+                        ? pk({ tr: "Canlı Haritayı Gizle", en: "Hide Live Map" }, lang)
+                        : pk({ tr: "Canlı Rota Haritasını Göster", en: "Show Live Route Map" }, lang)}
+                    </Button>
+                    <Button variant="outline" color="primary" size="sm" onClick={() => router.push(href.map("route"))}>
+                      {W(lang, "seeOnMap")} ↗
+                    </Button>
+                  </div>
                 </div>
 
                 <div style={sx("height:8px;border-radius:999px;background:var(--surface-muted);margin-top:12px;overflow:hidden")}>
@@ -231,6 +421,36 @@ export default function PlanPage() {
                     ar: "استُخدم " + pctUsed + "٪ من " + trip.hours + " ساعة",
                   }, lang)}
                 </div>
+
+                {/* Embedded Live Multi-Stop Route Map (Leaflet) */}
+                {showLiveMap && plan.kept.length > 0 && (
+                  <div
+                    style={sx(
+                      "margin-top:14px;border-radius:12px;border:1px solid var(--border-strong);overflow:hidden;background:var(--surface-muted)",
+                    )}
+                  >
+                    <div
+                      style={sx(
+                        "padding:8px 12px;background:var(--surface-subtle);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px",
+                      )}
+                    >
+                      <span style={sx("font-weight:700;color:var(--text-primary)")}>
+                        🧭 {pk({ tr: "Dış Mekan Hanlar Arası Yürüyüş Rotası (Numaralı Duraklar):", en: "Outdoor Inter-Han Walking Route (Numbered Stops):" }, lang)}{" "}
+                        {plan.kept.map((k, idx) => `${idx + 1}. ${k.stop.place.name}`).join(" ➔ ")}
+                      </span>
+                      <span style={sx("color:var(--text-muted);font-weight:600")}>
+                        {pk({ tr: "Haritadaki numaralı pinlere tıklayarak durağı inceleyin", en: "Click numbered pins on the map" }, lang)}
+                      </span>
+                    </div>
+                    <iframe
+                      src={`/han-map.html?lang=${lang}&pts=${encodeURIComponent(
+                        serializeRoutePts(plan.kept.map((k) => ({ place: k.stop.place, shiftNote: k.shiftNote }))),
+                      )}`}
+                      title="Canlı Rota Haritası"
+                      style={sx("display:block;width:100%;height:310px;border:none")}
+                    />
+                  </div>
+                )}
 
                 {/* Manual reordering: drag AND buttons. Dragging alone is hard
                     on touch and impossible from a keyboard. */}
@@ -256,8 +476,26 @@ export default function PlanPage() {
                     icon="rocket"
                     tone="neutral"
                     title={W(lang, "planEmpty")}
-                    description={W(lang, "planEmptyBody")}
-                    actions={<Button color="primary" onClick={() => router.push(href.search())}>{W(lang, "search")}</Button>}
+                    description={pk(
+                      {
+                        tr: "Yukarıdaki 'Tek Tıkla Hazır İnteraktif Rota Şablonları'ndan birini seçin veya sağdaki hızlı dükkân butonlarına tıklayın.",
+                        en: "Pick one of the 1-Click Route Templates above or tap a quick shop chip on the right.",
+                      },
+                      lang,
+                    )}
+                    actions={
+                      <Button
+                        color="primary"
+                        onClick={() => {
+                          const tpl = ROUTE_TEMPLATES[0];
+                          const items = tpl.items.map((it, idx) => ({ ...it, id: `auto_${Date.now()}_${idx}` }));
+                          patchTrip({ name: pk(tpl.title, lang), items, phase: "rota" });
+                          save({ buyList: items });
+                        }}
+                      >
+                        🚀 {pk({ tr: "Santral Han & Tahtakale Örnek Rotasını Yükle", en: "Load Santral Han Sample Route" }, lang)}
+                      </Button>
+                    }
                   />
                 </div>
               ) : (
@@ -267,6 +505,21 @@ export default function PlanPage() {
                     const acc = SC.accessOf(s.place);
                     const isDone = (trip.done || []).includes(s.place.id);
                     const isNow = !isDone && plan.kept.filter((x) => (trip.done || []).includes(x.stop.place.id)).length === i;
+                    const isFloorOpen = openFloorPlaceId === s.place.id;
+                    const firstRec = s.recs[0];
+                    const activeFloorForStop =
+                      selectedShopTarget?.placeId === s.place.id
+                        ? selectedShopTarget.floor
+                        : firstRec
+                          ? firstRec.floor
+                          : s.place.floors[0] || 0;
+                    const activeDoorForStop =
+                      selectedShopTarget?.placeId === s.place.id
+                        ? selectedShopTarget.door
+                        : firstRec
+                          ? String(firstRec.door)
+                          : undefined;
+
                     return (
                       <article
                         key={s.place.id}
@@ -296,12 +549,21 @@ export default function PlanPage() {
                           </span>
 
                           <div style={sx("flex:1;min-width:0")}>
-                            <div style={sx("font-size:16.5px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em")}>{s.place.name}</div>
+                            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+                              <div style={sx("font-size:16.5px;font-weight:800;color:var(--text-heading);letter-spacing:-.01em")}>
+                                {s.place.name}
+                              </div>
+                              {isNow && (
+                                <Badge color="accent" variant="solid">
+                                  📍 {pk({ tr: "Şu Anki Durağınız", en: "Current Stop" }, lang)}
+                                </Badge>
+                              )}
+                            </div>
                             <div style={sx("font-size:13px;color:var(--text-muted);margin-top:3px")}>
                               {hhmm(k.arrive)}–{hhmm(k.arrive + k.dwell)} ·{" "}
                               {k.walk
                                 ? pk({ tr: k.walk + " dk yürüme", en: k.walk + " min walk", ru: k.walk + " мин пешком", ar: k.walk + " د سيرًا" }, lang)
-                                : pk({ tr: "başlangıç", en: "start", ru: "старт", ar: "البداية" }, lang)}
+                                : pk({ tr: "başlangıç durağı", en: "starting stop", ru: "старт", ar: "البداية" }, lang)}
                             </div>
 
                             {/* When we move an arrival, we say why. */}
@@ -315,24 +577,70 @@ export default function PlanPage() {
                             )}
                             <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:4px")}>
                               {[
-                                acc.lift ? pk({ tr: "asansör var", en: "lift", ru: "лифт", ar: "مصعد" }, lang) : pk({ tr: "asansör yok, merdiven", en: "no lift, stairs", ru: "без лифта", ar: "بلا مصعد" }, lang),
-                                acc.handcart ? "" : pk({ tr: "el arabası giremez", en: "no handcart", ru: "без тележки", ar: "لا عربة" }, lang),
+                                acc.lift ? pk({ tr: "🛗 asansör var", en: "🛗 lift available", ru: "лифт", ar: "مصعد" }, lang) : pk({ tr: "🪜 asansör yok, merdiven", en: "🪜 stairs only", ru: "без лифта", ar: "بلا مصعد" }, lang),
+                                acc.handcart ? pk({ tr: "🛒 el arabası uygun", en: "🛒 handcart ok" }, lang) : pk({ tr: "el arabası giremez", en: "no handcart", ru: "без тележки", ar: "لا عربة" }, lang),
                               ].filter(Boolean).join(" · ")}
                             </div>
 
-                            <div style={sx("display:flex;flex-direction:column;gap:5px;margin-top:10px")}>
-                              {s.recs.slice(0, 6).map((r) => (
-                                <button
-                                  key={r.id}
-                                  type="button"
-                                  onClick={() => router.push(href.store(r.curated || r.id))}
-                                  style={sx("display:block;text-align:start;background:none;border:none;padding:0;font-family:inherit;font-size:13px;color:var(--color-primary);cursor:pointer")}
-                                >
-                                  {(r.floor === 0
-                                    ? pk({ tr: "Zemin", en: "Ground", ru: "1-й", ar: "أرضي" }, lang)
-                                    : F(lang, "hanFloor", r.floor)) + " · " + (r.name || r.cat) + " · " + W(lang, "doorNo") + " " + r.door}
-                                </button>
-                              ))}
+                            {/* Interactive Shop Buttons inside Stop: Click to highlight on indoor floor plan */}
+                            <div style={sx("display:flex;flex-direction:column;gap:6px;margin-top:10px")}>
+                              <div style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em")}>
+                                🎯 {pk({ tr: "Bu Handaki Hedef Dükkânlarınız (Tıklayıp Kat Planında Rotayı Çizin):", en: "Target Shops in This Han (Click to Route on Floor Plan):" }, lang)}
+                              </div>
+                              <div style={sx("display:flex;flex-wrap:wrap;gap:6px")}>
+                                {s.recs.slice(0, 6).map((r) => {
+                                  const isSelectedShop =
+                                    isFloorOpen &&
+                                    activeFloorForStop === r.floor &&
+                                    String(activeDoorForStop) === String(r.door);
+                                  return (
+                                    <div
+                                      key={r.id}
+                                      style={sx(
+                                        "display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid " +
+                                          (isSelectedShop ? "var(--color-primary)" : "var(--border-strong)") +
+                                          ";background:" +
+                                          (isSelectedShop ? "var(--color-primary-soft)" : "var(--surface-muted)"),
+                                      )}
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setOpenFloorPlaceId(s.place.id);
+                                          setSelectedShopTarget({
+                                            placeId: s.place.id,
+                                            floor: r.floor,
+                                            door: String(r.door),
+                                          });
+                                        }}
+                                        style={sx(
+                                          "background:none;border:none;padding:0;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--color-primary);cursor:pointer;text-align:start",
+                                        )}
+                                      >
+                                        🧭 {(r.floor === 0
+                                          ? pk({ tr: "Zemin", en: "Ground", ru: "1-й", ar: "أرضي" }, lang)
+                                          : F(lang, "hanFloor", r.floor)) +
+                                          " · " +
+                                          (r.name || r.cat) +
+                                          " · " +
+                                          W(lang, "doorNo") +
+                                          " " +
+                                          r.door}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => router.push(href.store(r.curated || r.id))}
+                                        style={sx(
+                                          "background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:5px;padding:2px 6px;font-family:inherit;font-size:11px;font-weight:700;color:var(--text-body);cursor:pointer",
+                                        )}
+                                        title={pk({ tr: "Dükkân sayfasına git", en: "Open shop page" }, lang)}
+                                      >
+                                        ↗
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
 
                             <div style={sx("display:flex;flex-wrap:wrap;gap:6px;margin-top:10px")}>
@@ -366,10 +674,37 @@ export default function PlanPage() {
                           </div>
                         </div>
 
-                        <div style={sx("border-top:1px solid var(--border-default);padding:10px 17px;display:flex;gap:8px;flex-wrap:wrap")}>
+                        {/* Action Bar on Each Stop: Expand Indoor Floor Plan + Google Maps Gate Walk + Mark Done */}
+                        <div style={sx("border-top:1px solid var(--border-default);padding:10px 17px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--surface-subtle)")}>
+                          <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+                            <Button
+                              variant={isFloorOpen ? "solid" : "outline"}
+                              color="primary"
+                              size="sm"
+                              onClick={() => setOpenFloorPlaceId(isFloorOpen ? null : s.place.id)}
+                            >
+                              🗺️ {isFloorOpen
+                                ? pk({ tr: "Han İçi Kat Planını Kapat", en: "Hide Indoor Floor Plan" }, lang)
+                                : pk({ tr: `${s.place.name} Kat Planını & Kapı Rotasını Aç`, en: `Open ${s.place.name} Indoor Map` }, lang)}
+                            </Button>
+
+                            {s.place.lat && s.place.lng && (
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${s.place.lat},${s.place.lng}&travelmode=walking`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={sx("text-decoration:none")}
+                              >
+                                <Button variant="outline" color="secondary" size="sm">
+                                  🌍 {pk({ tr: "Google Maps ile Han Kapısına Yürü", en: "Walk to Gate (Google Maps)" }, lang)}
+                                </Button>
+                              </a>
+                            )}
+                          </div>
+
                           <Button
-                            variant={isDone ? "light" : "outline"}
-                            color={isDone ? "success" : "primary"}
+                            variant={isDone ? "light" : "solid"}
+                            color={isDone ? "success" : "accent"}
                             size="sm"
                             onClick={() =>
                               patchTrip({
@@ -378,10 +713,23 @@ export default function PlanPage() {
                             }
                           >
                             {isDone
-                              ? pk({ tr: "Bitti", en: "Done", ru: "Готово", ar: "تم" }, lang)
-                              : pk({ tr: "Buradayım · bitti", en: "I'm here · done", ru: "Я здесь · готово", ar: "أنا هنا · تم" }, lang)}
+                              ? pk({ tr: "✓ Tamamlandı", en: "✓ Completed", ru: "Готово", ar: "تم" }, lang)
+                              : pk({ tr: "Buradayım · Durağı Tamamla", en: "I'm Here · Mark Done", ru: "Я здесь · готово", ar: "أنا هنا · تم" }, lang)}
                           </Button>
                         </div>
+
+                        {/* Inline Expandable Interactive Indoor Floor Map right inside the Route Stop! */}
+                        {isFloorOpen && (
+                          <div style={sx("padding:14px;border-top:1px solid var(--border-strong);background:var(--surface-muted)")}>
+                            <SantralFloorMap
+                              key={`${s.place.id}_${activeFloorForStop}_${activeDoorForStop}`}
+                              placeId={s.place.id}
+                              lang={lang}
+                              initialFloor={activeFloorForStop}
+                              initialDoor={activeDoorForStop}
+                            />
+                          </div>
+                        )}
                       </article>
                     );
                   })}
@@ -581,13 +929,49 @@ export default function PlanPage() {
                 onClick={() => {
                   if (!row.name.trim()) return;
                   const item = { id: "b" + Date.now(), name: row.name.trim(), qty: row.qty, target: row.target };
-                  patchTrip({ items: (trip.items || []).concat([item]) });
+                  patchTrip({ items: (trip.items || []).concat([item]), phase: "rota" });
                   save({ buyList: (state.buyList || []).concat([item]) });
                   setRow({ name: "", qty: "", target: "" });
                 }}
               >
                 {W(lang, "addRow")}
               </Button>
+            </div>
+
+            {/* 1-Click Popular Han & Shop Quick Add Chips */}
+            <div style={sx("margin-top:14px;padding-top:12px;border-top:1px solid var(--border-default)")}>
+              <div style={sx("font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em")}>
+                ⚡ {pk({ tr: "Tek Tıkla Rotaya Durak Ekle:", en: "1-Click Add Stop to Route:" }, lang)}
+              </div>
+              <div style={sx("display:flex;flex-wrap:wrap;gap:6px;margin-top:8px")}>
+                {QUICK_PICKS.map((qp) => {
+                  const alreadyIn = (trip.items || []).some((x) => x.name === qp.name);
+                  return (
+                    <button
+                      key={qp.name}
+                      type="button"
+                      onClick={() => {
+                        if (alreadyIn) return;
+                        const item = { id: `qp_${Date.now()}_${qp.name}`, name: qp.name, qty: qp.qty, target: qp.target };
+                        patchTrip({ items: (trip.items || []).concat([item]), phase: "rota" });
+                        save({ buyList: (state.buyList || []).concat([item]) });
+                      }}
+                      style={sx(
+                        "height:26px;padding:0 9px;border-radius:999px;border:1px solid " +
+                          (alreadyIn ? "var(--color-success)" : "var(--border-strong)") +
+                          ";background:" +
+                          (alreadyIn ? "var(--color-success-soft)" : "var(--surface-muted)") +
+                          ";color:" +
+                          (alreadyIn ? "var(--color-success)" : "var(--text-primary)") +
+                          ";font-family:inherit;font-size:11px;font-weight:700;cursor:pointer",
+                      )}
+                    >
+                      {alreadyIn ? "✓ " : ""}
+                      {qp.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {total > 0 && (

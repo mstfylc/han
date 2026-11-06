@@ -355,10 +355,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           hours: 3,
           intent: src.mode === "toptan" ? "is" : "gez",
           carry: "el",
-          // An older buying list is not lost: it becomes the first plan's rows.
-          items: (src.buyList || []).map((b) => ({ id: b.id, name: b.name, qty: b.qty })),
+          // Pre-populate a live Historic Peninsula route starting at Santral Han so /plan is immediately interactive.
+          items: (src.buyList && src.buyList.length)
+            ? src.buyList.map((b) => ({ id: b.id, name: b.name, qty: b.qty }))
+            : [
+                { id: "init_1", name: "Roza Bijuteri", qty: "12", target: "95" },
+                { id: "init_2", name: "Zenta Elektronik", qty: "15", target: "85" },
+                { id: "init_3", name: "Emre Aksesuar", qty: "24", target: "45" },
+                { id: "init_4", name: "Arif Bey Baharat", qty: "2", target: "280" },
+              ],
           done: [],
-          phase: "niyet",
+          phase: "rota",
         }],
         tripId: src.tripId || null,
         talepler: src.talepler || [],

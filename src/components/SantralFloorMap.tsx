@@ -201,7 +201,12 @@ export function SantralFloorMap({
 
   const [floor, setFloor] = useState<number>(resolvedInitialFloor);
   const [viewMode, setViewMode] = useState<"interactive" | "official" | "split">("interactive");
-  const [anchor, setAnchor] = useState<AnchorKey>("orta-pano");
+  const [anchor, setAnchor] = useState<AnchorKey>("giris");
+  const [startDoor, setStartDoor] = useState<string | null>(null);
+  const [entryFloor, setEntryFloor] = useState<number>(place.id === "santral" && place.floors.includes(1) ? 1 : (place.floors[0] ?? 0));
+  const [radarCat, setRadarCat] = useState<string>("all");
+  const [zoom, setZoom] = useState<number>(1);
+  const [liveStepIdx, setLiveStepIdx] = useState<number | null>(null);
   const [filterText, setFilterText] = useState("");
   const [selectedDoor, setSelectedDoor] = useState<string | null>(highlightDoor);
   const [askTraderOpen, setAskTraderOpen] = useState(false);
@@ -329,22 +334,103 @@ export function SantralFloorMap({
   }, [cells, selectedDoor, highlightRecordId, highlightDoor]);
 
   const activeAnchor = useMemo(
-    () => ANCHORS.find((a) => a.id === anchor) || ANCHORS[2],
+    () => ANCHORS.find((a) => a.id === anchor) || ANCHORS[0],
     [anchor],
   );
 
+  const startCell = useMemo(
+    () => (startDoor ? cells.find((c) => c.door === startDoor) || null : null),
+    [cells, startDoor],
+  );
+
+  // Start coordinates (either a custom selected startDoor on this floor, or the selected landmark anchor)
+  const startPoint = useMemo(() => {
+    if (startCell) {
+      return {
+        x: startCell.x + startCell.w / 2,
+        y: startCell.y + startCell.h / 2,
+        corridor: startCell.corridor,
+        label: lang === "tr" ? `Kapı No: ${startCell.door} (${startCell.record?.name || "Mevcut Konum"})` : `Door No: ${startCell.door}`,
+      };
+    }
+    return {
+      x: activeAnchor.x,
+      y: activeAnchor.y,
+      corridor: "Orta" as const,
+      label: tx(activeAnchor, lang),
+    };
+  }, [startCell, activeAnchor, lang]);
+
+  // Cross-floor matches when the user searches for a shop/door located on ANOTHER floor of the same han
+  const otherFloorHits = useMemo(() => {
+    const q = filterText.trim().toLocaleLowerCase("tr");
+    if (q.length < 2) return [];
+    return allPlaceRecords
+      .filter((r) => r.floor !== floor)
+      .filter(
+        (r) =>
+          String(r.door).toLocaleLowerCase("tr").includes(q) ||
+          (r.name || "").toLocaleLowerCase("tr").includes(q) ||
+          (r.cat || "").toLocaleLowerCase("tr").includes(q),
+      )
+      .slice(0, 5);
+  }, [allPlaceRecords, floor, filterText]);
+
+  const matchesRadar = (c: UnitCell, rCat: string): boolean => {
+    if (rCat === "all") return true;
+    if (rCat === "vacant") return c.vacant;
+    if (rCat === "curated") return !!c.record?.curated || c.record?.status === "aktif";
+    const catStr = `${c.record?.cat || ""} ${(c.record?.cats || []).join(" ")} ${c.record?.name || ""}`.toLocaleLowerCase("tr");
+    if (rCat === "bijuteri") return /bijuteri|taki|takı|gümüş|gumus|çelik|celik|kolye|küpe|tesbih|toka|doğaltaş/.test(catStr);
+    if (rCat === "elektronik") return /kilif|kılıf|sarj|şarj|telefon|elektronik|kablo|kulaklık|ses|kamera/.test(catStr);
+    if (rCat === "saat") return /saat|pil|batarya|kumanda|optik|gözlük/.test(catStr);
+    return true;
+  };
+
   const filteredCells = useMemo(() => {
     const q = filterText.trim().toLocaleLowerCase("tr");
-    if (!q) return cells;
     return cells.filter((c) => {
+      if (!matchesRadar(c, radarCat)) return false;
+      if (!q) return true;
       if (c.door.toLocaleLowerCase("tr").includes(q)) return true;
       if (c.record?.name?.toLocaleLowerCase("tr").includes(q)) return true;
       if (c.record?.cat?.toLocaleLowerCase("tr").includes(q)) return true;
       return false;
     });
-  }, [cells, filterText]);
+  }, [cells, filterText, radarCat]);
 
   const currentFloorLabel = floorLabel(floor, lang, place);
+  const entryFloorLabel = floorLabel(entryFloor, lang, place);
+  const floorDiff = floor - entryFloor;
+
+  // Approximate indoor walking distance in meters & seconds
+  const routeMetrics = useMemo(() => {
+    if (!activeCell) return { meters: 0, secs: 0, midX: 450, midY: 200, pathD: "" };
+    const txCoord = activeCell.x + activeCell.w / 2;
+    const tyCoord = activeCell.y + activeCell.h / 2;
+    const targetCorrY = activeCell.corridor === "Üst" ? 130 : activeCell.corridor === "Alt" ? 274 : 200;
+    const startCorrY = startCell
+      ? startCell.corridor === "Üst"
+        ? 130
+        : startCell.corridor === "Alt"
+          ? 274
+          : 200
+      : targetCorrY;
+
+    const dx = Math.abs(txCoord - startPoint.x);
+    const dy = Math.abs(tyCoord - startPoint.y);
+    const floorPenaltyMeters = Math.abs(floorDiff) * 18;
+    const meters = Math.max(8, Math.round((dx + dy) * 0.085 + floorPenaltyMeters));
+    const secs = Math.max(15, Math.round(meters * 1.1 + Math.abs(floorDiff) * 25));
+
+    const pathD = startCell && startCorrY !== targetCorrY
+      ? `M ${startPoint.x} ${startPoint.y} L ${startPoint.x} ${startCorrY} L 450 ${startCorrY} L 450 ${targetCorrY} L ${txCoord} ${targetCorrY} L ${txCoord} ${tyCoord}`
+      : `M ${startPoint.x} ${startPoint.y} L ${startPoint.x} ${targetCorrY} L ${txCoord} ${targetCorrY} L ${txCoord} ${tyCoord}`;
+
+    const midX = Math.round((startPoint.x + txCoord) / 2);
+    const midY = targetCorrY;
+    return { meters, secs, midX, midY, pathD };
+  }, [activeCell, startCell, startPoint, floorDiff]);
   const specialty = useMemo(() => {
     if (isSantral && SANTRAL_FLOOR_SPECIALTY[floor]) {
       return tx(SANTRAL_FLOOR_SPECIALTY[floor], lang);
@@ -365,36 +451,93 @@ export function SantralFloorMap({
 
   const officialPlanUrl = isSantral ? `/assets/santral/kat-${floor}.jpg` : null;
 
-  // Step-by-step indoor instruction from activeAnchor to activeCell
+  // Step-by-step indoor instruction from activeAnchor / startDoor (including cross-floor vertical guidance) to activeCell
   const indoorSteps = useMemo(() => {
     if (!activeCell) return [];
     const corrLabel =
       activeCell.corridor === "Üst"
         ? lang === "tr"
-          ? "Üst Koridor (Kuzey Kanadı)"
+          ? isCourtyard ? "Kuzey Revan Galerisi" : "Üst Koridor (Kuzey Kanadı)"
           : "Upper Corridor (North Wing)"
         : activeCell.corridor === "Orta"
           ? lang === "tr"
-            ? "Orta Ada Koridoru"
-            : "Central Island Corridor"
+            ? isCourtyard ? "Tarihi Orta Avlu Çevresi" : "Orta Ada Koridoru"
+            : "Central Corridor"
           : lang === "tr"
-            ? "Alt Koridor (Güney Kanadı)"
+            ? isCourtyard ? "Güney Revan Galerisi" : "Alt Koridor (Güney Kanadı)"
             : "Lower Corridor (South Wing)";
 
     const shopTitle = activeCell.record ? activeCell.record.name : `Kapı No: ${activeCell.door} (Boş / Kiralık)`;
+    const dirSide = activeCell.x + activeCell.w / 2 < startPoint.x - 40
+      ? (lang === "tr" ? "sol kola (Batı yönüne)" : "to the left wing")
+      : activeCell.x + activeCell.w / 2 > startPoint.x + 40
+        ? (lang === "tr" ? "sağ kola (Doğu yönüne)" : "to the right wing")
+        : (lang === "tr" ? "doğrudan karşı hatta" : "straight ahead");
+
     if (lang === "tr") {
-      return [
-        `1. Başlangıç: ${activeAnchor.tr} noktasındasınız (${place.name} · ${currentFloorLabel}).`,
-        `2. Yönelim: ${corrLabel} hattına ilerleyin; kapı numaraları sırayla yükselir.`,
-        `3. Hedef: Kapı No: ${activeCell.door} — ${shopTitle}.`,
-      ];
+      const steps: { title: string; detail: string; badge: string }[] = [];
+      if (!startCell && floorDiff !== 0) {
+        steps.push({
+          badge: `1 · Giriş (${entryFloorLabel})`,
+          title: `${place.name} ${entryFloorLabel} kapısından girin`,
+          detail: floorDiff > 0
+            ? `Ana merdiven veya asansör ile ${floorDiff} kat yukarı (${currentFloorLabel} seviyesine) çıkın.`
+            : `Merdiven veya asansör ile ${Math.abs(floorDiff)} kat aşağı (${currentFloorLabel} seviyesine) inin.`,
+        });
+      } else {
+        steps.push({
+          badge: `1 · Başlangıç (${currentFloorLabel})`,
+          title: `${startPoint.label} noktasından yürüyüşe başlayın`,
+          detail: `${place.name} · ${currentFloorLabel} seviyesindesiniz.`,
+        });
+      }
+      steps.push({
+        badge: `2 · Koridor (${corrLabel})`,
+        title: `${corrLabel} hattına geçip ${dirSide} ilerleyin`,
+        detail: `Yaklaşık ${routeMetrics.meters} metre (~${Math.max(1, Math.round(routeMetrics.secs / 60))} dk) yürüyün; kapı numaralarını takip edin.`,
+      });
+      steps.push({
+        badge: `3 · Varış (No: ${activeCell.door})`,
+        title: `Kapı No: ${activeCell.door} — ${shopTitle}`,
+        detail: activeCell.record
+          ? `Mağazaya ulaştınız. Tel: +${activeCell.record.tel} · ${activeCell.record.moq > 1 ? `Min. ${activeCell.record.moq} adet` : "Perakende & Toptan açık"}.`
+          : `Müsait / kiralık birim konumuna ulaştınız.`,
+      });
+      return steps;
     }
+
     return [
-      `1. Start at: ${tx(activeAnchor, lang)} (${place.name} · ${currentFloorLabel}).`,
-      `2. Walk along: ${corrLabel}; follow the door numbers in sequence.`,
-      `3. Arrive at: Door No: ${activeCell.door} — ${shopTitle}.`,
+      {
+        badge: `1 · Start (${currentFloorLabel})`,
+        title: `Start at ${startPoint.label}`,
+        detail: floorDiff !== 0 ? `Take the lift or stairs from ${entryFloorLabel} to ${currentFloorLabel}.` : `You are on ${currentFloorLabel} at ${place.name}.`,
+      },
+      {
+        badge: `2 · Corridor (${corrLabel})`,
+        title: `Walk along ${corrLabel} (${dirSide})`,
+        detail: `Proceed ~${routeMetrics.meters} meters following the door numbers in sequence.`,
+      },
+      {
+        badge: `3 · Arrive (Door ${activeCell.door})`,
+        title: `Door No: ${activeCell.door} — ${shopTitle}`,
+        detail: `You have arrived at your destination.`,
+      },
     ];
-  }, [activeCell, activeAnchor, place.name, currentFloorLabel, lang]);
+  }, [activeCell, startCell, startPoint, floorDiff, entryFloorLabel, currentFloorLabel, place.name, lang, isCourtyard, routeMetrics]);
+
+  const speakDirections = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const text = indoorSteps.map((s) => `${s.title}. ${s.detail}`).join(" ");
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang === "tr" ? "tr-TR" : lang === "ru" ? "ru-RU" : lang === "ar" ? "ar-SA" : "en-US";
+      utter.rate = 1.0;
+      window.speechSynthesis.speak(utter);
+    } catch {
+      /* ignore speech errors */
+    }
+  };
 
   return (
     <div
@@ -457,52 +600,110 @@ export function SantralFloorMap({
         )}
       </div>
 
-      {/* Floor Selector Strip (Z, A, B, C, D, E, F) */}
+      {/* Floor Selector Strip (Z, A, B, C, D, E, F) + Vertical Cross-Floor Indicator */}
       <div
         style={sx(
-          "padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:6px;overflow-x:auto;background:var(--surface-card)",
+          "padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface-card)",
         )}
       >
-        <span style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted);margin-inline-end:4px;white-space:nowrap")}>
-          {lang === "tr" ? "KAT SEÇİN:" : "FLOOR:"}
-        </span>
-        {place.floors.map((f) => {
-          const on = f === floor;
-          const cnt = allPlaceRecords.filter((r) => r.floor === f).length;
-          const fLbl = floorLabel(f, lang, place);
-          return (
-            <button
-              key={f}
-              type="button"
-              onClick={() => {
-                setFloor(f);
-                setSelectedDoor(null);
-              }}
-              style={sx(
-                "flex:none;height:34px;padding:0 12px;border-radius:8px;border:1px solid " +
-                  (on ? "var(--color-primary)" : "var(--border-subtle)") +
-                  ";background:" +
-                  (on ? "var(--color-primary)" : "var(--surface-muted)") +
-                  ";color:" +
-                  (on ? "var(--color-primary-inverse)" : "var(--text-primary)") +
-                  ";font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px",
-              )}
-            >
-              <span>{fLbl}</span>
-              <span
+        <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto")}>
+          <span style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted);margin-inline-end:4px;white-space:nowrap")}>
+            {lang === "tr" ? "HEDEF KAT:" : "TARGET FLOOR:"}
+          </span>
+          {place.floors.map((f) => {
+            const on = f === floor;
+            const cnt = allPlaceRecords.filter((r) => r.floor === f).length;
+            const fLbl = floorLabel(f, lang, place);
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => {
+                  setFloor(f);
+                  setSelectedDoor(null);
+                  setStartDoor(null);
+                  setLiveStepIdx(null);
+                }}
                 style={sx(
-                  "padding:1px 6px;border-radius:999px;font-size:10.5px;background:" +
-                    (on ? "var(--surface-card)" : "var(--surface-elevated)") +
+                  "flex:none;height:34px;padding:0 12px;border-radius:8px;border:1px solid " +
+                    (on ? "var(--color-primary)" : "var(--border-subtle)") +
+                    ";background:" +
+                    (on ? "var(--color-primary)" : "var(--surface-muted)") +
                     ";color:" +
-                    (on ? "var(--color-primary)" : "var(--text-muted)"),
+                    (on ? "#fff" : "var(--text-primary)") +
+                    ";font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px",
                 )}
               >
-                {cnt}
-              </span>
-            </button>
-          );
-        })}
+                <span>{fLbl}</span>
+                <span
+                  style={sx(
+                    "padding:1px 6px;border-radius:999px;font-size:10.5px;background:" +
+                      (on ? "var(--surface-card)" : "var(--surface-elevated)") +
+                      ";color:" +
+                      (on ? "var(--color-primary)" : "var(--text-muted)"),
+                  )}
+                >
+                  {cnt}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {place.floors.length > 1 && (
+          <div style={sx("display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-muted)")}>
+            <span style={sx("font-weight:700")}>
+              {lang === "tr" ? "Giriş Yaptığım Kat:" : "My Entry Floor:"}
+            </span>
+            <select
+              value={entryFloor}
+              onChange={(e) => setEntryFloor(Number(e.target.value))}
+              style={sx(
+                "height:28px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--text-primary);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer",
+              )}
+            >
+              {place.floors.map((f) => (
+                <option key={f} value={f}>
+                  {floorLabel(f, lang, place)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
+
+      {/* Cross-Floor Vertical Journey Banner when target floor !== entry floor */}
+      {floorDiff !== 0 && (
+        <div
+          style={sx(
+            "padding:8px 14px;background:var(--color-primary-soft);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px",
+          )}
+        >
+          <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text-primary);font-weight:700")}>
+            <span>🪜 {lang === "tr" ? "Katlar Arası Dikey Rota Aktif:" : "Cross-Floor Vertical Route:"}</span>
+            <span style={sx("padding:2px 8px;border-radius:6px;background:var(--surface-card);border:1px solid var(--border-subtle)")}>
+              1. {entryFloorLabel}
+            </span>
+            <span>➔</span>
+            <span style={sx("padding:2px 8px;border-radius:6px;background:var(--color-accent-soft);color:var(--text-primary)")}>
+              2. {floorDiff > 0 ? `+${floorDiff} Kat Yukarı (Asansör / Merdiven)` : `${Math.abs(floorDiff)} Kat Aşağı (Merdiven)`}
+            </span>
+            <span>➔</span>
+            <span style={sx("padding:2px 8px;border-radius:6px;background:var(--color-primary);color:#fff")}>
+              3. {currentFloorLabel} {activeCell ? `· Kapı No: ${activeCell.door}` : ""}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEntryFloor(floor)}
+            style={sx(
+              "background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--color-primary);cursor:pointer;text-decoration:underline",
+            )}
+          >
+            {lang === "tr" ? "Zaten bu kattayım" : "I am already on this floor"}
+          </button>
+        </div>
+      )}
 
       {/* Indoor No-GPS Location Anchor Bar + Quick Search */}
       <div
@@ -512,42 +713,159 @@ export function SantralFloorMap({
       >
         <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
           <span style={sx("font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
-            📍 {lang === "tr" ? "Han İçi Konum Çapası (GPS Gerekmez):" : "Indoor Anchor (No GPS):"}
+            📍 {lang === "tr" ? "Başlangıç Noktam (Haritadan veya Buradan Seçin):" : "My Start Point (Click Map or Select):"}
           </span>
           {ANCHORS.map((a) => {
-            const on = a.id === anchor;
+            const on = !startCell && a.id === anchor;
             return (
               <button
                 key={a.id}
                 type="button"
-                onClick={() => setAnchor(a.id)}
+                onClick={() => {
+                  setStartDoor(null);
+                  setAnchor(a.id);
+                }}
                 style={sx(
-                  "height:26px;padding:0 9px;border-radius:6px;border:1px solid " +
-                    (on ? "var(--color-accent)" : "var(--border-subtle)") +
+                  "height:28px;padding:0 10px;border-radius:6px;border:1px solid " +
+                    (on ? "var(--color-primary)" : "var(--border-subtle)") +
                     ";background:" +
-                    (on ? "var(--color-accent-soft)" : "var(--surface-card)") +
+                    (on ? "var(--color-primary)" : "var(--surface-card)") +
                     ";color:" +
-                    (on ? "var(--text-primary)" : "var(--text-body)") +
-                    ";font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer",
+                    (on ? "#fff" : "var(--text-body)") +
+                    ";font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer",
                 )}
               >
                 {tx(a, lang)}
               </button>
             );
           })}
+          {startCell && (
+            <span
+              style={sx(
+                "display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:6px;background:var(--color-accent);color:var(--color-accent-inverse);font-size:11.5px;font-weight:800",
+              )}
+            >
+              📍 {lang === "tr" ? `Başlangıç: Kapı ${startCell.door}` : `Start: Door ${startCell.door}`}
+              <button
+                type="button"
+                onClick={() => setStartDoor(null)}
+                style={sx("background:none;border:none;color:inherit;font-weight:900;cursor:pointer;padding:0 2px")}
+                title={lang === "tr" ? "Başlangıç kapısını sıfırla" : "Reset start door"}
+              >
+                ×
+              </button>
+            </span>
+          )}
         </div>
 
-        <div style={sx("min-width:210px;flex:1;max-width:280px")}>
+        <div style={sx("min-width:220px;flex:1;max-width:310px")}>
           <Input
             size="sm"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             placeholder={
               lang === "tr"
-                ? `${currentFloorLabel} içinde kapı no veya esnaf ara…`
-                : `Filter door no. or trader on ${currentFloorLabel}…`
+                ? `${place.name} içinde kapı no, esnaf veya ürün ara…`
+                : `Search door no., shop or product in ${place.name}…`
             }
           />
+        </div>
+      </div>
+
+      {/* Cross-Floor Search Suggestions (if user searches for a shop located on another floor) */}
+      {otherFloorHits.length > 0 && (
+        <div
+          style={sx(
+            "padding:8px 14px;background:var(--color-warning-soft);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:8px;flex-wrap:wrap",
+          )}
+        >
+          <span style={sx("font-size:11.5px;font-weight:800;color:var(--text-primary)")}>
+            🔎 {lang === "tr" ? "Diğer katlarda bulundu (Tıklayıp o kata geçin):" : "Found on other floors (Click to jump):"}
+          </span>
+          {otherFloorHits.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => {
+                setFloor(r.floor);
+                setSelectedDoor(String(r.door));
+                setFilterText("");
+                if (onSelectRecord) onSelectRecord(r.curated || r.id);
+              }}
+              style={sx(
+                "height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--color-primary);background:var(--surface-card);color:var(--color-primary);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer",
+              )}
+            >
+              {floorLabel(r.floor, lang, place)} · Kapı {r.door} · {r.name} ➔
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Smart Category Radar Filter Bar + Zoom Controls */}
+      <div
+        style={sx(
+          "padding:8px 14px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
+        )}
+      >
+        <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+          <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em")}>
+            🎯 {lang === "tr" ? "Kat Radarı:" : "Floor Radar:"}
+          </span>
+          {(
+            [
+              ["all", lang === "tr" ? "Tümü" : "All"],
+              ["vitrin", lang === "tr" ? "⭐ Vitrin & Aktif" : "⭐ Active"],
+              ["bijuteri", lang === "tr" ? "💎 Bijuteri & Takı" : "💎 Jewelry"],
+              ["elektronik", lang === "tr" ? "📱 Telefon & Elektronik" : "📱 Electronics"],
+              ["saat", lang === "tr" ? "⌚ Saat & Gözlük" : "⌚ Watch & Optics"],
+              ["bos", lang === "tr" ? "🟢 Boş / Kiralık" : "🟢 Vacant"],
+            ] as const
+          ).map(([id, label]) => {
+            const on = radarCat === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setRadarCat(id)}
+                style={sx(
+                  "height:26px;padding:0 9px;border-radius:999px;border:1px solid " +
+                    (on ? "var(--color-primary)" : "var(--border-subtle)") +
+                    ";background:" +
+                    (on ? "var(--color-primary)" : "var(--surface-muted)") +
+                    ";color:" +
+                    (on ? "#fff" : "var(--text-body)") +
+                    ";font-family:inherit;font-size:11px;font-weight:700;cursor:pointer",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={sx("display:flex;align-items:center;gap:4px")}>
+          <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted);margin-inline-end:4px")}>
+            🔍 {lang === "tr" ? "Yakınlaştır:" : "Zoom:"}
+          </span>
+          {[1, 1.35, 1.75].map((z) => (
+            <button
+              key={z}
+              type="button"
+              onClick={() => setZoom(z)}
+              style={sx(
+                "height:25px;padding:0 8px;border-radius:6px;border:1px solid " +
+                  (zoom === z ? "var(--color-primary)" : "var(--border-subtle)") +
+                  ";background:" +
+                  (zoom === z ? "var(--color-primary)" : "var(--surface-muted)") +
+                  ";color:" +
+                  (zoom === z ? "#fff" : "var(--text-body)") +
+                  ";font-family:inherit;font-size:11px;font-weight:700;cursor:pointer",
+              )}
+            >
+              {Math.round(z * 100)}%
+            </button>
+          ))}
         </div>
       </div>
 
@@ -560,8 +878,8 @@ export function SantralFloorMap({
             )}
           >
             <svg
-              viewBox="0 0 900 380"
-              style={sx("width:100%;min-width:680px;height:auto;display:block")}
+              viewBox="0 0 900 385"
+              style={sx(`width:${Math.round(zoom * 100)}%;min-width:680px;height:auto;display:block;transition:width 180ms ease`)}
               role="img"
               aria-label={`${place.name} ${currentFloorLabel} Kat Planı`}
             >
@@ -570,7 +888,7 @@ export function SantralFloorMap({
                 x="14"
                 y="12"
                 width="872"
-                height="356"
+                height="360"
                 rx="12"
                 fill="var(--surface-card)"
                 stroke="var(--border-strong)"
@@ -581,42 +899,65 @@ export function SantralFloorMap({
               <rect x="26" y="114" width="848" height="32" rx="4" fill="var(--surface-subtle)" />
               <rect x="26" y="258" width="848" height="32" rx="4" fill="var(--surface-subtle)" />
 
-              {/* Left & Right Staircases + Lift */}
-              <g>
+              {/* Left Staircase + Lift (Clickable Start Landmark) */}
+              <g
+                onClick={() => {
+                  setStartDoor(null);
+                  setAnchor("stair_left");
+                }}
+                style={{ cursor: "pointer" }}
+              >
                 <rect
                   x="34"
                   y="152"
                   width="108"
                   height="98"
                   rx="8"
-                  fill="var(--surface-muted)"
-                  stroke="var(--border-strong)"
-                  strokeDasharray="4 2"
+                  fill={!startCell && anchor === "stair_left" ? "var(--color-primary-soft)" : "var(--surface-muted)"}
+                  stroke={!startCell && anchor === "stair_left" ? "var(--color-primary)" : "var(--border-strong)"}
+                  strokeWidth={!startCell && anchor === "stair_left" ? "2.5" : "1.5"}
+                  strokeDasharray={!startCell && anchor === "stair_left" ? undefined : "4 2"}
                 />
                 <text
                   x="88"
-                  y="192"
+                  y="186"
                   textAnchor="middle"
                   fill="var(--text-primary)"
-                  fontSize="11"
-                  fontWeight="700"
+                  fontSize="10.5"
+                  fontWeight="800"
                 >
                   {isCourtyard ? "BATI REVAN" : "SOL MERDİVEN"}
                 </text>
                 <text
                   x="88"
-                  y="210"
+                  y="204"
                   textAnchor="middle"
                   fill="var(--color-primary)"
-                  fontSize="10"
+                  fontSize="9.5"
                   fontWeight="700"
                 >
                   {isCourtyard ? "🏛️ TAŞ MERDİVEN" : "⇅ ASANSÖR & WC"}
                 </text>
+                <text
+                  x="88"
+                  y="224"
+                  textAnchor="middle"
+                  fill="var(--text-muted)"
+                  fontSize="8.5"
+                  fontWeight="700"
+                >
+                  {!startCell && anchor === "stair_left" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
+                </text>
               </g>
 
-              {/* Central Architectural Spine (Courtyard vs Multi-Corridor Center) */}
-              <g>
+              {/* Central Architectural Spine (Clickable Start Landmark) */}
+              <g
+                onClick={() => {
+                  setStartDoor(null);
+                  setAnchor("center_hall");
+                }}
+                style={{ cursor: "pointer" }}
+              >
                 <rect
                   x="404"
                   y="148"
@@ -624,71 +965,119 @@ export function SantralFloorMap({
                   height="106"
                   rx="8"
                   fill={isCourtyard ? "var(--color-accent-soft)" : "var(--color-primary-soft)"}
-                  stroke={isCourtyard ? "var(--color-accent)" : "var(--color-primary)"}
-                  strokeWidth="1.5"
+                  stroke={!startCell && anchor === "center_hall" ? "var(--color-primary)" : isCourtyard ? "var(--color-accent)" : "var(--color-primary)"}
+                  strokeWidth={!startCell && anchor === "center_hall" ? "2.5" : "1.5"}
                 />
                 <text
                   x="450"
-                  y="186"
+                  y="182"
                   textAnchor="middle"
                   fill="var(--color-primary)"
-                  fontSize="12.5"
+                  fontSize="12"
                   fontWeight="800"
                 >
                   {currentFloorLabel.toUpperCase()}
                 </text>
                 <text
                   x="450"
-                  y="205"
+                  y="200"
                   textAnchor="middle"
                   fill="var(--text-body)"
-                  fontSize="10"
+                  fontSize="9.5"
                   fontWeight="700"
                 >
-                  {isCourtyard ? "TARİHİ AVLU" : "KAT PLANI"}
+                  {isCourtyard ? "TARİHİ AVLU" : "ORTA HOL"}
                 </text>
                 <text
                   x="450"
-                  y="223"
+                  y="218"
                   textAnchor="middle"
                   fill="var(--text-muted)"
-                  fontSize="9.5"
-                  fontWeight="600"
+                  fontSize="8.5"
+                  fontWeight="700"
                 >
-                  {isCourtyard ? "ŞADIRVAN / REVAN" : "ORTA HOL"}
+                  {!startCell && anchor === "center_hall" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
                 </text>
               </g>
 
-              <g>
+              {/* Right Staircase / Tea Stall (Clickable Start Landmark) */}
+              <g
+                onClick={() => {
+                  setStartDoor(null);
+                  setAnchor("stair_right");
+                }}
+                style={{ cursor: "pointer" }}
+              >
                 <rect
                   x="758"
                   y="152"
                   width="108"
                   height="98"
                   rx="8"
-                  fill="var(--surface-muted)"
-                  stroke="var(--border-strong)"
-                  strokeDasharray="4 2"
+                  fill={!startCell && anchor === "stair_right" ? "var(--color-primary-soft)" : "var(--surface-muted)"}
+                  stroke={!startCell && anchor === "stair_right" ? "var(--color-primary)" : "var(--border-strong)"}
+                  strokeWidth={!startCell && anchor === "stair_right" ? "2.5" : "1.5"}
+                  strokeDasharray={!startCell && anchor === "stair_right" ? undefined : "4 2"}
                 />
                 <text
                   x="812"
-                  y="192"
+                  y="186"
                   textAnchor="middle"
                   fill="var(--text-primary)"
-                  fontSize="11"
-                  fontWeight="700"
+                  fontSize="10.5"
+                  fontWeight="800"
                 >
                   {isCourtyard ? "DOĞU REVAN" : "SAĞ MERDİVEN"}
                 </text>
                 <text
                   x="812"
-                  y="210"
+                  y="204"
                   textAnchor="middle"
                   fill="var(--color-accent)"
-                  fontSize="10"
+                  fontSize="9.5"
                   fontWeight="700"
                 >
                   ☕ ÇAY OCAĞI / WC
+                </text>
+                <text
+                  x="812"
+                  y="224"
+                  textAnchor="middle"
+                  fill="var(--text-muted)"
+                  fontSize="8.5"
+                  fontWeight="700"
+                >
+                  {!startCell && anchor === "stair_right" ? "📍 BURADASINIZ" : "(Başlangıç seç)"}
+                </text>
+              </g>
+
+              {/* Main Entrance Gate Button at Bottom Center */}
+              <g
+                onClick={() => {
+                  setStartDoor(null);
+                  setAnchor("main_gate");
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                <rect
+                  x="375"
+                  y="348"
+                  width="150"
+                  height="22"
+                  rx="6"
+                  fill={!startCell && anchor === "main_gate" ? "var(--color-primary)" : "var(--surface-elevated)"}
+                  stroke="var(--color-primary)"
+                  strokeWidth="1.5"
+                />
+                <text
+                  x="450"
+                  y="363"
+                  textAnchor="middle"
+                  fill={!startCell && anchor === "main_gate" ? "#fff" : "var(--color-primary)"}
+                  fontSize="9.5"
+                  fontWeight="800"
+                >
+                  🚪 ANA GİRİŞ / DANIŞMA {!startCell && anchor === "main_gate" ? "(AKTİF)" : ""}
                 </text>
               </g>
 
@@ -703,37 +1092,43 @@ export function SantralFloorMap({
               {/* Shop Unit Cells */}
               {cells.map((cell) => {
                 const isTarget = activeCell?.door === cell.door;
+                const isStart = startCell?.door === cell.door;
                 const isFilteredOut =
-                  filterText.trim().length > 0 && !filteredCells.some((fc) => fc.door === cell.door);
+                  (filterText.trim().length > 0 && !filteredCells.some((fc) => fc.door === cell.door)) ||
+                  !matchesRadar(cell);
                 const isCurated = !!cell.record?.curated;
                 const status = cell.record?.status;
 
                 const fill = isTarget
                   ? "var(--color-accent)"
-                  : cell.vacant
-                    ? "var(--surface-subtle)"
-                    : isCurated
-                      ? "var(--color-primary)"
-                      : status === "aktif"
-                        ? "var(--color-success-soft)"
-                        : status === "onayli"
-                          ? "var(--color-primary-soft)"
-                          : "var(--color-warning-soft)";
+                  : isStart
+                    ? "var(--color-success)"
+                    : cell.vacant
+                      ? "var(--surface-subtle)"
+                      : isCurated
+                        ? "var(--color-primary)"
+                        : status === "aktif"
+                          ? "var(--color-success-soft)"
+                          : status === "onayli"
+                            ? "var(--color-primary-soft)"
+                            : "var(--color-warning-soft)";
 
                 const stroke = isTarget
                   ? "var(--color-primary)"
-                  : cell.vacant
-                    ? "var(--border-strong)"
-                    : isCurated
-                      ? "var(--color-primary)"
-                      : status === "aktif"
-                        ? "var(--color-success)"
-                        : "var(--border-strong)";
+                  : isStart
+                    ? "var(--color-success)"
+                    : cell.vacant
+                      ? "var(--border-strong)"
+                      : isCurated
+                        ? "var(--color-primary)"
+                        : status === "aktif"
+                          ? "var(--color-success)"
+                          : "var(--border-strong)";
 
                 const textColor = isTarget
                   ? "var(--color-accent-inverse)"
-                  : isCurated
-                    ? "var(--color-primary-inverse)"
+                  : isStart || isCurated
+                    ? "#fff"
                     : cell.vacant
                       ? "var(--text-muted)"
                       : "var(--text-primary)";
@@ -743,13 +1138,14 @@ export function SantralFloorMap({
                     key={cell.door}
                     onClick={() => {
                       setSelectedDoor(cell.door);
+                      setLiveStepIdx(null);
                       if (cell.record && onSelectRecord) {
                         onSelectRecord(cell.record.curated || cell.record.id);
                       }
                     }}
                     style={{
                       cursor: "pointer",
-                      opacity: isFilteredOut ? 0.25 : 1,
+                      opacity: isFilteredOut && !isTarget && !isStart ? 0.22 : 1,
                       transition: "opacity 150ms ease",
                     }}
                   >
@@ -761,7 +1157,7 @@ export function SantralFloorMap({
                       rx="5"
                       fill={fill}
                       stroke={stroke}
-                      strokeWidth={isTarget ? "2.5" : "1"}
+                      strokeWidth={isTarget || isStart ? "2.5" : "1"}
                       strokeDasharray={cell.vacant ? "3 2" : undefined}
                     />
                     <text
@@ -783,45 +1179,95 @@ export function SantralFloorMap({
                         fontSize="7.5"
                         fontWeight="600"
                       >
-                        {cell.vacant
-                          ? "BOŞ"
-                          : (cell.record?.name || "").split(" ")[0].slice(0, 6)}
+                        {isStart
+                          ? "BAŞLA"
+                          : cell.vacant
+                            ? "BOŞ"
+                            : (cell.record?.name || "").split(" ")[0].slice(0, 6)}
                       </text>
                     )}
                   </g>
                 );
               })}
 
-              {/* Animated Indoor Walking Route from Active Anchor to Selected Door */}
-              {activeCell && (
+              {/* Animated Indoor Walking Route from Start Point (Anchor or Start Door) to Selected Target Door */}
+              {activeCell && routeMetrics && (
                 <g pointerEvents="none">
-                  <circle
-                    cx={activeAnchor.x}
-                    cy={activeAnchor.y}
-                    r="7"
-                    fill="var(--color-primary)"
-                    stroke="var(--surface-card)"
-                    strokeWidth="2"
-                  />
+                  {/* Glowing background path */}
                   <path
-                    d={`M ${activeAnchor.x} ${activeAnchor.y} L ${activeAnchor.x} ${
-                      activeCell.corridor === "Üst" ? 130 : activeCell.corridor === "Alt" ? 274 : 200
-                    } L ${activeCell.x + activeCell.w / 2} ${
-                      activeCell.corridor === "Üst" ? 130 : activeCell.corridor === "Alt" ? 274 : 200
-                    } L ${activeCell.x + activeCell.w / 2} ${activeCell.y + activeCell.h / 2}`}
+                    d={routeMetrics.pathD}
+                    fill="none"
+                    stroke="var(--color-accent)"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.28"
+                  />
+                  {/* Animated marching ants foreground path */}
+                  <path
+                    d={routeMetrics.pathD}
                     fill="none"
                     stroke="var(--color-primary)"
-                    strokeWidth="3"
-                    strokeDasharray="6 4"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray="8 6"
+                  >
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from="28"
+                      to="0"
+                      dur="0.9s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+
+                  {/* Start Point Marker */}
+                  <circle
+                    cx={startPoint.x}
+                    cy={startPoint.y}
+                    r="8"
+                    fill="var(--color-success)"
+                    stroke="#fff"
+                    strokeWidth="2.5"
                   />
+
+                  {/* Distance & Walking Time Pill on Route Midpoint */}
+                  <g transform={`translate(${Math.min(820, Math.max(80, routeMetrics.midX))}, ${routeMetrics.midY})`}>
+                    <rect
+                      x="-54"
+                      y="-12"
+                      width="108"
+                      height="22"
+                      rx="11"
+                      fill="var(--color-primary)"
+                      stroke="#fff"
+                      strokeWidth="1.5"
+                    />
+                    <text
+                      x="0"
+                      y="3"
+                      textAnchor="middle"
+                      fill="#fff"
+                      fontSize="9.5"
+                      fontWeight="800"
+                    >
+                      🚶 ~{routeMetrics.meters}m · {routeMetrics.secs} sn
+                    </text>
+                  </g>
+
+                  {/* Pulsing Target Ring on Destination Door */}
                   <circle
                     cx={activeCell.x + activeCell.w / 2}
                     cy={activeCell.y + activeCell.h / 2}
-                    r="11"
+                    r="14"
                     fill="none"
-                    stroke="var(--color-primary)"
-                    strokeWidth="2.5"
-                  />
+                    stroke="var(--color-accent)"
+                    strokeWidth="3"
+                  >
+                    <animate attributeName="r" values="11;18;11" dur="1.5s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="1;0.35;1" dur="1.5s" repeatCount="indefinite" />
+                  </circle>
                 </g>
               )}
             </svg>
@@ -853,8 +1299,8 @@ export function SantralFloorMap({
             </div>
             <span>
               {lang === "tr"
-                ? "💡 Bir kapı numarasına dokunarak dükkân kartını ve yürüyüş rotasını açın."
-                : "💡 Tap any door number to view shop details and walking route."}
+                ? "💡 Haritadaki merdivenlere/kapılara tıklayarak 'Buradayım' seçebilir, kapıdan kapıya canlı rota çizebilirsiniz."
+                : "💡 Click any stair/gate or door to set your start point and draw a live door-to-door route."}
             </span>
           </div>
         </div>
@@ -895,22 +1341,27 @@ export function SantralFloorMap({
         </div>
       )}
 
-      {/* Selected Door Detail & Step-by-step Indoor Route Card */}
+      {/* Selected Door Detail & Interactive Turn-by-Turn Indoor Navigation Card */}
       {activeCell && (
         <div
           style={sx(
-            "padding:14px 16px;border-top:1px solid var(--border-subtle);background:var(--surface-subtle);display:flex;flex-direction:column;gap:10px",
+            "padding:14px 16px;border-top:1px solid var(--border-subtle);background:var(--surface-subtle);display:flex;flex-direction:column;gap:12px",
           )}
         >
           <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
             <div>
               <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
                 <Badge color="accent" variant="solid">
-                  {currentFloorLabel} · Kapı No: {activeCell.door}
+                  🎯 {currentFloorLabel} · Kapı No: {activeCell.door}
                 </Badge>
                 <Badge color="secondary" variant="light">
                   {activeCell.corridor} Koridor
                 </Badge>
+                {routeMetrics && (
+                  <Badge color="primary" variant="light">
+                    🚶 ~{routeMetrics.meters} m · {routeMetrics.secs} sn yürüyüş
+                  </Badge>
+                )}
                 {activeCell.record ? (
                   recordBadges(activeCell.record, lang).map((b, idx) => (
                     <span key={idx} style={sx(b.style)}>
@@ -940,6 +1391,22 @@ export function SantralFloorMap({
             </div>
 
             <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+              <Button
+                size="sm"
+                color={startDoor === activeCell.door ? "success" : "secondary"}
+                variant={startDoor === activeCell.door ? "solid" : "outline"}
+                onClick={() => {
+                  setStartDoor(startDoor === activeCell.door ? null : activeCell.door);
+                }}
+              >
+                📍 {startDoor === activeCell.door
+                  ? lang === "tr"
+                    ? "Başlangıç Kapısı Seçildi"
+                    : "Selected as Start Door"
+                  : lang === "tr"
+                    ? "Şu An Bu Kapıdayım (Başlangıç Yap)"
+                    : "I'm at This Door (Set Start)"}
+              </Button>
               {activeCell.record && (
                 <>
                   <Link
@@ -970,25 +1437,114 @@ export function SantralFloorMap({
                 variant="outline"
                 onClick={() => setAskTraderOpen(true)}
               >
-                🗣️ {lang === "tr" ? "Esnafa Göster (Tam Ekran)" : "Show to Trader (Turkish Card)"}
+                🗣️ {lang === "tr" ? "Esnafa Göster (Tam Ekran)" : "Show to Trader"}
               </Button>
             </div>
           </div>
 
-          {/* Step-by-step Indoor Wayfinding */}
+          {/* Interactive Step-by-Step Indoor Wayfinding + Live Walking Mode + Voice Guidance */}
           <div
             style={sx(
-              "padding:10px 12px;border-radius:10px;background:var(--surface-card);border:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:4px",
+              "padding:12px 14px;border-radius:12px;background:var(--surface-card);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:10px",
             )}
           >
-            <div style={sx("font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
-              🧭 {lang === "tr" ? "Han İçi Adım Adım Yürüyüş Tarifi (İnternetsiz / GPS'siz):" : "Step-by-Step Indoor Directions (No GPS):"}
-            </div>
-            {indoorSteps.map((st, idx) => (
-              <div key={idx} style={sx("font-size:12.5px;color:var(--text-body)")}>
-                {st}
+            <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
+              <div style={sx("font-size:12.5px;font-weight:800;color:var(--color-primary);display:flex;align-items:center;gap:6px")}>
+                <span>🧭 {lang === "tr" ? "İnteraktif Han İçi Adım Adım Rota:" : "Interactive Turn-by-Turn Indoor Route:"}</span>
+                <span style={sx("font-size:11.5px;font-weight:600;color:var(--text-muted)")}>
+                  ({startPoint.label} ➔ Kapı No: {activeCell.door})
+                </span>
               </div>
-            ))}
+              <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+                <Button
+                  size="sm"
+                  color={liveStepIdx !== null ? "accent" : "primary"}
+                  variant={liveStepIdx !== null ? "solid" : "outline"}
+                  onClick={() => setLiveStepIdx(liveStepIdx === null ? 0 : null)}
+                >
+                  {liveStepIdx !== null
+                    ? lang === "tr"
+                      ? "⏹️ Adım Modunu Kapat"
+                      : "⏹️ Exit Step Mode"
+                    : lang === "tr"
+                      ? "▶️ Adım Adım Yürüyüşü Başlat"
+                      : "▶️ Start Step-by-Step Walk"}
+                </Button>
+                <Button size="sm" color="secondary" variant="outline" onClick={speakDirections}>
+                  🔊 {lang === "tr" ? "Sesli Tarif" : "Voice Guide"}
+                </Button>
+              </div>
+            </div>
+
+            <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:8px")}>
+              {indoorSteps.map((st, idx) => {
+                const isCurrentStep = liveStepIdx === idx;
+                const isPassedStep = liveStepIdx !== null && idx < liveStepIdx;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => setLiveStepIdx(idx)}
+                    style={sx(
+                      "padding:10px 12px;border-radius:10px;cursor:pointer;border:1.5px solid " +
+                        (isCurrentStep
+                          ? "var(--color-accent)"
+                          : isPassedStep
+                            ? "var(--color-success)"
+                            : "var(--border-subtle)") +
+                        ";background:" +
+                        (isCurrentStep
+                          ? "var(--color-accent-soft)"
+                          : isPassedStep
+                            ? "var(--color-success-soft)"
+                            : "var(--surface-muted)"),
+                    )}
+                  >
+                    <div style={sx("font-size:10.5px;font-weight:800;color:var(--color-primary);text-transform:uppercase;letter-spacing:.04em")}>
+                      {isPassedStep ? "✓ " : isCurrentStep ? "▶ " : ""}
+                      {st.badge}
+                    </div>
+                    <div style={sx("font-size:13px;font-weight:800;color:var(--text-primary);margin-top:3px")}>
+                      {st.title}
+                    </div>
+                    <div style={sx("font-size:11.5px;color:var(--text-body);margin-top:3px;line-height:1.4")}>
+                      {st.detail}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {liveStepIdx !== null && (
+              <div
+                style={sx(
+                  "display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:8px;border-top:1px solid var(--border-subtle)",
+                )}
+              >
+                <Button
+                  size="sm"
+                  color="secondary"
+                  variant="outline"
+                  disabled={liveStepIdx <= 0}
+                  onClick={() => setLiveStepIdx(Math.max(0, liveStepIdx - 1))}
+                >
+                  ◀ {lang === "tr" ? "Önceki Adım" : "Previous Step"}
+                </Button>
+                <span style={sx("font-size:12px;font-weight:700;color:var(--text-primary)")}>
+                  {lang === "tr"
+                    ? `Adım ${liveStepIdx + 1} / ${indoorSteps.length}`
+                    : `Step ${liveStepIdx + 1} of ${indoorSteps.length}`}
+                </span>
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="solid"
+                  disabled={liveStepIdx >= indoorSteps.length - 1}
+                  onClick={() => setLiveStepIdx(Math.min(indoorSteps.length - 1, liveStepIdx + 1))}
+                >
+                  {lang === "tr" ? "Sonraki Adım ▶" : "Next Step ▶"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -90,6 +90,18 @@ const dist = (a: Place, b: Place) => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
+export function serializeRoutePts(
+  stops: { place: Place; shiftNote?: string }[],
+): string {
+  return stops
+    .filter((s) => isFinite(s.place.lat) && isFinite(s.place.lng))
+    .map(
+      (s, idx) =>
+        `${s.place.lat},${s.place.lng},${encodeURIComponent(`${idx + 1}. ${s.place.name}`)},${s.shiftNote ? "1" : "0"}`,
+    )
+    .join(";");
+}
+
 export function buildPlan(
   trip: Trip,
   opts: {
@@ -128,6 +140,7 @@ export function buildPlan(
   });
 
   let stops = Object.values(byPlace);
+  stops.sort((a, b) => (a.place.id === "santral" ? -1 : b.place.id === "santral" ? 1 : 0));
   const isHeavy = (s: Stop) => s.recs.some((r) => HEAVY.includes(r.cat));
 
   // Nearest-neighbour, then heavy stops to the end.

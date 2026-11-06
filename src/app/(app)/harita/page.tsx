@@ -22,6 +22,7 @@ import type { Lang } from "@/data/types";
 import { Button, EmptyState, Icon } from "@/ds";
 import { F, W } from "@/lib/copy";
 import { num, tx } from "@/lib/i18n";
+import { buildPlan, serializeRoutePts } from "@/lib/planEngine";
 import { PARAM, getStr, href } from "@/lib/routes";
 import { sx } from "@/lib/sx";
 import { useApp } from "@/state/AppState";
@@ -149,18 +150,31 @@ function MapScreen() {
     ["carsida", pk({ tr: "Çarşı modu", en: "Bazaar mode", ru: "Режим базара", ar: "وضع السوق" }, lang)],
   ];
 
-  // In route mode the map draws the plan's stops as numbered pins.
+  // In route mode the map draws the plan's stops as numbered pins & polyline.
   const routePoints = useMemo(() => {
     if (layer !== "route") return "";
-    const ids = new Set((state.buyList || []).map((b) => b.name.toLocaleLowerCase(lang === "tr" ? "tr-TR" : lang)));
-    if (!ids.size) return "";
-    const places: string[] = [];
-    (state.buyList || []).forEach((it) => {
-      const hit = SE.search(it.name, {}, { mode, lang }).items[0];
-      if (hit && !places.includes(hit.rec.place)) places.push(hit.rec.place);
-    });
-    return places.join(",");
-  }, [layer, state.buyList, mode, lang]);
+    const activeTrip = (state.trips || []).find((t) => t.id === state.tripId) || (state.trips || [])[0] || null;
+    if (activeTrip && (activeTrip.items || []).length > 0) {
+      const p = buildPlan(activeTrip, {
+        lang,
+        mode,
+        events: state.evPlan || [],
+        appointments: state.appts || [],
+      });
+      if (p.kept.length > 0) {
+        return serializeRoutePts(
+          p.kept.map((k) => ({ place: k.stop.place, shiftNote: k.shiftNote })),
+        );
+      }
+    }
+    // Fallback to buyList or default showcase Historic Peninsula route starting at Santral Han
+    const defaultIds = ["santral", "sark", "buyuk_yeni", "zincirli"];
+    const fallbackStops = defaultIds
+      .map((id) => SC.PLACES.find((pl) => pl.id === id))
+      .filter(Boolean)
+      .map((pl) => ({ place: pl! }));
+    return serializeRoutePts(fallbackStops);
+  }, [layer, state.trips, state.tripId, state.evPlan, state.appts, mode, lang]);
 
   const mapSrc =
     "/han-map.html?lang=" + lang + (routePoints ? "&pts=" + encodeURIComponent(routePoints) : "");
