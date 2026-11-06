@@ -32,6 +32,7 @@ export default function DiscoverPage() {
   const router = useRouter();
   const { lang, mode, currency } = state;
   const [q, setQ] = useState("");
+  const [activeHanId, setActiveHanId] = useState<string>("sark");
 
   const cv = (n: number | null) => convert(n, lang, currency);
   const T = (D.L[lang] || D.L.tr) as Record<string, string>;
@@ -252,10 +253,103 @@ export default function DiscoverPage() {
     },
   ];
 
-  const popularQ = [
-    { label: "🏛️ Santral Han", value: "Santral Han" },
-    ...(D.CATS || []).slice(0, 6).map((c) => ({ label: tx(c, lang), value: tx(c, lang) })),
+  const popularQ = (D.CATS || []).slice(0, 6).map((c) => ({ label: tx(c, lang), value: tx(c, lang) }));
+
+  const featuredHans = [
+    {
+      id: "sark",
+      name: "Şark Han",
+      area: "Tahtakale · Mercan",
+      badge: "5 Kat · 340 Birim",
+      addr: "Hasırcılar Cd. & Uzunçarşı kesişimi, Tahtakale / Fatih",
+      lat: 41.0156,
+      lng: 28.9693,
+      desc: "Tahtakale'nin en yoğun çok katlı toptan merkezi. Saat, gözlük, oyuncak, telefon aksesuarı ve hediyelik eşya koridorları.",
+      floors: [
+        { fl: "Zemin (0)", title: "Saat · Gözlük · Hediyelik · Kılıf", ex: "Emre Aksesuar No:14 · Mercan Saat No:22" },
+        { fl: "1. Kat", title: "Telefon Aksesuarı · Elektronik · Şarj", ex: "Tahtakale Электроник No:108 · Asya Kılıf No:119" },
+        { fl: "2. Kat", title: "Bijuteri · Çelik Takı · Toka · Kozmetik", ex: "Şark Bijuteri No:204 · İnci Aksesuar No:218" },
+        { fl: "3. Kat", title: "Oyuncak · Kırtasiye · Parti Malzemesi", ex: "Anadolu Oyuncak No:305 · Hobi Toptan No:332" },
+        { fl: "4. Kat", title: "İthalat Showroom · Toptan Koli Depo", ex: "Boğaziçi Dış Tic. No:402 · Şark Yönetim" },
+      ],
+    },
+    {
+      id: "buyukyeni",
+      name: "Büyük Yeni Han",
+      area: "Mahmutpaşa · Çakmakçılar",
+      badge: "3 Kat · 220 Birim · Tarihi 1764",
+      addr: "Çakmakçılar Yokuşu No: 31, Tarakçılar / Fatih",
+      lat: 41.0132,
+      lng: 28.9695,
+      desc: "Sultan III. Mustafa vakfı (1764), iki avlulu anıtsal Osmanlı hanı. Gümüş atölyeleri, dokuma, tekstil ve geleneksel zanaat odaları.",
+      floors: [
+        { fl: "Zemin Avlu", title: "Tarihi Taş Avlu · Gümüş · Dokuma · Kafe", ex: "Avlu Gümüş Atölyesi No:12 · Çakmakçılar Dokuma No:28" },
+        { fl: "1. Revan Katı", title: "El İşi Gümüş · Bakır · Antika · Halı", ex: "Usta Gümüşhane No:104 · Tarihi Han Halı No:118" },
+        { fl: "2. Üst Galeri", title: "Zanaat Atölyeleri · Tasarım · İhracat Ofis", ex: "Sadekar Atölye No:206 · Han Sanat No:219" },
+      ],
+    },
+    {
+      id: "santral",
+      name: "Santral Han",
+      area: "Tahtakale",
+      badge: "7 Kat (Z–F) · 256 Birim · Resmi Paftalı",
+      addr: "Tahtakale Cd. No: 7, Fatih / İstanbul · Tel: 0552 744 79 38",
+      lat: 41.01518,
+      lng: 28.96845,
+      desc: "Z Kat'tan F Kat'a kadar 7 katın resmi mimari paftası ve 194 gerçek kapı numarasıyla bijuteri, çelik takı ve telefon aksesuarı merkezi.",
+      floors: [
+        { fl: "Z & A Kat", title: "Gümüş · Çelik · Bijuteri · Ana Giriş", ex: "Roza No:8 · Yılmaz No:61 · Kardeşler No:152" },
+        { fl: "B Kat", title: "Bijuteri · Doğaltaş · Toka · Tesbih", ex: "KLC No:228 · Zümrüt No:229 · Ema No:225" },
+        { fl: "C & D Kat", title: "Telefon Aksesuar · Saat · Pil · Batarya", ex: "Zenta No:367 · Asır Saat No:350 · Pil Dünyası No:412" },
+        { fl: "E & F Kat", title: "İthalat · İhracat · Lojistik · Yönetim", ex: "Aydın Tic. No:501 · Kaya Depo No:601 · Yönetim" },
+      ],
+    },
+    {
+      id: "kurkcu",
+      name: "Kürkçü Han",
+      area: "Mahmutpaşa",
+      badge: "2 Kat · 160 Birim · Tarihi 1467",
+      addr: "Mahmutpaşa Yokuşu & Kürkçü Han Sk., Fatih",
+      lat: 41.0144,
+      lng: 28.9708,
+      desc: "Fatih Sultan Mehmet dönemi sadrazamı Mahmud Paşa tarafından yaptırılan tarihi avlulu han. Çeyiz, havlu, bornoz ve ev tekstili toptancıları.",
+      floors: [
+        { fl: "Zemin Avlu", title: "Havlu · Bornoz · Nevresim · Çeyiz Toptan", ex: "Bursa Havlu Pazarı No:9 · Mahmutpaşa Çeyiz No:24" },
+        { fl: "1. Galeri Katı", title: "Ev Tekstili · Perde · Toptan Konfeksiyon", ex: "Denizli Dokuma No:106 · Sultan Tekstil No:129" },
+      ],
+    },
+    {
+      id: "kalcilar",
+      name: "Kalcılar & Zincirli Han",
+      area: "Kapalıçarşı",
+      badge: "3 Kat · 96 Birim · Kuyum & Halı",
+      addr: "Kapalıçarşı Kuyumcular & Mercan Kapısı Çıkışı, Beyazıt",
+      lat: 41.0114,
+      lng: 28.9688,
+      desc: "Kapalıçarşı'nın kalbinde altın, gümüş, sadekârlık, değerli taş atölyeleri ve koleksiyonluk el dokuma halı galerileri.",
+      floors: [
+        { fl: "Zemin Avlu", title: "Mücevher · El Dokuma Halı · Antika", ex: "Anadolu Halı No:5 · Kapalıçarşı Mücevher No:16" },
+        { fl: "1. Kat", title: "Altın & Gümüş Atölyeleri · Sadekârlar", ex: "Has Altın Atölye No:102 · Mercan Gümüş No:114" },
+        { fl: "2. Kat", title: "Değerli Taş · Saat Tamir · Ekspertiz", ex: "Pırlanta Mıhlama No:203 · Usta Saat No:211" },
+      ],
+    },
+    {
+      id: "dogubank",
+      name: "Doğubank İş Hanı",
+      area: "Sirkeci",
+      badge: "6 Kat · 260 Birim · Elektronik",
+      addr: "Hamidiye Cd. No: 22, Sirkeci / Eminönü",
+      lat: 41.014,
+      lng: 28.9756,
+      desc: "Sirkeci'nin efsanevi elektronik, profesyonel ses sistemleri, fotoğraf ekipmanları, saat ve teknik servis merkezi.",
+      floors: [
+        { fl: "Bodrum & Zemin", title: "Ses Sistemleri · Kulaklık · Saat · Optik", ex: "Sirkeci Ses No:11 · Doğubank Saat No:34" },
+        { fl: "1. & 2. Kat", title: "Kamera · Fotoğraf · Bilgisayar · Konsol", ex: "Pro Kamera No:112 · Dijital Dünya No:208" },
+        { fl: "3.–5. Katlar", title: "Teknik Servis · Yedek Parça · İthalat", ex: "Merkez Teknik Servis No:315 · Sirkeci İthalat No:410" },
+      ],
+    },
   ];
+  const selectedHan = featuredHans.find((h) => h.id === activeHanId) || featuredHans[0];
   const knowRows = (D.KNOW || []).slice(0, 4);
   const areaMini = D.AREAS.map((a) => ({
     id: a.id as string,
@@ -430,7 +524,7 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* ── Santral Han Live Digital Floor Directory Showcase ────────────── */}
+      {/* ── Historic Peninsula Multi-Han Interactive Floor Directory Showcase ── */}
       <section
         style={sx(
           "margin-top:20px;border-radius:16px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 6px rgba(0,0,0,.04);padding:18px 20px;display:flex;flex-direction:column;gap:14px",
@@ -440,62 +534,101 @@ export default function DiscoverPage() {
           <div>
             <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
               <span style={sx("display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--color-accent);color:#fff")}>
-                {pk({ tr: "CANLI DİJİTAL HAN REHBERİ · PİLOT VİTRİN", en: "LIVE DIGITAL HAN DIRECTORY · PILOT SHOWCASE", ru: "ЦИФРОВОЙ СПРАВОЧНИК ХАНА", ar: "دليل الخان الرقمي المباشر" }, lang)}
+                {pk({ tr: "TARİHİ YARIMADA · 39 HAN & ÇARŞI İÇ MEKAN REHBERİ", en: "HISTORIC PENINSULA · 39 HANS & BAZAARS INDOOR GUIDE", ru: "ИСТОРИЧЕСКИЙ ПОЛУОСТРОВ · 39 ХАНОВ И БАЗАРОВ", ar: "شبه الجزيرة التاريخية · دليل ٣٩ خانًا وسوقًا" }, lang)}
               </span>
               <span style={sx("font-size:12.5px;font-weight:700;color:var(--color-primary)")}>
-                📍 Tahtakale Cd. No: 7, Fatih / İstanbul · Tel: 0552 744 79 38
+                Tahtakale · Kapalıçarşı · Mahmutpaşa · Mısır Çarşısı · Sirkeci
               </span>
             </div>
             <h2 style={sx("font-size:21px;font-weight:800;color:var(--text-heading);margin:6px 0 0;letter-spacing:-.015em")}>
               {pk({
-                tr: "Santral Han · 7 Kat (Z, A, B, C, D, E, F) · 256 Birim Kapı Numarası ve İnteraktif Kat Krokisi",
-                en: "Santral Han · 7 Floors (Z, A, B, C, D, E, F) · 256 Units Door Index & Interactive Floor Plan",
-                ru: "Santral Han · 7 этажей (Z–F) · 256 павильонов и интерактивный план",
-                ar: "خان سنترال · ٧ طوابق (Z–F) · ٢٥٦ وحدة ومخطط تفاعلي",
+                tr: "Bölgedeki Tüm Tarihi ve Ticari Hanlar İçin Kat Planı, Koridor Krokisi ve Kapı Numarası Dizini",
+                en: "Floor Plans, Corridor Schematics & Door Registries Across All Historic Peninsula Hans",
+                ru: "Поэтажные планы, коридоры и номера дверей для всех ханов Исторического полуострова",
+                ar: "مخططات الطوابق والممرات وأرقام الأبواب لجميع الخانات التاريخية والتجارية",
               }, lang)}
             </h2>
             <p style={sx("font-size:13.5px;color:var(--text-muted);margin:4px 0 0;text-wrap:pretty")}>
               {pk({
-                tr: "Han içinde GPS çekmese bile Z Kat'tan F Kat'a kadar tüm koridorları, merdiven çapalarını, resmi mimari kat paftalarını ve 200+ esnafı kapı numarasıyla görüntüleyin.",
-                en: "Even without indoor GPS, explore every corridor from Ground (Z) to F Floor with official architectural blueprints and 200+ verified doors.",
-                ru: "Даже без GPS внутри хана: все коридоры с этажа Z до F, официальные планы и более 200 лавок.",
-                ar: "حتى بدون إشارة GPS داخل الخان: تصفح جميع الممرات من طابق Z إلى F مع المخططات الرسمية.",
+                tr: "İster 500 yıllık avlulu Osmanlı hanlarını (Büyük Yeni Han, Kürkçü Han, Zincirli Han), ister çok katlı toptan merkezlerini (Şark Han, Santral Han, Doğubank) gezin — GPS çekmese bile kat, koridor ve kapı numarasıyla yolunuzu bulun.",
+                en: "Whether exploring 500-year-old Ottoman courtyard hans or multi-story wholesale centers, navigate by floor, corridor, and door number without needing indoor GPS.",
+                ru: "От старинных османских ханов с внутренним двором до многоэтажных оптовых центров — навигация по этажам и дверям без GPS.",
+                ar: "سواء كنت تتجول في الخانات العثمانية ذات الأفنية أو مراكز الجملة متعددة الطوابق، اعثر على طريقك برقم الطابق والباب بدون GPS.",
               }, lang)}
             </p>
           </div>
           <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
-            <Button color="primary" size="md" onClick={() => router.push("/yer/santral")}>
-              {pk({ tr: "Santral Han Kat Planını Aç", en: "Open Santral Han Floor Map", ru: "Открыть план Santral Han", ar: "افتح مخطط خان سنترال" }, lang)}
+            <Button variant="outline" color="primary" size="md" onClick={() => router.push("/harita")}>
+              {pk({ tr: "39 Han & Çarşıyı Haritada Gör", en: "View All 39 Hans on Map", ru: "Все 39 ханов на карте", ar: "عرض ٣٩ خانًا على الخريطة" }, lang)}
+            </Button>
+          </div>
+        </div>
+
+        {/* Multi-Han Selector Bar */}
+        <div style={sx("display:flex;align-items:center;gap:8px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--border-default)")}>
+          {featuredHans.map((h) => {
+            const on = h.id === selectedHan.id;
+            return (
+              <button
+                key={h.id}
+                type="button"
+                onClick={() => setActiveHanId(h.id)}
+                style={sx(
+                  "flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 14px;border-radius:10px;border:1px solid " +
+                    (on ? "var(--color-primary)" : "var(--border-default)") +
+                    ";background:" +
+                    (on ? "var(--color-primary)" : "var(--surface-muted)") +
+                    ";color:" +
+                    (on ? "#fff" : "var(--text-heading)") +
+                    ";font-family:inherit;text-align:start;cursor:pointer",
+                )}
+              >
+                <span style={sx("font-size:13.5px;font-weight:800")}>{h.name}</span>
+                <span style={sx("font-size:11px;font-weight:600;color:" + (on ? "rgba(255,255,255,.78)" : "var(--text-muted)"))}>
+                  {h.area} · {h.badge}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active Han Detail & Floor Cards */}
+        <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surface-muted);padding:12px 14px;border-radius:12px;border:1px solid var(--border-default)")}>
+          <div style={sx("flex:1;min-width:240px")}>
+            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <span style={sx("font-size:16px;font-weight:800;color:var(--text-heading)")}>{selectedHan.name}</span>
+              <span style={sx("font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--color-primary-soft);color:var(--color-primary)")}>
+                {selectedHan.badge}
+              </span>
+              <span style={sx("font-size:12px;color:var(--text-muted)")}>📍 {selectedHan.addr}</span>
+            </div>
+            <div style={sx("font-size:13px;color:var(--text-body);margin-top:4px")}>{selectedHan.desc}</div>
+          </div>
+          <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+            <Button color="primary" size="md" onClick={() => router.push("/yer/" + selectedHan.id)}>
+              {selectedHan.name} {pk({ tr: "Kat Planını & Rehberini Aç", en: "Floor Plan & Directory", ru: "План этажей", ar: "مخطط الطوابق" }, lang)}
             </Button>
             <a
-              href="https://www.google.com/maps/dir/?api=1&destination=41.01518,28.96845&travelmode=walking"
+              href={`https://www.google.com/maps/dir/?api=1&destination=${selectedHan.lat},${selectedHan.lng}&travelmode=walking`}
               target="_blank"
               rel="noreferrer"
               style={sx("text-decoration:none")}
             >
               <Button variant="outline" color="accent" size="md" iconStart="map">
-                {pk({ tr: "Google Maps ile Kapıya Yürü", en: "Walk to Gate via Google Maps", ru: "Маршрут до входа", ar: "المشي إلى البوابة" }, lang)}
+                {pk({ tr: "Google Maps ile Kapıya Yürü", en: "Walk to Gate", ru: "Маршрут до входа", ar: "المشي إلى البوابة" }, lang)}
               </Button>
             </a>
           </div>
         </div>
 
-        <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:8px")}>
-          {[
-            { fl: "Z Kat", title: "Kuyumcu Atölye · Saat · Kafe", ex: "Nadir · Hasgül · Çağlar (No: 21-101)" },
-            { fl: "A Kat", title: "Gümüş · Çelik · Bijuteri · Aksesuar", ex: "Roza No:8 · Yılmaz No:61 · Kardeşler No:152" },
-            { fl: "B Kat", title: "Bijuteri · Doğaltaş · Toka · Tesbih", ex: "KLC No:228 · Zümrüt No:229 · Ema No:225" },
-            { fl: "C Kat", title: "Telefon Aksesuar · Saat · Elektronik", ex: "Zenta No:367 · Asır Saat No:350 · Asya No:322" },
-            { fl: "D Kat", title: "Pil · Batarya · Şarj · Saat Tamir", ex: "Pil Dünyası No:412 · Saatçi Murat No:402" },
-            { fl: "E Kat", title: "İthalat · İhracat · Lojistik · Ofis", ex: "Aydın Tic. No:501 · Öztürk No:514 · Huzur No:558" },
-            { fl: "F Kat", title: "Toptan Depo · Atölye · Yönetim", ex: "Kaya Depo No:601 · Yönetim · Zirve No:612" },
-          ].map((item) => (
+        <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:8px")}>
+          {selectedHan.floors.map((item) => (
             <button
               key={item.fl}
               type="button"
-              onClick={() => router.push("/yer/santral")}
+              onClick={() => router.push("/yer/" + selectedHan.id)}
               style={sx(
-                "display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-default);background:var(--surface-muted);font-family:inherit;text-align:start;cursor:pointer",
+                "display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-default);background:var(--surface-card);font-family:inherit;text-align:start;cursor:pointer",
               )}
             >
               <span style={sx("font-size:12px;font-weight:800;color:var(--color-primary)")}>{item.fl}</span>

@@ -71,12 +71,22 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
   const floor = Number(String(f.floor).replace(/\D/g, "")) || 0;
   const nothing = parsed.rows.length === 0 && parsed.errors.length === 0;
 
-  const loadSantralFloorSample = (fl: number) => {
-    const list = SC.SANTRAL_TENANTS.filter((t) => t.floor === fl);
-    const lines = list.map((t, i) => `${t.door}; ${t.name}; ${t.cat}; 0532${String(1000000 + fl * 100000 + i * 73).slice(0, 7)}`);
-    setF({ place: "santral", floor: String(fl), text: lines.join("\n"), bulk: true });
+  const loadPlaceFloorSample = (targetPlaceId: string, fl: number) => {
+    const targetPlace = SC.PLACES.find((p) => p.id === targetPlaceId) || place;
+    const fLabel = targetPlace.floorLabels?.[fl] || (fl === 0 ? "Zemin Kat" : `${fl}. Kat`);
+    if (targetPlace.id === "santral") {
+      const list = SC.SANTRAL_TENANTS.filter((t) => t.floor === fl);
+      const lines = list.map((t, i) => `${t.door}; ${t.name}; ${t.cat}; 0532${String(1000000 + fl * 100000 + i * 73).slice(0, 7)}`);
+      setF({ place: "santral", floor: String(fl), text: lines.join("\n"), bulk: true });
+      setDone(null);
+      say(`${targetPlace.name} · ${fLabel} kat planından ${list.length} esnaf listesi yüklendi`);
+      return;
+    }
+    const recs = SC.recordsOfPlace(targetPlace.id).filter((r) => r.floor === fl);
+    const lines = recs.map((r, i) => `${r.door}; ${r.name}; ${r.cat || (r.cats || []).join(", ")}; ${r.tel || "0532" + String(2000000 + i * 97).slice(0, 7)}`);
+    setF({ place: targetPlace.id, floor: String(fl), text: lines.join("\n"), bulk: true });
     setDone(null);
-    say(`Santral Han · ${place.floorLabels?.[fl] || `Kat ${fl}`} resmi kat planından ${list.length} esnaf listesi yüklendi`);
+    say(`${targetPlace.name} · ${fLabel} açık kaynak envanterinden ${lines.length} esnaf listesi yüklendi`);
   };
 
   const apply = () => {
@@ -124,7 +134,7 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
         Han yönetiminden gelen kiracı listeleri, resmi mimari kat planı paftaları ve açık kaynaklardan (Google Business, OSM, Ticaret Sicili) toplanan esnaf verileri tek tıkla omurgaya işlenir.
       </p>
 
-      {/* OSINT & Official Santral Han Blueprint Sync Card */}
+      {/* OSINT & Multi-Han Floor Directory Sync Card */}
       <div
         style={sx(
           CARD +
@@ -134,40 +144,59 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
         <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
           <div>
             <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
-              <Pill label="OSINT & KAT PLANI SENKRONU AKTİF" t="success" />
+              <Pill label="39 HAN & ÇARŞI OSINT VERİ HAVUZU AKTİF" t="success" />
               <span style={sx("font-size:12.5px;font-weight:700;color:var(--color-primary)")}>
-                Santral Han · 7 Resmi Kat Paftası (Z, A, B, C, D, E, F) · {SC.SANTRAL_TENANTS.length} Doğrulanmış Kapı
+                Seçili Han: {place.name} ({place.floors.length} Kat · {place.units} Birim)
               </span>
             </div>
             <div style={sx("font-size:14.5px;font-weight:700;color:var(--text-heading);margin-top:6px")}>
-              Açık Kaynaklardan (santralhancenter.com.tr + Google Haritalar + OSM) Gömülen Hazır Kat Verileri
+              Açık Kaynaklardan (Google Haritalar, OSM, Han Kat Planları ve Rehberler) Gömülen Hazır Han Verileri
             </div>
             <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:3px;text-wrap:pretty")}>
-              Saha ekibi kapı kapı dolaşmadan önce Santral Han&apos;ın 7 katının resmi mimari kat planlarındaki (Z Kat – F Kat) tüm esnaf isimleri ve kapı numaraları sisteme gömülmüştür. İstediğiniz katın kiracı listesini aşağıdan tek tıkla önizlemeye çağırabilirsiniz:
+              Tarihi Yarımada&apos;daki tüm hanlar (Şark Han, Büyük Yeni Han, Kürkçü Han, Santral Han, Kalcılar Han, Doğubank vb.) için açık kaynaklardan ve kat planlarından toplanan esnaf listelerini aşağıdan han ve kat seçerek tek tıkla önizlemeye çağırabilirsiniz:
             </div>
           </div>
         </div>
 
-        <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
-          {[
-            { fl: 0, lbl: "Z Kat (Zemin)" },
-            { fl: 1, lbl: "A Kat (1. Kat)" },
-            { fl: 2, lbl: "B Kat (2. Kat)" },
-            { fl: 3, lbl: "C Kat (3. Kat)" },
-            { fl: 4, lbl: "D Kat (4. Kat)" },
-            { fl: 5, lbl: "E Kat (5. Kat)" },
-            { fl: 6, lbl: "F Kat (6. Kat)" },
-          ].map((item) => {
-            const count = SC.SANTRAL_TENANTS.filter((t) => t.floor === item.fl).length;
+        {/* Quick Han Switcher Pills */}
+        <div style={sx("display:flex;gap:6px;flex-wrap:wrap")}>
+          {["sark", "buyukyeni", "santral", "kurkcu", "kalcilar", "dogubank", "zincirli", "cukur"].map((pid) => {
+            const pObj = SC.PLACES.find((x) => x.id === pid);
+            if (!pObj) return null;
+            const on = place.id === pid;
             return (
               <Button
-                key={item.fl}
+                key={pid}
                 size="sm"
-                variant={Number(f.floor) === item.fl && f.place === "santral" && f.text ? "solid" : "outline"}
-                color="primary"
-                onClick={() => loadSantralFloorSample(item.fl)}
+                variant={on ? "solid" : "light"}
+                color={on ? "accent" : "secondary"}
+                onClick={() => {
+                  const defaultFl = pObj.floors.includes(1) ? 1 : (pObj.floors[0] ?? 0);
+                  loadPlaceFloorSample(pid, defaultFl);
+                }}
               >
-                {item.lbl} · {count} Kapı Yükle
+                🏛️ {pObj.name}
+              </Button>
+            );
+          })}
+        </div>
+
+        <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+          {place.floors.map((fl) => {
+            const lbl = place.floorLabels?.[fl] || (fl === 0 ? "Zemin Kat (0)" : fl < 0 ? `Bodrum (${fl})` : `${fl}. Kat`);
+            const count =
+              place.id === "santral"
+                ? SC.SANTRAL_TENANTS.filter((t) => t.floor === fl).length
+                : SC.recordsOfPlace(place.id).filter((r) => r.floor === fl).length;
+            return (
+              <Button
+                key={fl}
+                size="sm"
+                variant={Number(f.floor) === fl && f.text ? "solid" : "outline"}
+                color="primary"
+                onClick={() => loadPlaceFloorSample(place.id, fl)}
+              >
+                {lbl} · {count} Kapı Yükle
               </Button>
             );
           })}

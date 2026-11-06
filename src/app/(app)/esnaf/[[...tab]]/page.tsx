@@ -681,12 +681,19 @@ function TraderScreen() {
                     color="primary"
                     size="lg"
                     onClick={() => {
-                      save({ esSession: { tel: "05550000012", at: Date.now() } });
-                      router.replace(href.trader("yonet", { record: "r-santral-000" }));
-                      toast(t({ tr: "Santral Han · Roza Aksesuar (A Kat No: 8) olarak giriş yapıldı", en: "Signed in as Roza Aksesuar (Santral Han)" }));
+                      save({
+                        claims: {
+                          ...claims,
+                          "r-sark-000": { owner: "Emre Demir", tel: "05550000012", proof: "vergi", status: "onayli", officer: "tahtakale", at: Date.now() },
+                          "r-santral-000": { owner: "Roza Aksesuar", tel: "05550000012", proof: "vergi", status: "onayli", officer: "santral", at: Date.now() },
+                        },
+                        esSession: { tel: "05550000012", at: Date.now() },
+                      });
+                      router.replace(href.trader("yonet", { record: "r-sark-000" }));
+                      toast(t({ tr: "Demo Esnaf Girişi: Şark Han (Emre Aksesuar) & Santral Han (Roza Aksesuar) açıldı", en: "Signed in to demo trader accounts" }));
                     }}
                   >
-                    ⚡ {t({ tr: "Santral Han Demo Esnaf Girişi (Roza Aksesuar · No: 8)", en: "Santral Han Demo Trader Login (No: 8)" })}
+                    ⚡ {t({ tr: "Demo Esnaf Girişi (Şark Han & Santral Han Mağazaları)", en: "Demo Trader Login (Şark Han & Santral Han)" })}
                   </Button>
                 </div>
               </div>
@@ -849,7 +856,7 @@ function TraderScreen() {
                       )}
                     >
                       <div style={sx("font-size:11px;font-weight:800;color:var(--color-primary);letter-spacing:.06em")}>
-                        SANTRAL HAN KAPI ETİKETİ
+                        {placeName(mRec.place).toLocaleUpperCase("tr")} KAPI ETİKETİ
                       </div>
                       <div style={sx("font-size:16px;font-weight:800;color:var(--text-heading)")}>
                         {floorLabel(mRec.floor, mRec.place)} · Kapı No: {mRec.door}

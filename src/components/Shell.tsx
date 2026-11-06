@@ -189,15 +189,6 @@ export function Shell({ children }: { children: ReactNode }) {
           <div style={sx(hdrCtlStyle)}>
             <button
               type="button"
-              onClick={() => router.push("/yer/santral")}
-              style={sx(
-                "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.34);background:rgba(255,255,255,.16);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
-              )}
-            >
-              🏛️ Santral Han
-            </button>
-            <button
-              type="button"
               onClick={() => router.push("/esnaf/yonet")}
               style={sx(
                 "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
@@ -212,7 +203,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
               )}
             >
-              {lang === "tr" ? "Han Yönetimi" : "Admin"}
+              {lang === "tr" ? "Yönetim" : "Admin"}
             </button>
             {/* Nobody reads "T·P" as a buying mode: the word is always spelled out. */}
             <select

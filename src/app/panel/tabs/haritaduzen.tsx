@@ -80,12 +80,36 @@ export default function HaritaDuzen(props: PanelTabProps) {
 
   return (
     <>
-      <h1 style={sx(H1)}>Harita &amp; Kat Planı · Dijital Han Yönetimi</h1>
+      <h1 style={sx(H1)}>Harita &amp; Kat Planı · Tarihi Yarımada Hanları Dijital Yönetimi</h1>
       <p style={sx(SUB)}>
-        Hanınızın 7 katlı (Z–F) kapı-kapı doluluk matrisi, boş/kiralık birimleri, resmi mimari kat paftaları ve dış giriş kapısı koordinatları.
+        Tarihi Yarımada&apos;daki tüm hanların (Şark Han, Büyük Yeni Han, Kürkçü Han, Santral Han, Kalcılar Han, Doğubank vb.) kat-kat kapı doluluk matrisi, boş/kiralık birimleri, mimari kat krokileri ve dış giriş kapısı koordinatları.
       </p>
 
-      <div style={sx("margin-top:18px")}>
+      <div style={sx("margin-top:14px;display:flex;gap:6px;flex-wrap:wrap")}>
+        {["sark", "buyukyeni", "santral", "kurkcu", "kalcilar", "dogubank", "zincirli", "cukur"].map((id) => {
+          const pObj = SC.PLACES.find((x) => x.id === id);
+          if (!pObj) return null;
+          const on = pid === id;
+          return (
+            <Button
+              key={id}
+              size="sm"
+              variant={on ? "solid" : "outline"}
+              color={on ? "primary" : "secondary"}
+              onClick={() => {
+                setLoadedFor(null);
+                setSavedName(null);
+                setErrs({});
+                setGp({ place: id, lat: "", lng: "", ent: "", note: "" });
+              }}
+            >
+              🏛️ {pObj.name} ({pObj.floors.length} Kat)
+            </Button>
+          );
+        })}
+      </div>
+
+      <div style={sx("margin-top:14px")}>
         <SantralFloorMap placeId={pid} adminMode={true} lang="tr" />
       </div>
 

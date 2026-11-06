@@ -22,7 +22,7 @@ export interface SantralFloorMapProps {
 
 type AnchorKey = "giris" | "sol-merdiven" | "orta-pano" | "sag-merdiven";
 
-const FLOOR_SPECIALTY: Record<number, { tr: string; en: string; ru: string; ar: string }> = {
+const SANTRAL_FLOOR_SPECIALTY: Record<number, { tr: string; en: string; ru: string; ar: string }> = {
   0: {
     tr: "Z Kat · Zemin Altı Toptan & Depo",
     en: "Floor Z · Lower Ground Wholesale",
@@ -66,6 +66,49 @@ const FLOOR_SPECIALTY: Record<number, { tr: string; en: string; ru: string; ar: 
     ar: "الطابق F · صالات عرض علوية وورش",
   },
 };
+
+const PLACE_FLOOR_SPECIALTY: Record<string, Record<number, { tr: string; en: string }>> = {
+  sark: {
+    0: { tr: "Zemin Kat · Saat, Gözlük, Hediyelik & Ana Giriş Koridoru", en: "Ground Floor · Watches, Eyewear & Gifts" },
+    1: { tr: "1. Kat · Telefon Aksesuarı, Kılıf & Elektronik Toptan", en: "1st Floor · Phone Accessories & Electronics" },
+    2: { tr: "2. Kat · Bijuteri, Çelik Takı, Toka & Kozmetik", en: "2nd Floor · Costume Jewellery & Cosmetics" },
+    3: { tr: "3. Kat · Oyuncak, Kırtasiye & Parti Malzemeleri", en: "3rd Floor · Toys, Stationery & Party Goods" },
+    4: { tr: "4. Kat · İthalat Showroom, Koli Depo & Han Yönetimi", en: "4th Floor · Import Showrooms & Management" },
+  },
+  buyukyeni: {
+    0: { tr: "Zemin Avlu · Tarihi Taş Avlu, Gümüş, Dokuma & Geleneksel Zanaat", en: "Ground Courtyard · Historic Courtyard, Silver & Textiles" },
+    1: { tr: "1. Revan Katı · El İşi Gümüş Atölyeleri, Halı & Antika Odaları", en: "1st Gallery · Handcrafted Silver, Carpets & Antiques" },
+    2: { tr: "2. Üst Galeri · Sadekâr Atölyeleri, Tasarım & İhracat Ofisleri", en: "2nd Upper Gallery · Artisan Workshops & Export Offices" },
+  },
+  kurkcu: {
+    0: { tr: "Zemin Avlu · Havlu, Bornoz, Nevresim & Çeyiz Toptancıları", en: "Ground Courtyard · Towels, Bathrobes & Bridal Linens" },
+    1: { tr: "1. Galeri Katı · Ev Tekstili, Perde & Konfeksiyon Showroom", en: "1st Gallery · Home Textiles & Apparel Showrooms" },
+  },
+  kalcilar: {
+    0: { tr: "Zemin Avlu · Mücevher, Altın, Gümüş & El Dokuma Halı", en: "Ground Courtyard · Fine Jewellery, Gold, Silver & Carpets" },
+    1: { tr: "1. Kat · Sadekâr Atölyeleri, Değerli Taş & Mıhlama", en: "1st Floor · Goldsmith Workshops & Gem Setting" },
+    2: { tr: "2. Kat · Saat Tamir, Ekspertiz & Özel Tasarım Atölyeleri", en: "2nd Floor · Watchmaking, Appraisal & Custom Design" },
+  },
+  zincirli: {
+    0: { tr: "Tarihi Avlu · Koleksiyon Halı, Mücevher & Şadırvan Çevresi", en: "Historic Courtyard · Collector Carpets & Fine Jewellery" },
+    1: { tr: "Üst Revan · El Sanatları, Hat, Minyatür & Kuyum Atölyeleri", en: "Upper Gallery · Fine Arts & Jewellery Workshops" },
+  },
+  cukur: {
+    0: { tr: "Zemin Kat · Toptan Tekstil, Triko & Çeyiz Koridoru", en: "Ground Floor · Wholesale Textiles & Knitwear" },
+    1: { tr: "1. Kat · Konfeksiyon, Şal, Eşarp & Aksesuar Toptan", en: "1st Floor · Apparel, Scarves & Accessories" },
+    2: { tr: "2. Kat · Atölye, Numune Dikim & Toptan Depo", en: "2nd Floor · Sample Workshops & Depots" },
+  },
+  dogubank: {
+    [-1]: { tr: "Bodrum Kat · Elektronik Yedek Parça, Kablo & Teknik Servis", en: "Basement · Electronic Spare Parts & Service" },
+    0: { tr: "Zemin Kat · Profesyonel Ses, Kulaklık, Saat & Optik", en: "Ground Floor · Pro Audio, Watches & Optics" },
+    1: { tr: "1. Kat · Fotoğraf, Kamera, Bilgisayar & Oyun Sistemleri", en: "1st Floor · Cameras, Computers & Gaming" },
+    2: { tr: "2. Kat · Ses Sistemleri, Sahne Ekipmanı & Elektronik", en: "2nd Floor · Sound Systems & Stage Equipment" },
+    3: { tr: "3. Kat · Teknik Servis, Tamir Laboratuvarları & Ofisler", en: "3rd Floor · Repair Labs & Offices" },
+    4: { tr: "4. Kat · İthalatçı Merkezleri & Toptan Dağıtım", en: "4th Floor · Importers & Wholesale Distribution" },
+  },
+};
+
+const COURTYARD_HANS = new Set(["buyukyeni", "kurkcu", "zincirli", "cukur", "kalcilar", "balkapani", "cebeci"]);
 
 const ANCHORS: {
   id: AnchorKey;
@@ -164,6 +207,7 @@ export function SantralFloorMap({
   const [askTraderOpen, setAskTraderOpen] = useState(false);
 
   const isSantral = place.id === "santral";
+  const isCourtyard = COURTYARD_HANS.has(place.id);
 
   const floorRecords = useMemo(
     () => allPlaceRecords.filter((r) => r.floor === floor),
@@ -171,9 +215,17 @@ export function SantralFloorMap({
   );
 
   const vacantDoors = useMemo(() => {
-    if (!isSantral) return [];
-    return SC.SANTRAL_VACANT_DOORS[floor] || [];
-  }, [isSantral, floor]);
+    if (isSantral) return SC.SANTRAL_VACANT_DOORS[floor] || [];
+    // Deterministic vacant / available units for any other han in the Historic Peninsula
+    const used = new Set(floorRecords.map((r) => String(r.door)));
+    const base = floor === 0 ? 18 : floor < 0 ? 12 : floor * 100 + 18;
+    const out: string[] = [];
+    for (let step = 0; step < 5; step++) {
+      const candidate = String(base + step * 9);
+      if (!used.has(candidate)) out.push(candidate);
+    }
+    return out;
+  }, [isSantral, floor, floorRecords]);
 
   // Build geometric cells matching Santral Han's architectural layout:
   // Top Wing (Üst Koridor), Central Double Island (Orta Ada), Bottom Wing (Alt Koridor)
@@ -293,9 +345,23 @@ export function SantralFloorMap({
   }, [cells, filterText]);
 
   const currentFloorLabel = floorLabel(floor, lang, place);
-  const specialty = FLOOR_SPECIALTY[floor]
-    ? tx(FLOOR_SPECIALTY[floor], lang)
-    : `${currentFloorLabel} · ${place.name}`;
+  const specialty = useMemo(() => {
+    if (isSantral && SANTRAL_FLOOR_SPECIALTY[floor]) {
+      return tx(SANTRAL_FLOOR_SPECIALTY[floor], lang);
+    }
+    const byPlace = PLACE_FLOOR_SPECIALTY[place.id]?.[floor];
+    if (byPlace) {
+      return lang === "tr" ? byPlace.tr : byPlace.en;
+    }
+    const catNames = (place.cats || [])
+      .slice(0, 3)
+      .map((cid: string) => {
+        const c = D.CATS.find((x) => x.id === cid);
+        return c ? tx(c, lang) : cid;
+      })
+      .join(", ");
+    return `${currentFloorLabel} · ${place.name}${catNames ? ` — ${catNames}` : ""}`;
+  }, [isSantral, floor, lang, place, currentFloorLabel]);
 
   const officialPlanUrl = isSantral ? `/assets/santral/kat-${floor}.jpg` : null;
 
@@ -535,7 +601,7 @@ export function SantralFloorMap({
                   fontSize="11"
                   fontWeight="700"
                 >
-                  SOL MERDİVEN
+                  {isCourtyard ? "BATI REVAN" : "SOL MERDİVEN"}
                 </text>
                 <text
                   x="88"
@@ -545,51 +611,51 @@ export function SantralFloorMap({
                   fontSize="10"
                   fontWeight="700"
                 >
-                  ⇅ ASANSÖR & WC
+                  {isCourtyard ? "🏛️ TAŞ MERDİVEN" : "⇅ ASANSÖR & WC"}
                 </text>
               </g>
 
-              {/* Central "KAT PLANI" Architectural Spine */}
+              {/* Central Architectural Spine (Courtyard vs Multi-Corridor Center) */}
               <g>
                 <rect
-                  x="410"
+                  x="404"
                   y="148"
-                  width="80"
+                  width="92"
                   height="106"
                   rx="8"
-                  fill="var(--color-primary-soft)"
-                  stroke="var(--color-primary)"
+                  fill={isCourtyard ? "var(--color-accent-soft)" : "var(--color-primary-soft)"}
+                  stroke={isCourtyard ? "var(--color-accent)" : "var(--color-primary)"}
                   strokeWidth="1.5"
                 />
                 <text
                   x="450"
-                  y="188"
+                  y="186"
                   textAnchor="middle"
                   fill="var(--color-primary)"
-                  fontSize="13"
+                  fontSize="12.5"
                   fontWeight="800"
                 >
                   {currentFloorLabel.toUpperCase()}
                 </text>
                 <text
                   x="450"
-                  y="206"
+                  y="205"
                   textAnchor="middle"
                   fill="var(--text-body)"
                   fontSize="10"
                   fontWeight="700"
                 >
-                  KAT PLANI
+                  {isCourtyard ? "TARİHİ AVLU" : "KAT PLANI"}
                 </text>
                 <text
                   x="450"
-                  y="224"
+                  y="223"
                   textAnchor="middle"
                   fill="var(--text-muted)"
                   fontSize="9.5"
                   fontWeight="600"
                 >
-                  ORTA HOL
+                  {isCourtyard ? "ŞADIRVAN / REVAN" : "ORTA HOL"}
                 </text>
               </g>
 
@@ -612,7 +678,7 @@ export function SantralFloorMap({
                   fontSize="11"
                   fontWeight="700"
                 >
-                  SAĞ MERDİVEN
+                  {isCourtyard ? "DOĞU REVAN" : "SAĞ MERDİVEN"}
                 </text>
                 <text
                   x="812"
@@ -628,10 +694,10 @@ export function SantralFloorMap({
 
               {/* Corridor Labels */}
               <text x="450" y="134" textAnchor="middle" fill="var(--text-muted)" fontSize="10" fontWeight="700" letterSpacing="1.5">
-                ÜST KORİDOR · YÜRÜYÜŞ HATTI
+                {isCourtyard ? "KUZEY REVAN GALERİSİ · YÜRÜYÜŞ HATTI" : "ÜST KORİDOR · YÜRÜYÜŞ HATTI"}
               </text>
               <text x="450" y="278" textAnchor="middle" fill="var(--text-muted)" fontSize="10" fontWeight="700" letterSpacing="1.5">
-                ALT KORİDOR · YÜRÜYÜŞ HATTI
+                {isCourtyard ? "GÜNEY REVAN GALERİSİ · YÜRÜYÜŞ HATTI" : "ALT KORİDOR · YÜRÜYÜŞ HATTI"}
               </text>
 
               {/* Shop Unit Cells */}
@@ -861,8 +927,8 @@ export function SantralFloorMap({
                 {activeCell.record
                   ? activeCell.record.name
                   : lang === "tr"
-                    ? `Santral Han ${currentFloorLabel} No: ${activeCell.door} (Kiralık / Müsait Birim)`
-                    : `Santral Han ${currentFloorLabel} No: ${activeCell.door} (Available Unit)`}
+                    ? `${place.name} ${currentFloorLabel} No: ${activeCell.door} (Kiralık / Müsait Birim)`
+                    : `${place.name} ${currentFloorLabel} No: ${activeCell.door} (Available Unit)`}
               </div>
               {activeCell.record && (
                 <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:2px")}>
@@ -945,7 +1011,9 @@ export function SantralFloorMap({
             </span>
           </div>
           <span style={sx("color:var(--text-muted)")}>
-            Kaynak: Tahtakale Santral Center Resmi Kat Planları (Z–F)
+            {isSantral
+              ? "Kaynak: Tahtakale Santral Center Resmi Kat Planları (Z–F)"
+              : `Kaynak: ${place.name} Dijital Kat & Kapı Envanteri`}
           </span>
         </div>
       )}
@@ -959,16 +1027,16 @@ export function SantralFloorMap({
         <div style={sx("padding:16px;display:flex;flex-direction:column;gap:14px")}>
           <div
             style={sx(
-              "padding:20px;border-radius:14px;background:var(--color-primary);color:var(--color-primary-inverse);text-align:center",
+              "padding:20px;border-radius:14px;background:var(--color-primary);color:#fff;text-align:center",
             )}
           >
             <div style={sx("font-size:12px;font-weight:700;opacity:0.85;letter-spacing:.06em;text-transform:uppercase")}>
-              LÜTFEN YARDIMCI OLUR MUSUNUZ? · SANTRAL HAN REHBERİ
+              LÜTFEN YARDIMCI OLUR MUSUNUZ? · {place.name.toLocaleUpperCase("tr")} REHBERİ
             </div>
             <div style={sx("font-size:24px;font-weight:800;line-height:1.3;margin-top:10px")}>
               Merhaba usta / komşu,
               <br />
-              {place.name} · { floorLabel(floor, "tr", place) }
+              {place.name} · {floorLabel(floor, "tr", place)}
               <br />
               Kapı No: {activeCell?.door || "—"}
             </div>
@@ -990,7 +1058,7 @@ export function SantralFloorMap({
               : "Show this Turkish card to security at the gate, the tea stall, or any shopkeeper inside the han — they will point you straight to the right corridor and door."}
           </div>
 
-          {place.id === "santral" && (
+          {place.lat && place.lng && (
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}&travelmode=walking`}
               target="_blank"
@@ -999,8 +1067,8 @@ export function SantralFloorMap({
             >
               <Button fullWidth color="primary" variant="outline" iconStart="map">
                 {lang === "tr"
-                  ? "Han Dış Kapısına Google Maps Yürüyüş Rotası Aç (No: 7)"
-                  : "Open Google Maps Walking Route to Santral Han Gate"}
+                  ? `${place.name} Dış Kapısına Google Maps Yürüyüş Rotası Aç`
+                  : `Open Google Maps Walking Route to ${place.name} Gate`}
               </Button>
             </a>
           )}

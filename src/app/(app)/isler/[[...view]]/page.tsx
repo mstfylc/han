@@ -342,8 +342,8 @@ function RequestsView({
           <Button color="accent" size="lg" onClick={submit}>
             {pk({ tr: "Talebi gönder", en: "Send the request", ru: "Отправить заявку", ar: "أرسل الطلب" }, lang)}
           </Button>
-          <Button variant="outline" color="primary" size="lg" onClick={() => router.push("/yer/santral")}>
-            🏛️ {pk({ tr: "Santral Han Kat Rehberinden Dükkân Seç", en: "Pick Shop from Santral Han Floor Guide", ru: "Выбрать лавку в Santral Han", ar: "اختر متجرًا من دليل خان سنترال" }, lang)}
+          <Button variant="outline" color="primary" size="lg" onClick={() => router.push("/harita")}>
+            🏛️ {pk({ tr: "Han & Çarşı Kat Rehberinden Dükkân Seç", en: "Pick Shop from Han & Bazaar Floor Guide", ru: "Выбрать лавку на плане ханов", ar: "اختر متجرًا من دليل الخانات" }, lang)}
           </Button>
         </div>
 
@@ -351,34 +351,34 @@ function RequestsView({
         <div style={sx("margin-top:24px;padding-top:20px;border-top:1px solid var(--border-default)")}>
           <div style={sx(KICKER)}>
             {pk({
-              tr: "HAN KAPI PASAPORTU · HANDAN AYRILDIKTAN SONRA DOĞRUDAN İLETİŞİM & TEKRAR SİPARİŞ",
-              en: "HAN DOOR PASSPORT · RECONNECT & REORDER AFTER LEAVING THE HAN",
-              ru: "ПАСПОРТ ДВЕРЕЙ ХАНА · СВЯЗЬ И ПОВТОРНЫЙ ЗАКАЗ",
-              ar: "جواز أبواب الخان · التواصل وإعادة الطلب بعد مغادرة الخان",
+              tr: "TARİHİ YARIMADA KAPI PASAPORTU · HANDAN AYRILDIKTAN SONRA DOĞRUDAN İLETİŞİM & TEKRAR SİPARİŞ",
+              en: "HISTORIC PENINSULA DOOR PASSPORT · RECONNECT & REORDER AFTER LEAVING THE BAZAAR",
+              ru: "ПАСПОРТ ДВЕРЕЙ ХАНОВ · СВЯЗЬ И ПОВТОРНЫЙ ЗАКАЗ",
+              ar: "جواز أبواب الخانات · التواصل وإعادة الطلب بعد المغادرة",
             }, lang)}
           </div>
           <p style={sx("font-size:13px;color:var(--text-muted);margin-top:4px;text-wrap:pretty")}>
             {pk({
-              tr: "Santral Han içinde gezdiğiniz veya kapı QR kodunu okuttuğunuz dükkânlar kat ve kapı numarasıyla burada saklanır; handan ayrıldıktan aylar sonra bile doğrudan WhatsApp ile yazabilir veya tek tıkla yeni talep gönderebilirsiniz.",
-              en: "Shops you visited or scanned inside Santral Han stay saved here with their exact floor and door number so you can message them on WhatsApp or reorder anytime.",
-              ru: "Лавки, которые вы посетили в Santral Han, сохраняются с этажом и номером двери для связи в WhatsApp и повторного заказа.",
-              ar: "المتاجر التي زرتها في خان سنترال تُحفظ هنا مع الطابق ورقم الباب للتواصل عبر واتساب أو إعادة الطلب.",
+              tr: "Şark Han, Büyük Yeni Han, Kürkçü Han, Santral Han veya Kapalıçarşı'da gezdiğiniz ve kapı QR kodunu okuttuğunuz dükkânlar kat ve kapı numarasıyla burada saklanır; handan ayrıldıktan aylar sonra bile doğrudan WhatsApp ile yazabilir veya tek tıkla yeni talep gönderebilirsiniz.",
+              en: "Shops you visited or scanned across Şark Han, Büyük Yeni Han, Kürkçü Han, Santral Han, or the Grand Bazaar stay saved here with their exact floor and door number so you can message them on WhatsApp or reorder anytime.",
+              ru: "Лавки, которые вы посетили в ханах Тахтакале, Махмутпаши и Гранд-базара, сохраняются с этажом и номером двери для связи в WhatsApp и повторного заказа.",
+              ar: "المتاجر التي زرتها في خانات المنطقة تُحفظ هنا مع الطابق ورقم الباب للتواصل عبر واتساب أو إعادة الطلب.",
             }, lang)}
           </p>
           <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;margin-top:12px")}>
             {[
-              { id: "roza", name: "Roza Aksesuar", fl: "A Kat · No: 8", cat: "Çelik Takı & Bijuteri (B2B + B2C)", tel: "905324001001" },
-              { id: "yilmazbijuteri", name: "Yılmaz Bijuteri", fl: "A Kat · No: 61", cat: "925 Gümüş & Zirkon (B2B + B2C)", tel: "905324001061" },
-              { id: "klcbijuteri", name: "KLC Consept Bijuteri", fl: "B Kat · No: 228", cat: "Toka · Doğaltaş · Tesbih", tel: "905324001228" },
-              { id: "zentaelektronik", name: "Zenta Elektronik", fl: "C Kat · No: 367", cat: "Telefon Kılıfı & Powerbank", tel: "905324001367" },
-              { id: "pildunyasi", name: "Pil Dünyası & Batarya", fl: "D Kat · No: 412", cat: "Saat Pili · Kumanda & Batarya", tel: "905324001412" },
+              { id: "emre", han: "Şark Han", fl: "1. Kat · No: 114", name: "Emre Aksesuar", cat: "Telefon Kılıfı & Aksesuar (B2B + B2C)", tel: "905322101114" },
+              { id: "anadolu", han: "Zincirli Han (Kapalıçarşı)", fl: "Zemin Avlu · No: 5", name: "Anadolu El Halısı", cat: "El Dokuma Halı & Kilim", tel: "905322102005" },
+              { id: "roza", han: "Santral Han", fl: "A Kat · No: 8", name: "Roza Aksesuar", cat: "Çelik Takı & Bijuteri (B2B + B2C)", tel: "905324001001" },
+              { id: "sultan", han: "Kürkçü Han (Mahmutpaşa)", fl: "Zemin Avlu · No: 18", name: "Sultan Çeyiz & Tekstil", cat: "Havlu · Bornoz · Ev Tekstili", tel: "905322103018" },
+              { id: "zentaelektronik", han: "Santral Han", fl: "C Kat · No: 367", name: "Zenta Elektronik", cat: "Telefon Kılıfı & Powerbank", tel: "905324001367" },
             ].map((sh) => (
               <div
                 key={sh.id}
                 style={sx("padding:12px;border-radius:11px;border:1px solid var(--border-default);background:var(--surface-muted);display:flex;flex-direction:column;gap:6px")}
               >
                 <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:6px")}>
-                  <span style={sx("font-size:11.5px;font-weight:800;color:var(--color-primary)")}>Santral Han · {sh.fl}</span>
+                  <span style={sx("font-size:11.5px;font-weight:800;color:var(--color-primary)")}>{sh.han} · {sh.fl}</span>
                 </div>
                 <div style={sx("font-size:14.5px;font-weight:700;color:var(--text-heading)")}>{sh.name}</div>
                 <div style={sx("font-size:12px;color:var(--text-muted)")}>{sh.cat}</div>
@@ -387,7 +387,7 @@ function RequestsView({
                     {lang === "tr" ? "Mağaza & Katalog" : "Shop"}
                   </Button>
                   <a
-                    href={`https://wa.me/${sh.tel}?text=${encodeURIComponent(`Merhaba ${sh.name}, Santral Han (${sh.fl}) mağazanız için HAN üzerinden ulaşıyorum.`)}`}
+                    href={`https://wa.me/${sh.tel}?text=${encodeURIComponent(`Merhaba ${sh.name}, ${sh.han} (${sh.fl}) mağazanız için HAN üzerinden ulaşıyorum.`)}`}
                     target="_blank"
                     rel="noreferrer"
                     style={sx("text-decoration:none")}

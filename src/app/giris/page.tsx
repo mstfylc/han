@@ -220,7 +220,7 @@ function LoginScreen() {
                     color="primary"
                     onClick={() => { setTel("05550000005"); setPin("1234"); setErr(""); }}
                   >
-                    🏛️ Santral Han Yönetimi (05550000005 · 1234)
+                    🏛️ Han Yönetimi Demo (05550000005 · 1234)
                   </Button>
                   <Button
                     size="sm"
@@ -228,7 +228,7 @@ function LoginScreen() {
                     color="secondary"
                     onClick={() => { setTel("05550000001"); setPin("1234"); setErr(""); }}
                   >
-                    ⚡ Genel Yönetici (05550000001 · 1234)
+                    ⚡ Bölge / Genel Yönetici (05550000001 · 1234)
                   </Button>
                 </div>
               </div>
