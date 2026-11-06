@@ -160,7 +160,7 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
 
         {/* Quick Han Switcher Pills */}
         <div style={sx("display:flex;gap:6px;flex-wrap:wrap")}>
-          {["sark", "buyukyeni", "santral", "kurkcu", "kalcilar", "dogubank", "zincirli", "cukur"].map((pid) => {
+          {["santral", "sark", "buyukyeni", "kurkcu", "kalcilar", "dogubank", "zincirli", "cukur"].map((pid) => {
             const pObj = SC.PLACES.find((x) => x.id === pid);
             if (!pObj) return null;
             const on = place.id === pid;

@@ -86,7 +86,7 @@ export default function HaritaDuzen(props: PanelTabProps) {
       </p>
 
       <div style={sx("margin-top:14px;display:flex;gap:6px;flex-wrap:wrap")}>
-        {["sark", "buyukyeni", "santral", "kurkcu", "kalcilar", "dogubank", "zincirli", "cukur"].map((id) => {
+        {["santral", "sark", "buyukyeni", "kurkcu", "kalcilar", "dogubank", "zincirli", "cukur"].map((id) => {
           const pObj = SC.PLACES.find((x) => x.id === id);
           if (!pObj) return null;
           const on = pid === id;

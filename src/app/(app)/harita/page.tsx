@@ -139,7 +139,7 @@ function MapScreen() {
     }
     return SC.PLACES.slice()
       .map((p) => ({ id: p.id, name: p.name, n: SC.placeStats(p.id)?.records || 0, semt: p.semt }))
-      .sort((a, b) => b.n - a.n)
+      .sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.n - a.n))
       .slice(0, 12);
   }, [box, focusInfo]);
 

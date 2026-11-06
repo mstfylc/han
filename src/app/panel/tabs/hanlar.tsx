@@ -42,7 +42,7 @@ export default function Hanlar(_props: PanelTabProps) {
   const cards = useMemo(
     () =>
       SC.PLACES.slice()
-        .sort((a, b) => b.units - a.units)
+        .sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.units - a.units))
         .map((p) => {
           const st = SC.placeStats(p.id);
           const registered = st ? st.openRecords : 0;

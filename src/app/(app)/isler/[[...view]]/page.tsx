@@ -367,9 +367,9 @@ function RequestsView({
           </p>
           <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;margin-top:12px")}>
             {[
+              { id: "roza", han: "Santral Han", fl: "A Kat · No: 8", name: "Roza Aksesuar", cat: "Çelik Takı & Bijuteri (B2B + B2C)", tel: "905324001001" },
               { id: "emre", han: "Şark Han", fl: "1. Kat · No: 114", name: "Emre Aksesuar", cat: "Telefon Kılıfı & Aksesuar (B2B + B2C)", tel: "905322101114" },
               { id: "anadolu", han: "Zincirli Han (Kapalıçarşı)", fl: "Zemin Avlu · No: 5", name: "Anadolu El Halısı", cat: "El Dokuma Halı & Kilim", tel: "905322102005" },
-              { id: "roza", han: "Santral Han", fl: "A Kat · No: 8", name: "Roza Aksesuar", cat: "Çelik Takı & Bijuteri (B2B + B2C)", tel: "905324001001" },
               { id: "sultan", han: "Kürkçü Han (Mahmutpaşa)", fl: "Zemin Avlu · No: 18", name: "Sultan Çeyiz & Tekstil", cat: "Havlu · Bornoz · Ev Tekstili", tel: "905322103018" },
               { id: "zentaelektronik", han: "Santral Han", fl: "C Kat · No: 367", name: "Zenta Elektronik", cat: "Telefon Kılıfı & Powerbank", tel: "905324001367" },
             ].map((sh) => (

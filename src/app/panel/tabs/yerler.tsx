@@ -96,7 +96,7 @@ export default function Yerler(props: PanelTabProps) {
     return (ids ? SC.PLACES.filter((p) => ids.has(p.id)) : SC.PLACES.slice())
       .filter((p) => kind === "all" || p.kind === kind)
       .filter((p) => !qq || p.name.toLocaleLowerCase("tr").includes(qq))
-      .sort((a, b) => b.units - a.units);
+      .sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.units - a.units));
   }, [scope, sel, q, kind, rev]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Yetkili sütunu uydurulmaz: o yerdeki kayıtların en sık yetkilisinden türer.

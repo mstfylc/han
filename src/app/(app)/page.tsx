@@ -32,7 +32,7 @@ export default function DiscoverPage() {
   const router = useRouter();
   const { lang, mode, currency } = state;
   const [q, setQ] = useState("");
-  const [activeHanId, setActiveHanId] = useState<string>("sark");
+  const [activeHanId, setActiveHanId] = useState<string>("santral");
 
   const cv = (n: number | null) => convert(n, lang, currency);
   const T = (D.L[lang] || D.L.tr) as Record<string, string>;
@@ -257,6 +257,22 @@ export default function DiscoverPage() {
 
   const featuredHans = [
     {
+      id: "santral",
+      name: "Santral Han",
+      area: "Tahtakale",
+      badge: "7 Kat (Z–F) · 256 Birim · Resmi Paftalı",
+      addr: "Tahtakale Cd. No: 7, Fatih / İstanbul · Tel: 0552 744 79 38",
+      lat: 41.01518,
+      lng: 28.96845,
+      desc: "Z Kat'tan F Kat'a kadar 7 katın resmi mimari paftası ve 194 gerçek kapı numarasıyla bijuteri, çelik takı ve telefon aksesuarı merkezi.",
+      floors: [
+        { fl: "Z & A Kat", title: "Gümüş · Çelik · Bijuteri · Ana Giriş", ex: "Roza No:8 · Yılmaz No:61 · Kardeşler No:152" },
+        { fl: "B Kat", title: "Bijuteri · Doğaltaş · Toka · Tesbih", ex: "KLC No:228 · Zümrüt No:229 · Ema No:225" },
+        { fl: "C & D Kat", title: "Telefon Aksesuar · Saat · Pil · Batarya", ex: "Zenta No:367 · Asır Saat No:350 · Pil Dünyası No:412" },
+        { fl: "E & F Kat", title: "İthalat · İhracat · Lojistik · Yönetim", ex: "Aydın Tic. No:501 · Kaya Depo No:601 · Yönetim" },
+      ],
+    },
+    {
       id: "sark",
       name: "Şark Han",
       area: "Tahtakale · Mercan",
@@ -267,7 +283,7 @@ export default function DiscoverPage() {
       desc: "Tahtakale'nin en yoğun çok katlı toptan merkezi. Saat, gözlük, oyuncak, telefon aksesuarı ve hediyelik eşya koridorları.",
       floors: [
         { fl: "Zemin (0)", title: "Saat · Gözlük · Hediyelik · Kılıf", ex: "Emre Aksesuar No:14 · Mercan Saat No:22" },
-        { fl: "1. Kat", title: "Telefon Aksesuarı · Elektronik · Şarj", ex: "Tahtakale Электроник No:108 · Asya Kılıf No:119" },
+        { fl: "1. Kat", title: "Telefon Aksesuarı · Elektronik · Şarj", ex: "Tahtakale Elektronik No:108 · Asya Kılıf No:119" },
         { fl: "2. Kat", title: "Bijuteri · Çelik Takı · Toka · Kozmetik", ex: "Şark Bijuteri No:204 · İnci Aksesuar No:218" },
         { fl: "3. Kat", title: "Oyuncak · Kırtasiye · Parti Malzemesi", ex: "Anadolu Oyuncak No:305 · Hobi Toptan No:332" },
         { fl: "4. Kat", title: "İthalat Showroom · Toptan Koli Depo", ex: "Boğaziçi Dış Tic. No:402 · Şark Yönetim" },
@@ -286,22 +302,6 @@ export default function DiscoverPage() {
         { fl: "Zemin Avlu", title: "Tarihi Taş Avlu · Gümüş · Dokuma · Kafe", ex: "Avlu Gümüş Atölyesi No:12 · Çakmakçılar Dokuma No:28" },
         { fl: "1. Revan Katı", title: "El İşi Gümüş · Bakır · Antika · Halı", ex: "Usta Gümüşhane No:104 · Tarihi Han Halı No:118" },
         { fl: "2. Üst Galeri", title: "Zanaat Atölyeleri · Tasarım · İhracat Ofis", ex: "Sadekar Atölye No:206 · Han Sanat No:219" },
-      ],
-    },
-    {
-      id: "santral",
-      name: "Santral Han",
-      area: "Tahtakale",
-      badge: "7 Kat (Z–F) · 256 Birim · Resmi Paftalı",
-      addr: "Tahtakale Cd. No: 7, Fatih / İstanbul · Tel: 0552 744 79 38",
-      lat: 41.01518,
-      lng: 28.96845,
-      desc: "Z Kat'tan F Kat'a kadar 7 katın resmi mimari paftası ve 194 gerçek kapı numarasıyla bijuteri, çelik takı ve telefon aksesuarı merkezi.",
-      floors: [
-        { fl: "Z & A Kat", title: "Gümüş · Çelik · Bijuteri · Ana Giriş", ex: "Roza No:8 · Yılmaz No:61 · Kardeşler No:152" },
-        { fl: "B Kat", title: "Bijuteri · Doğaltaş · Toka · Tesbih", ex: "KLC No:228 · Zümrüt No:229 · Ema No:225" },
-        { fl: "C & D Kat", title: "Telefon Aksesuar · Saat · Pil · Batarya", ex: "Zenta No:367 · Asır Saat No:350 · Pil Dünyası No:412" },
-        { fl: "E & F Kat", title: "İthalat · İhracat · Lojistik · Yönetim", ex: "Aydın Tic. No:501 · Kaya Depo No:601 · Yönetim" },
       ],
     },
     {

@@ -713,11 +713,11 @@ function TraderScreen() {
                         },
                         esSession: { tel: "05550000012", at: Date.now() },
                       });
-                      router.replace(href.trader("yonet", { record: "r-sark-000" }));
-                      toast(t({ tr: "Demo Esnaf Girişi: Şark Han (Emre Aksesuar) & Santral Han (Roza Aksesuar) açıldı", en: "Signed in to demo trader accounts" }));
+                      router.replace(href.trader("yonet", { record: "r-santral-000" }));
+                      toast(t({ tr: "Demo Esnaf Girişi: Santral Han (Roza Aksesuar) & Şark Han (Emre Aksesuar) açıldı", en: "Signed in to demo trader accounts" }));
                     }}
                   >
-                    ⚡ {t({ tr: "Demo Esnaf Girişi (Şark Han & Santral Han Mağazaları)", en: "Demo Trader Login (Şark Han & Santral Han)" })}
+                    ⚡ {t({ tr: "Demo Esnaf Girişi (Santral Han & Şark Han Mağazaları)", en: "Demo Trader Login (Santral Han & Şark Han)" })}
                   </Button>
                 </div>
               </div>

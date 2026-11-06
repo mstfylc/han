@@ -84,7 +84,7 @@ export function Filters(p: FiltersProps) {
   ] as FacetDef[]).concat(
     SC.PLACES.map((pl) => ({ id: pl.id, label: pl.name, count: facets.place[pl.id] || 0 }))
       .filter((x) => x.count > 0)
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.count - a.count))
       .slice(0, 12),
   );
 
