@@ -353,7 +353,7 @@ export function SantralFloorMap({
     if (byPlace) {
       return lang === "tr" ? byPlace.tr : byPlace.en;
     }
-    const catNames = (place.cats || [])
+    const catNames = (place.dominantCats || [])
       .slice(0, 3)
       .map((cid: string) => {
         const c = D.CATS.find((x) => x.id === cid);
