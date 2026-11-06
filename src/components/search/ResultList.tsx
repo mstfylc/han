@@ -122,18 +122,18 @@ export function ResultRow({ hit, lang, picked, onPick, onOpen }: ResultRowProps)
       <button
         type="button"
         onClick={onOpen}
-        style={sx("display:flex;gap:15px;flex:1;min-width:0;padding:14px;border-radius:14px;background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);font-family:inherit;text-align:start;cursor:pointer;border:1px solid var(--border-strong)")}
+        className="han-result-btn"
       >
         {/* Downloading 40 remote images per page buys nothing at scale: only a
             record with its own photo loads one, the rest get a letter tile. */}
         {rec.curated ? (
-          <span style={sx("flex:none;width:74px;height:74px;border-radius:11px;overflow:hidden;background:var(--surface-muted)")}>
+          <span style={sx("flex:none;width:66px;height:66px;border-radius:11px;overflow:hidden;background:var(--surface-muted)")}>
             <ImageSlot src={storePhoto(D.STORES.find((x) => x.id === rec.curated) || null)} placeholder={name} decorative />
           </span>
         ) : (
           <span
             style={sx(
-              "flex:none;width:74px;height:74px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;letter-spacing:-.02em;background:var(--color-" +
+              "flex:none;width:66px;height:66px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;letter-spacing:-.02em;background:var(--color-" +
                 (rec.status === "aktif" ? "accent" : rec.status === "beyan" ? "warning" : "primary") +
                 "-soft);color:var(--color-" +
                 (rec.status === "aktif" ? "accent-active" : rec.status === "beyan" ? "warning-accent" : "primary-accent") +
@@ -145,9 +145,9 @@ export function ResultRow({ hit, lang, picked, onPick, onOpen }: ResultRowProps)
           </span>
         )}
 
-        <span style={sx("flex:1;min-width:0")}>
+        <span style={sx("flex:1 1 170px;min-width:0")}>
           <span style={sx("display:flex;align-items:center;gap:7px;flex-wrap:wrap")}>
-            <span style={sx("font-size:17px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap")}>
+            <span style={sx("font-size:16.5px;font-weight:700;color:var(--text-heading);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%")}>
               {name}
             </span>
             {/* The state is shown as the action it permits, not its internal name. */}
@@ -161,14 +161,14 @@ export function ResultRow({ hit, lang, picked, onPick, onOpen }: ResultRowProps)
             </span>
           </span>
 
-          <span style={sx("display:block;font-size:13.5px;color:var(--text-muted);margin-top:4px")}>{where}</span>
+          <span style={sx("display:block;font-size:13px;color:var(--text-muted);margin-top:4px")}>{where}</span>
 
-          <span style={sx("display:flex;flex-wrap:wrap;gap:6px;margin-top:9px")}>
+          <span style={sx("display:flex;flex-wrap:wrap;gap:6px;margin-top:8px")}>
             {badges.map((b) => (
               <span
                 key={b.label}
                 style={sx(
-                  "display:inline-flex;align-items:center;height:23px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:700;background:var(--color-" +
+                  "display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;background:var(--color-" +
                     b.tone + "-soft);color:var(--color-" + b.tone +
                     (b.tone === "accent" || b.tone === "warning" ? "-accent" : "") + ")",
                 )}
@@ -178,29 +178,33 @@ export function ResultRow({ hit, lang, picked, onPick, onOpen }: ResultRowProps)
             ))}
           </span>
 
-          <span style={sx("display:block;font-size:12.5px;color:var(--color-primary);margin-top:8px;text-wrap:pretty")}>
+          <span style={sx("display:block;font-size:12px;color:var(--color-primary);margin-top:7px;text-wrap:pretty")}>
             {reasonText(hit, lang)}
           </span>
 
           {flaw && (
-            <span style={sx("display:block;font-size:12.5px;color:var(--color-warning-accent);margin-top:5px")}>{flaw}</span>
+            <span style={sx("display:block;font-size:12px;color:var(--color-warning-accent);margin-top:4px")}>{flaw}</span>
           )}
         </span>
 
-        <span style={sx("flex:none;width:150px;text-align:end;align-self:center")}>
-          <span style={sx("display:block;font-size:11.5px;color:var(--text-muted)")}>
-            {active && band
-              ? pk({ tr: "fiyat bandı", en: "price band", ru: "диапазон цен", ar: "نطاق السعر" }, lang)
-              : active
-                ? W(lang, "from")
-                : pk({ tr: "fiyat girilmemiş", en: "no price yet", ru: "цена не указана", ar: "لا سعر بعد" }, lang)}
+        <span className="han-result-price">
+          <span>
+            <span style={sx("display:block;font-size:11.5px;color:var(--text-muted)")}>
+              {active && band
+                ? pk({ tr: "fiyat bandı", en: "price band", ru: "диапазон цен", ar: "نطاق السعر" }, lang)
+                : active
+                  ? W(lang, "from")
+                  : pk({ tr: "fiyat girilmemiş", en: "no price yet", ru: "цена не указана", ar: "لا سعر بعد" }, lang)}
+            </span>
+            <span style={sx("display:block;font-size:17.5px;font-weight:700;color:var(--color-primary);letter-spacing:-.01em")}>
+              {active && band ? money(band[0]) + "–" + money(band[1]) : active ? "—" : ""}
+            </span>
           </span>
-          <span style={sx("display:block;font-size:18px;font-weight:700;color:var(--color-primary);letter-spacing:-.01em")}>
-            {active && band ? money(band[0]) + "–" + money(band[1]) : active ? "—" : ""}
-          </span>
-          <span style={sx("display:block;font-size:12px;color:var(--text-muted);margin-top:5px")}>
-            {rec.moq > 1 ? W(lang, "minOrder") + " " + rec.moq : ""}
-          </span>
+          {rec.moq > 1 && (
+            <span style={sx("display:block;font-size:12px;color:var(--text-muted);margin-top:3px")}>
+              {W(lang, "minOrder") + " " + rec.moq}
+            </span>
+          )}
         </span>
       </button>
     </div>

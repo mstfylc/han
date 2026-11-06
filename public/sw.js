@@ -8,11 +8,24 @@
 //   · pages and API — network first, cache fallback for pages only, so an
 //     offline reopen still shows the last shell instead of a dinosaur
 //   · never cache /api responses: shared truth must not fork in a cache
-const VERSION = "han-v1";
+const VERSION = "han-v2";
 const STATIC = /^\/(assets|vendor)\/|^\/(han-data\.js|han-map\.html|favicon\.ico|manifest\.webmanifest)$/;
+const PRECACHE = [
+  "/",
+  "/han-map.html",
+  "/manifest.webmanifest",
+  "/assets/han-mark.svg",
+  "/assets/santral-a.jpg",
+  "/assets/santral-b.jpg",
+];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(self.skipWaiting());
+  e.waitUntil(
+    caches
+      .open(VERSION)
+      .then((c) => c.addAll(PRECACHE).catch(() => {}))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (e) => {

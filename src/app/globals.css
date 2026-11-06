@@ -93,6 +93,135 @@ textarea {
   font-family: inherit;
 }
 
+/* ── Mobile-First & SSR-Safe Responsive Layout Utilities ────────────────── */
+.han-search-grid {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.han-plan-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.han-cat-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.han-result-btn {
+  display: flex;
+  gap: 15px;
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-card);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.03);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+}
+
+.han-result-price {
+  flex: none;
+  width: 150px;
+  text-align: end;
+  align-self: center;
+}
+
+.han-show-mobile {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .han-search-grid {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .han-plan-grid,
+  .han-cat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .han-search-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .han-hide-mobile {
+    display: none !important;
+  }
+
+  .han-show-mobile {
+    display: flex !important;
+  }
+
+  /* Prevent iOS Safari from auto-zooming the viewport on input focus */
+  input,
+  select,
+  textarea,
+  .mtinput {
+    font-size: 16px !important;
+  }
+
+  /* Keep Toast above the 60px Bottom Tab Bar */
+  .mttoast {
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Turn side Drawers into native-feeling bottom sheets on phones */
+  .mtov--drawer {
+    align-items: flex-end;
+  }
+  .mtdrawer {
+    max-width: 100vw !important;
+    height: auto;
+    max-height: 88dvh;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -12px 48px rgba(15, 23, 42, 0.24);
+  }
+  .mtdrawer__hd {
+    padding: 14px 16px;
+  }
+  .mtdrawer__body {
+    padding: 16px;
+  }
+  .mtdrawer__foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 640px) {
+  .han-result-btn {
+    flex-wrap: wrap;
+    gap: 11px;
+    padding: 12px;
+  }
+  .han-result-price {
+    width: 100%;
+    flex: 1 1 100%;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 9px;
+    margin-top: 2px;
+    border-top: 1px dashed var(--border-default);
+    text-align: start;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

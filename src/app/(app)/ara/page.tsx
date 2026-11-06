@@ -13,7 +13,7 @@ import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import * as SE from "@/data/han-search";
 import type { Lang, SearchFilters, SortKey } from "@/data/types";
-import { Alert, Button, Icon } from "@/ds";
+import { Alert, Button, Drawer, Icon } from "@/ds";
 import { DetailPanel } from "@/components/search/DetailPanel";
 import { Filters } from "@/components/search/Filters";
 import { ResultRow, ResultSkeleton } from "@/components/search/ResultList";
@@ -65,6 +65,7 @@ function SearchScreen() {
   // every back/forward, and a cascading render the compiler flags.
   const [draft, setDraft] = useState(q);
   const [syncedQ, setSyncedQ] = useState(q);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   if (q !== syncedQ) {
     setSyncedQ(q);
     setDraft(q);
@@ -210,51 +211,161 @@ function SearchScreen() {
   const totals = SC.SCALE_TOTALS;
 
   const idle = !q.trim() && !hasFilters;
+  const activeFilterCount =
+    (semtFilter !== "all" ? 1 : 0) +
+    (placeFilter !== "all" ? 1 : 0) +
+    (sectorFilter !== "all" ? 1 : 0) +
+    (statusFilter !== "all" ? 1 : 0) +
+    flagFilters.length;
+
+  const filtersNode = (
+    <Filters
+      lang={lang}
+      q={draft}
+      onQ={setDraft}
+      onSubmitQ={() => {
+        setFilterDrawerOpen(false);
+        nav({ [PARAM.q]: draft || null, [PARAM.page]: null });
+      }}
+      res={res}
+      sort={sort}
+      onSort={(s) => nav({ [PARAM.sort]: s === "uygunluk" ? null : s, [PARAM.page]: null })}
+      qty={qtyParam}
+      onQty={(v) => { set({ qty: v }); nav({ adet: v || null, [PARAM.page]: null }, true); }}
+      semtFilter={semtFilter}
+      placeFilter={placeFilter}
+      sectorFilter={sectorFilter}
+      statusFilter={statusFilter}
+      flagFilters={flagFilters}
+      onFacet={(patch) => {
+        const out: Record<string, string | string[] | null> = { [PARAM.page]: null };
+        if ("semtFilter" in patch) { out[PARAM.semt] = patch.semtFilter === "all" ? null : (patch.semtFilter as string); out.yer = null; }
+        if ("placeFilter" in patch) out.yer = patch.placeFilter === "all" ? null : (patch.placeFilter as string);
+        if ("sectorFilter" in patch) out[PARAM.trade] = patch.sectorFilter === "all" ? null : (patch.sectorFilter as string);
+        if ("statusFilter" in patch) out.durum = patch.statusFilter === "all" ? null : (patch.statusFilter as string);
+        if ("flagFilters" in patch) out[PARAM.flags] = (patch.flagFilters as string[]).length ? (patch.flagFilters as string[]) : null;
+        nav(out);
+      }}
+      hasFilters={hasFilters}
+      onClear={() => nav({ [PARAM.semt]: null, yer: null, [PARAM.trade]: null, durum: null, [PARAM.flags]: null, [PARAM.page]: null })}
+      onBrowseCats={() => {
+        setFilterDrawerOpen(false);
+        router.push(href.category());
+      }}
+      qHist={state.qHist || []}
+      onPickHistory={(h) => {
+        setDraft(h);
+        setFilterDrawerOpen(false);
+        nav({ [PARAM.q]: h, [PARAM.page]: null });
+      }}
+      onClearHistory={() => save({ qHist: [] })}
+      savedSearches={state.savedSearches || []}
+      onSaveSearch={saveSearch}
+      onOpenSaved={(s) => {
+        setFilterDrawerOpen(false);
+        nav({ [PARAM.q]: s.q, [PARAM.semt]: (s.filters?.semt as string) === "all" ? null : (s.filters?.semt as string), [PARAM.page]: null });
+      }}
+      onRemoveSaved={(s) => save({ savedSearches: (state.savedSearches || []).filter((y) => y.at !== s.at) })}
+      searchPlaceholder={(D.L[lang] || D.L.tr).searchPlaceholder as string}
+    />
+  );
+
+  const detailNode = (
+    <DetailPanel
+      panel={panel}
+      lang={lang}
+      mode={mode}
+      currency={currency}
+      hanFloor={hanFloor}
+      saved={state.saved}
+      onClose={() => nav({ [PARAM.panel]: null, [PARAM.floor]: null })}
+      onOpenPanel={openPanel}
+      onFloor={(n) => nav({ [PARAM.floor]: n || null }, true)}
+      onToggleSave={toggleSave}
+      onAddToPlan={(s) => {
+        const item = { id: "b" + Date.now(), name: s.name, qty: "1", target: "" };
+        save({ buyList: (state.buyList || []).concat(item) });
+        toast(W(lang, "addPlan"));
+      }}
+    />
+  );
 
   return (
     <div style={sx(searchGrid(b))}>
-      {/* ── filters ─────────────────────────────────────────────────────── */}
-      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : ""))} data-han-search aria-label={F(lang, "flags")}>
-        <Filters
-          lang={lang}
-          q={draft}
-          onQ={setDraft}
-          onSubmitQ={() => nav({ [PARAM.q]: draft || null, [PARAM.page]: null })}
-          res={res}
-          sort={sort}
-          onSort={(s) => nav({ [PARAM.sort]: s === "uygunluk" ? null : s, [PARAM.page]: null })}
-          qty={qtyParam}
-          onQty={(v) => { set({ qty: v }); nav({ adet: v || null, [PARAM.page]: null }, true); }}
-          semtFilter={semtFilter}
-          placeFilter={placeFilter}
-          sectorFilter={sectorFilter}
-          statusFilter={statusFilter}
-          flagFilters={flagFilters}
-          onFacet={(patch) => {
-            const out: Record<string, string | string[] | null> = { [PARAM.page]: null };
-            if ("semtFilter" in patch) { out[PARAM.semt] = patch.semtFilter === "all" ? null : (patch.semtFilter as string); out.yer = null; }
-            if ("placeFilter" in patch) out.yer = patch.placeFilter === "all" ? null : (patch.placeFilter as string);
-            if ("sectorFilter" in patch) out[PARAM.trade] = patch.sectorFilter === "all" ? null : (patch.sectorFilter as string);
-            if ("statusFilter" in patch) out.durum = patch.statusFilter === "all" ? null : (patch.statusFilter as string);
-            if ("flagFilters" in patch) out[PARAM.flags] = (patch.flagFilters as string[]).length ? (patch.flagFilters as string[]) : null;
-            nav(out);
-          }}
-          hasFilters={hasFilters}
-          onClear={() => nav({ [PARAM.semt]: null, yer: null, [PARAM.trade]: null, durum: null, [PARAM.flags]: null, [PARAM.page]: null })}
-          onBrowseCats={() => router.push(href.category())}
-          qHist={state.qHist || []}
-          onPickHistory={(h) => { setDraft(h); nav({ [PARAM.q]: h, [PARAM.page]: null }); }}
-          onClearHistory={() => save({ qHist: [] })}
-          savedSearches={state.savedSearches || []}
-          onSaveSearch={saveSearch}
-          onOpenSaved={(s) => nav({ [PARAM.q]: s.q, [PARAM.semt]: (s.filters?.semt as string) === "all" ? null : (s.filters?.semt as string), [PARAM.page]: null })}
-          onRemoveSaved={(s) => save({ savedSearches: (state.savedSearches || []).filter((y) => y.at !== s.at) })}
-          searchPlaceholder={(D.L[lang] || D.L.tr).searchPlaceholder as string}
-        />
-      </aside>
+      {/* ── filters (desktop/tablet sidebar; on single-column inside Drawer) ── */}
+      {!b.single && (
+        <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : ""))} data-han-search aria-label={F(lang, "flags")}>
+          {filtersNode}
+        </aside>
+      )}
 
       {/* ── results ─────────────────────────────────────────────────────── */}
       <main style={sx(areaOn("l"))} id="han-sonuclar">
+        {/* Compact Mobile Search & Filter Bar (< 1040px) */}
+        {b.single && (
+          <div style={sx("background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 3px 8px rgba(0,0,0,.04)")}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                nav({ [PARAM.q]: draft || null, [PARAM.page]: null });
+              }}
+              style={sx("display:flex;gap:8px")}
+            >
+              <input
+                type="search"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={(D.L[lang] || D.L.tr).searchPlaceholder as string}
+                className="mtinput mtinput--md"
+                style={sx("flex:1;min-width:0;height:42px")}
+              />
+              <Button type="submit" color="accent" variant="solid" size="md" leadingIcon="magnifier">
+                {W(lang, "secSearch")}
+              </Button>
+            </form>
+            <div style={sx("display:flex;align-items:center;gap:8px;margin-top:9px;overflow-x:auto")}>
+              <button
+                type="button"
+                onClick={() => setFilterDrawerOpen(true)}
+                style={sx(
+                  "flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:1px solid " +
+                    (activeFilterCount > 0
+                      ? "var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)"
+                      : "var(--border-strong);background:var(--surface-muted);color:var(--text-heading)"),
+                )}
+              >
+                <Icon name="sliders" size={15} />
+                <span>{lang === "tr" ? "Filtre & Sırala" : "Filter & Sort"}</span>
+                {activeFilterCount > 0 && (
+                  <span style={sx("display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;font-size:11px;font-weight:800;background:var(--color-primary);color:#fff")}>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(href.category())}
+                style={sx(
+                  "flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-body)",
+                )}
+              >
+                <Icon name="category" size={15} />
+                <span>{W(lang, "allCats")}</span>
+              </button>
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={() => nav({ [PARAM.semt]: null, yer: null, [PARAM.trade]: null, durum: null, [PARAM.flags]: null, [PARAM.page]: null })}
+                  style={sx(
+                    "flex:none;height:36px;padding:0 10px;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid var(--color-danger);background:var(--color-danger-soft);color:var(--color-danger)",
+                  )}
+                >
+                  {F(lang, "clear")}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap")}>
           <div>
             <div style={sx("font-size:15px;color:var(--text-body)")}>
@@ -515,26 +626,38 @@ function SearchScreen() {
         )}
       </main>
 
-      {/* ── detail ──────────────────────────────────────────────────────── */}
-      <aside style={sx(areaOn("d") + (b.three ? STICKY_TOP : ""))} aria-label={W(lang, "pickTitle")}>
-        <DetailPanel
-          panel={panel}
-          lang={lang}
-          mode={mode}
-          currency={currency}
-          hanFloor={hanFloor}
-          saved={state.saved}
-          onClose={() => nav({ [PARAM.panel]: null, [PARAM.floor]: null })}
-          onOpenPanel={openPanel}
-          onFloor={(n) => nav({ [PARAM.floor]: n || null }, true)}
-          onToggleSave={toggleSave}
-          onAddToPlan={(s) => {
-            const item = { id: "b" + Date.now(), name: s.name, qty: "1", target: "" };
-            save({ buyList: (state.buyList || []).concat(item) });
-            toast(W(lang, "addPlan"));
-          }}
-        />
-      </aside>
+      {/* ── detail (desktop/tablet sidebar; on single-column inside Drawer) ── */}
+      {!b.single ? (
+        <aside style={sx(areaOn("d") + (b.three ? STICKY_TOP : ""))} aria-label={W(lang, "pickTitle")}>
+          {detailNode}
+        </aside>
+      ) : (
+        <>
+          <Drawer
+            open={filterDrawerOpen}
+            onClose={() => setFilterDrawerOpen(false)}
+            title={lang === "tr" ? "Filtreler ve Sıralama" : "Filters & Sorting"}
+            subtitle={lang === "tr" ? `${num(res.total, lang)} dükkân gösteriliyor` : `${num(res.total, lang)} shops matching`}
+            size="md"
+            footer={
+              <Button color="accent" variant="solid" size="lg" fullWidth onClick={() => setFilterDrawerOpen(false)}>
+                {lang === "tr" ? `${num(res.total, lang)} Sonucu Göster` : `Show ${num(res.total, lang)} Results`}
+              </Button>
+            }
+          >
+            {filtersNode}
+          </Drawer>
+
+          <Drawer
+            open={!!panel}
+            onClose={() => nav({ [PARAM.panel]: null, [PARAM.floor]: null })}
+            title={W(lang, "pickTitle")}
+            size="md"
+          >
+            {detailNode}
+          </Drawer>
+        </>
+      )}
     </div>
   );
 }

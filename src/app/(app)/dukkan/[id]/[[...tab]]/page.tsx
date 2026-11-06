@@ -25,6 +25,7 @@ import { ImageSlot } from "@/components/ImageSlot";
 import SantralFloorMap from "@/components/SantralFloorMap";
 import { F, W } from "@/lib/copy";
 import { convert, localeOf, money, num, tonePair, tx } from "@/lib/i18n";
+import { pagePad } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { medStyle } from "@/lib/shop";
 import { photoHonesty, resolveShop, similarShops, srcLabel, trustRows } from "@/lib/shopView";
@@ -122,8 +123,10 @@ export default function ShopPage() {
     reviews: W(lang, "reviewsTitle"),
   };
 
+  const isMobile = state.vw < 768;
+
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:18px 24px 56px")}>
+    <div style={sx("max-width:1480px;margin:0 auto;padding:" + pagePad(state.vw) + (isMobile ? ";padding-bottom:136px" : ""))}>
       {/* ── breadcrumb ─────────────────────────────────────────────────── */}
       <div style={sx("display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--text-muted)")}>
         <button
@@ -143,9 +146,9 @@ export default function ShopPage() {
       </div>
 
       {/* ── header ─────────────────────────────────────────────────────── */}
-      <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:24px;margin-top:16px;align-items:start")}>
+      <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:" + (isMobile ? "16px" : "24px") + ";margin-top:16px;align-items:start")}>
         <div>
-          <div style={sx("border-radius:16px;overflow:hidden;border:1px solid var(--border-strong);background:var(--surface-muted);height:352px")}>
+          <div style={sx("border-radius:16px;overflow:hidden;border:1px solid var(--border-strong);background:var(--surface-muted);height:" + (isMobile ? "216px" : "352px"))}>
             {/* Panelde onaylanan kapak görseli önce gelir; onaysız görsel
                 alıcıya hiç ulaşmaz (Mağaza Görselleri akışı, uçtan uca). */}
             <ImageSlot
@@ -419,6 +422,71 @@ export default function ShopPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* ── Mobile Sticky Thumb-Zone Action Bar (sits right above 62px Bottom Nav) ── */}
+      {isMobile && (
+        <div
+          style={sx(
+            "position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:45;padding:8px 12px;background:var(--surface-card);border-top:1px solid var(--border-strong);box-shadow:0 -4px 16px rgba(0,0,0,.08);display:flex;align-items:center;gap:6px",
+          )}
+        >
+          <Button
+            size="sm"
+            color="primary"
+            variant="solid"
+            iconStart="compass"
+            style={{ flex: 1 }}
+            onClick={() => router.push(href.directions(view.id))}
+          >
+            {pk({ tr: "Yol Tarifi", en: "Directions" }, lang)}
+          </Button>
+          <Button
+            size="sm"
+            color="accent"
+            variant="solid"
+            iconStart="camera"
+            style={{ flex: 1 }}
+            onClick={() => router.push(`${href.directions(view.id)}?ar=1`)}
+          >
+            {pk({ tr: "Kamera AR", en: "Camera AR" }, lang)}
+          </Button>
+          {view.tel && (
+            <a
+              href={"https://wa.me/" + view.tel}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={sx(
+                "height:34px;padding:0 11px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:800;border:1px solid var(--color-success);background:var(--color-success-soft);color:var(--color-success);display:inline-flex;align-items:center;gap:5px;white-space:nowrap",
+              )}
+            >
+              <Icon name="messages" size={14} />
+              WA
+            </a>
+          )}
+          <Button
+            size="sm"
+            color="secondary"
+            variant="outline"
+            iconStart="plus-squared"
+            onClick={() => {
+              const item = { id: "b" + Date.now(), name: view.name, qty: "1", target: "" };
+              const activeTripId = state.tripId || ((state.trips || [])[0]?.id ?? null);
+              const nextTrips = (state.trips || []).map((t) =>
+                t.id === activeTripId
+                  ? { ...t, items: (t.items || []).concat([item]), phase: "rota" as const }
+                  : t,
+              );
+              save({
+                buyList: (state.buyList || []).concat([item]),
+                trips: nextTrips,
+              });
+              toast(W(lang, "addPlan"));
+            }}
+          >
+            {pk({ tr: "+Rota", en: "+Route" }, lang)}
+          </Button>
+        </div>
       )}
     </div>
   );

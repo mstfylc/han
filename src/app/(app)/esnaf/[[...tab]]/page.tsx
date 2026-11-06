@@ -108,6 +108,7 @@ function TraderScreen() {
   const [owner, setOwner] = useState("");
   const [tel, setTel] = useState("");
   const [proof, setProof] = useState("han");
+  const [proofPhoto, setProofPhoto] = useState<string>("");
   const [errs, setErrs] = useState<{ owner?: string; tel?: string }>({});
 
   const proofDefs: [string, string, string][] = [
@@ -310,8 +311,15 @@ function TraderScreen() {
   return (
     <div style={sx(searchGrid(b))}>
       {/* ── tabs ─────────────────────────────────────────────────────── */}
-      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : ""))}>
-        <nav style={sx("display:flex;flex-direction:column;gap:3px")} aria-label={t({ tr: "Esnaf", en: "Trader", ru: "Продавец", ar: "التاجر" })}>
+      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : "") + (b.single ? ";padding:8px 10px" : ""))}>
+        <nav
+          style={sx(
+            b.single
+              ? "display:flex;flex-direction:row;gap:6px;overflow-x:auto"
+              : "display:flex;flex-direction:column;gap:3px",
+          )}
+          aria-label={t({ tr: "Esnaf", en: "Trader", ru: "Продавец", ar: "التاجر" })}
+        >
           {tabs.map((x) => {
             const on = x.id === tab;
             return (
@@ -321,9 +329,11 @@ function TraderScreen() {
                 onClick={() => go(x.id)}
                 aria-current={on ? "page" : undefined}
                 style={sx(
-                  "display:flex;align-items:center;gap:10px;width:100%;background:" +
+                  "display:flex;align-items:center;gap:8px;" +
+                    (b.single ? "flex:none;white-space:nowrap;padding:9px 12px;" : "width:100%;padding:11px 11px;") +
+                    "background:" +
                     (on ? "var(--color-primary-soft)" : "none") +
-                    ";border:none;padding:11px 11px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:" +
+                    ";border:none;border-radius:9px;font-family:inherit;font-size:13.5px;font-weight:" +
                     (on ? "700" : "500") +
                     ";color:" + (on ? "var(--color-primary-accent)" : "var(--text-body)") +
                     ";text-align:start;cursor:pointer",
@@ -499,6 +509,44 @@ function TraderScreen() {
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Mobile Camera Document / Business Card / Door Sign Capture */}
+              <div style={sx("margin-top:14px;padding:13px 14px;border-radius:11px;border:1px dashed var(--border-strong);background:var(--surface-muted);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
+                <div style={sx("display:flex;align-items:center;gap:10px")}>
+                  <Icon name="camera" size={18} color="var(--color-primary)" />
+                  <div>
+                    <div style={sx("font-size:13.5px;font-weight:700;color:var(--text-heading)")}>
+                      {t({ tr: "Kartvizit / Vergi Levhası / Kapı Tabelası Fotoğrafı", en: "Business Card / Tax Plate / Door Sign Photo", ru: "Фото визитки или вывески", ar: "صورة البطاقة أو اللافتة" })}
+                    </div>
+                    <div style={sx("font-size:12px;color:var(--text-muted)")}>
+                      {proofPhoto
+                        ? t({ tr: "✓ Belge eklendi: ", en: "✓ Attached: ", ru: "✓ Прикреплено: ", ar: "✓ مرفق: " }) + proofPhoto
+                        : t({ tr: "Telefon kameranızla çekip ekleyebilirsiniz (opsiyonel)", en: "Snap with your phone camera (optional)", ru: "Сделайте фото камерой телефона", ar: "التقط بكاميرا الهاتف" })}
+                    </div>
+                  </div>
+                </div>
+                <label
+                  style={sx(
+                    "display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--color-primary);background:var(--surface-card);color:var(--color-primary);font-size:12.5px;font-weight:700;cursor:pointer",
+                  )}
+                >
+                  <Icon name="camera" size={15} />
+                  <span>{t({ tr: "Kamera ile Çek / Seç", en: "Take Photo / Choose", ru: "Сделать фото", ar: "التقط صورة" })}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={sx("display:none")}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setProofPhoto(f.name);
+                        toast(t({ tr: `Fotoğraf eklendi: ${f.name}`, en: `Photo attached: ${f.name}` }));
+                      }
+                    }}
+                  />
+                </label>
               </div>
 
               <div style={sx("display:flex;align-items:flex-start;gap:10px;margin-top:18px;padding:14px;border-radius:11px;background:var(--color-warning-soft)")}>

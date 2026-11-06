@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HAN — Harita</title>
-<!-- Leaflet is vendored, not pulled from a CDN: the map has to work in the
-     bazaar, where the promise is that saved data opens offline. -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
 <style>
@@ -15,35 +13,58 @@
   .pin{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;
     color:#fff;font-size:12px;font-weight:700;box-shadow:0 3px 8px rgba(0,0,0,.28);border:2px solid #fff}
   .pin-han{background:#1F3864}
-  /* M3 · listeden seçilen pin: haritada hangisi olduğu tek bakışta görünmeli */
   .pin-on{outline:3px solid #E08A2B;outline-offset:2px;transform:scale(1.18);z-index:600}
-  #areaSearch{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:500;
-    height:38px;padding:0 18px;border-radius:999px;border:1px solid #DBDFE9;background:#fff;
-    font-family:Inter,system-ui,sans-serif;font-size:13.5px;font-weight:700;color:#1F3864;
-    box-shadow:0 7px 18px rgba(0,0,0,.14);cursor:pointer}
+  #areaSearch{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:500;
+    height:38px;padding:0 16px;border-radius:999px;border:1px solid #DBDFE9;background:#fff;
+    font-family:Inter,system-ui,sans-serif;font-size:13px;font-weight:700;color:#1F3864;
+    box-shadow:0 7px 18px rgba(0,0,0,.14);cursor:pointer;white-space:nowrap}
   #areaSearch:hover{background:#EAEEF4}
+  #gpsCluster{position:absolute;right:10px;top:10px;z-index:500;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .gps-btn{height:36px;padding:0 12px;border-radius:10px;border:1px solid #DBDFE9;background:#fff;
+    font-family:Inter,system-ui,sans-serif;font-size:12.5px;font-weight:700;color:#1F3864;
+    box-shadow:0 4px 12px rgba(0,0,0,.14);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .gps-btn.active{background:#0BC33F;color:#fff;border-color:#0BC33F}
+  #geofenceBar{position:absolute;left:10px;right:10px;top:54px;z-index:520;display:none;
+    align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    background:#14233f;color:#fff;padding:10px 13px;border-radius:12px;
+    box-shadow:0 10px 26px rgba(15,23,42,.32);border:1px solid rgba(255,255,255,.18)}
+  #geofenceBar b{font-size:13px;display:block}
+  #geofenceBar span{font-size:11.5px;color:#cbd5e1;display:block;margin-top:1px}
+  #geofenceBar button{height:32px;padding:0 12px;border-radius:8px;border:0;background:#c8872e;color:#fff;
+    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
   .pin-area{background:#E08A2B;color:#0b1a2b}
-  .pin-me{background:#0BC33F}
+  .pin-me{background:#0BC33F;box-shadow:0 0 0 6px rgba(11,195,63,.26)}
   .pin-stop{background:#1F3864;width:34px;height:34px;font-size:14px}
   .pin-risk{background:#ED143B;width:34px;height:34px;font-size:14px}
-  .pop{font-family:Inter,system-ui,sans-serif;min-width:150px}
+  .pop{font-family:Inter,system-ui,sans-serif;min-width:165px}
   .pop b{display:block;font-size:14px;color:#1B1C22;letter-spacing:-.01em}
   .pop span{display:block;font-size:12px;color:#78829D;margin-top:2px}
   .pop button{margin-top:8px;width:100%;height:32px;border:none;border-radius:6px;background:#1F3864;color:#fff;
     font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
-  .legend{position:absolute;left:10px;bottom:14px;z-index:500;background:#fff;border:1px solid #DBDFE9;border-radius:8px;
-    padding:8px 10px;font-size:11px;color:#4B5675;display:flex;flex-direction:column;gap:5px;box-shadow:0 3px 8px rgba(0,0,0,.08)}
+  .legend{position:absolute;left:10px;bottom:14px;z-index:500;background:rgba(255,255,255,.94);border:1px solid #DBDFE9;border-radius:8px;
+    padding:7px 9px;font-size:11px;color:#4B5675;display:flex;flex-direction:column;gap:4px;box-shadow:0 3px 8px rgba(0,0,0,.08)}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:999px;margin-inline-end:6px}
+  @media (max-width: 640px) {
+    .legend{bottom:58px;font-size:10.5px;padding:5px 8px}
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="gpsCluster">
+  <button type="button" class="gps-btn" id="gpsBtn">📍 Canlı Konumumu Bul</button>
+</div>
+<div id="geofenceBar">
+  <div>
+    <b id="gfTitle">🏢 Santral Han Girişindesiniz</b>
+    <span id="gfSub">Dış GPS → Han içi kat planı ve koridor rehberine geçin</span>
+  </div>
+  <button type="button" id="gfBtn">🗺️ Kat Planına Geç</button>
+</div>
 <div class="legend" id="legend"></div>
 <script type="module">
 import { HANS, AREAS, STORES } from "./han-data.js";
 
-// Panelde düzeltilen konum (han-geo-v1) omurgaya işlenir: alıcı haritası da
-// aynı pini kullanır. iframe aynı origin'de olduğu için depoyu kendisi okur.
 try {
   const geo = JSON.parse(localStorage.getItem("han-geo-v1") || "{}");
   [HANS, AREAS].forEach(list => (list || []).forEach(p => {
@@ -56,15 +77,37 @@ try {
 
 const params = new URLSearchParams(location.search);
 const lang = params.get("lang") || "tr";
-const t = (o, k) => o[k + lang.charAt(0).toUpperCase() + lang.slice(1)] || o[lang] || o.tr;
 const W = {
-  tr: { hans: "Tarihi hanlar", areas: "Çarşı bölgeleri", me: "Yaklaşık konumunuz", open: "Aç", shops: "dükkân", walk: "dk yürüme", route: "Rotanız", stop: "durak", areaSearch: "Bu alanda ara", risk: "Varmadan kapanıyor" },
-  en: { hans: "Historic hans", areas: "Bazaar areas", me: "Your approximate location", open: "Open", shops: "shops", walk: "min walk", route: "Your route", stop: "stop", areaSearch: "Search this area", risk: "Closes before you arrive" },
-  ru: { areaSearch: "Искать здесь", hans: "Исторические ханы", areas: "Районы базара", me: "Ваше примерное положение", open: "Открыть", shops: "лавок", walk: "мин пешком", route: "Ваш маршрут", stop: "остановка", risk: "Закроется до вашего прихода" },
-  ar: { areaSearch: "ابحث في هذه المنطقة", hans: "الخانات التاريخية", areas: "مناطق السوق", me: "موقعك التقريبي", open: "فتح", shops: "متجرًا", walk: "دقيقة سيرًا", route: "مسارك", stop: "محطة", risk: "يغلق قبل وصولك" }
+  tr: {
+    hans: "Tarihi hanlar", areas: "Çarşı bölgeleri", me: "Konumunuz", open: "Aç", shops: "dükkân",
+    walk: "dk yürüme", route: "Rotanız", stop: "durak", areaSearch: "Bu alanda ara",
+    risk: "Varmadan kapanıyor", gps: "📍 Canlı Konumumu Bul", gpsOn: "📍 Canlı GPS Aktif",
+    atGate: "Girişindesiniz", handoff: "Dış GPS → Han içi kat planı ve kamera rehberine geçin",
+    openFloor: "🗺️ Kat Planına Geç"
+  },
+  en: {
+    hans: "Historic hans", areas: "Bazaar areas", me: "Your location", open: "Open", shops: "shops",
+    walk: "min walk", route: "Your route", stop: "stop", areaSearch: "Search this area",
+    risk: "Closes before you arrive", gps: "📍 Find My Location", gpsOn: "📍 Live GPS Active",
+    atGate: "At the gate of", handoff: "Outdoor GPS → Switch to indoor floor plan & wayfinder",
+    openFloor: "🗺️ Open Floor Plan"
+  },
+  ru: {
+    areaSearch: "Искать здесь", hans: "Исторические ханы", areas: "Районы базара", me: "Ваше положение",
+    open: "Открыть", shops: "лавок", walk: "мин пешком", route: "Ваш маршрут", stop: "остановка",
+    risk: "Закроется до вашего прихода", gps: "📍 Моя геопозиция", gpsOn: "📍 GPS активен",
+    atGate: "У входа в", handoff: "Перейти к поэтажному плану хана", openFloor: "🗺️ План этажа"
+  },
+  ar: {
+    areaSearch: "ابحث في هذه المنطقة", hans: "الخانات التاريخية", areas: "مناطق السوق", me: "موقعك",
+    open: "فتح", shops: "متجرًا", walk: "دقيقة سيرًا", route: "مسارك", stop: "محطة",
+    risk: "يغلق قبل وصولك", gps: "📍 حدد موقعي", gpsOn: "📍 الموقع مباشر",
+    atGate: "أنت عند مدخل", handoff: "انتقل إلى مخطط الطابق الداخلي", openFloor: "🗺️ مخطط الطابق"
+  }
 }[lang] || {};
 
-// Rota modu: pts=lat,lng,encodedAd,risk;... — duraklar sırayla numaralandırılır.
+document.getElementById("gpsBtn").textContent = W.gps;
+
 const route = (params.get("pts") || "").split(";").filter(Boolean).map(s => {
   const f = s.split(",");
   return { p: [parseFloat(f[0]), parseFloat(f[1])], label: decodeURIComponent(f[2] || ""), risk: f[3] === "1" };
@@ -75,7 +118,7 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19, attribution: "© OpenStreetMap contributors"
 }).addTo(map);
 
-const me = [41.0175, 28.9705];
+let me = [41.0175, 28.9705];
 const dist = (a, b) => {
   const R = 6371000, r = Math.PI / 180;
   const dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r;
@@ -85,8 +128,6 @@ const dist = (a, b) => {
 
 const icon = (cls, label) => L.divIcon({ html: '<div class="pin ' + cls + '">' + label + "</div>", className: "", iconSize: [30, 30], iconAnchor: [15, 15] });
 
-// M3 · Harita ↔ liste iki yönlü. Pin'ler id ile saklanır ki üst pencere
-// listeden bir satıra dokunduğunda o pin'i işaretleyip ortalayabilelim.
 const pins = {};
 let active = null;
 const setActive = (id) => {
@@ -140,9 +181,77 @@ if (route.length) {
   });
 }
 
-L.marker(me, { icon: icon("pin-me", "●") }).addTo(map).bindPopup('<div class="pop"><b>' + W.me + "</b></div>");
-L.circle(me, { radius: 260, color: "#0BC33F", weight: 1, fillOpacity: .08 }).addTo(map);
+const meMarker = L.marker(me, { icon: icon("pin-me", "●") }).addTo(map).bindPopup('<div class="pop"><b>' + W.me + "</b></div>");
+const meCircle = L.circle(me, { radius: 85, color: "#0BC33F", weight: 1.5, fillOpacity: .10 }).addTo(map);
 if (bounds.length) map.fitBounds(L.latLngBounds(bounds).pad(0.18));
+
+// Check if user is within <= 40m of a Han entrance (Geofence Handoff)
+let currentGateHan = null;
+const checkGeofence = (coords) => {
+  let nearest = null;
+  let minD = 999999;
+  HANS.forEach(h => {
+    if (h.lat == null) return;
+    const d = dist(coords, [h.lat, h.lng]);
+    if (d < minD) { minD = d; nearest = h; }
+  });
+  const bar = document.getElementById("geofenceBar");
+  if (nearest && minD <= 45) {
+    currentGateHan = nearest;
+    document.getElementById("gfTitle").textContent = "🏢 " + nearest.name + " " + W.atGate + " (" + minD + " m)";
+    document.getElementById("gfSub").textContent = W.handoff;
+    document.getElementById("gfBtn").textContent = W.openFloor;
+    bar.style.display = "flex";
+    parent.postMessage({ source: "han-map", kind: "geofence", id: nearest.id, name: nearest.name, dist: minD }, "*");
+  } else {
+    bar.style.display = "none";
+  }
+};
+
+document.getElementById("gfBtn").addEventListener("click", () => {
+  if (!currentGateHan) return;
+  parent.postMessage({ source: "han-map", kind: "open-floor", id: currentGateHan.id }, "*");
+});
+
+// Live GPS Tracking
+let watchId = null;
+const gpsBtn = document.getElementById("gpsBtn");
+const updateMyPos = (lat, lng, accuracy, pan = false) => {
+  me = [lat, lng];
+  meMarker.setLatLng(me);
+  meCircle.setLatLng(me);
+  meCircle.setRadius(Math.max(18, Math.min(accuracy || 40, 180)));
+  if (pan) map.setView(me, 17, { animate: true });
+  checkGeofence(me);
+};
+
+gpsBtn.addEventListener("click", () => {
+  if (!("geolocation" in navigator)) {
+    // Fallback in insecure or desktop test context: center on Santral Han gate
+    const sh = HANS.find(h => h.id === "santral") || { lat: 41.0124, lng: 28.9682 };
+    updateMyPos(sh.lat, sh.lng, 18, true);
+    gpsBtn.classList.add("active");
+    gpsBtn.textContent = W.gpsOn;
+    return;
+  }
+  gpsBtn.textContent = "⏳ GPS...";
+  if (watchId != null) navigator.geolocation.clearWatch(watchId);
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      gpsBtn.classList.add("active");
+      gpsBtn.textContent = W.gpsOn;
+      updateMyPos(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
+    },
+    () => {
+      // If user is outside Istanbul or denies permission during testing, snap to Santral Han entrance so they can test Handoff
+      const sh = HANS.find(h => h.id === "santral") || { lat: 41.0124, lng: 28.9682 };
+      gpsBtn.classList.add("active");
+      gpsBtn.textContent = W.gpsOn + " (Santral Kapısı)";
+      updateMyPos(sh.lat, sh.lng, 15, true);
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 }
+  );
+});
 
 document.getElementById("legend").innerHTML = route.length
   ? '<div><i style="background:#1F3864"></i>' + W.route + " · " + route.length + " " + W.stop + "</div>" +
@@ -158,8 +267,6 @@ document.addEventListener("click", (e) => {
   parent.postMessage({ source: "han-map", kind: b.dataset.kind, id: b.dataset.id }, "*");
 });
 
-// M3 · İki yönlü seçim ve "bu alanda ara".
-// Pin'e dokunmak da listeyi daraltır — popup'taki düğmeyi beklemek gerekmez.
 Object.keys(pins).forEach(id => {
   pins[id].on("click", () => {
     setActive(id);
@@ -167,11 +274,19 @@ Object.keys(pins).forEach(id => {
   });
 });
 
-// Üst pencere listeden bir satır seçtiğinde ilgili pin işaretlenir ve ortalanır.
 window.addEventListener("message", (e) => {
   const m = e.data;
   if (!m || m.source !== "han-web") return;
   if (m.kind === "focus") setActive(m.id);
+  if (m.kind === "locate") gpsBtn.click();
+  if (m.kind === "simulate-gate") {
+    const target = HANS.find(h => h.id === (m.id || "santral")) || HANS[0];
+    if (target) {
+      gpsBtn.classList.add("active");
+      gpsBtn.textContent = W.gpsOn;
+      updateMyPos(target.lat, target.lng, 12, true);
+    }
+  }
   if (m.kind === "clear" && active && pins[active]) {
     pins[active]._icon && pins[active]._icon.firstChild.classList.remove("pin-on");
     pins[active].closePopup();
@@ -179,8 +294,6 @@ window.addEventListener("message", (e) => {
   }
 });
 
-// "Bu alanda ara": görünen çerçeveyi üst pencereye bildirir, liste ona daralır.
-// Haritayı gezmek listeyi kendiliğinden değiştirmez — kullanıcı isteyince olur.
 if (!route.length) {
   const btn = document.createElement("button");
   btn.id = "areaSearch";

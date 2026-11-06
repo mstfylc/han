@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
@@ -213,6 +213,8 @@ export function SantralFloorMap({
   const [filterText, setFilterText] = useState("");
   const [selectedDoor, setSelectedDoor] = useState<string | null>(effectiveDoor);
   const [askTraderOpen, setAskTraderOpen] = useState(false);
+  const [fullScreen, setFullScreen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const isSantral = place.id === "santral";
   const isCourtyard = COURTYARD_HANS.has(place.id);
@@ -340,6 +342,16 @@ export function SantralFloorMap({
     () => ANCHORS.find((a) => a.id === anchor) || ANCHORS[0],
     [anchor],
   );
+
+  // Automatically center the horizontal scrollable SVG viewport on the selected door on mobile/narrow viewports
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el || !activeCell) return;
+    if (el.scrollWidth <= el.clientWidth + 12) return;
+    const ratio = (activeCell.x + activeCell.w / 2) / 900;
+    const targetLeft = Math.max(0, ratio * el.scrollWidth - el.clientWidth / 2);
+    el.scrollTo({ left: targetLeft, behavior: "smooth" });
+  }, [activeCell, floor, zoom, fullScreen]);
 
   const startCell = useMemo(
     () => (startDoor ? cells.find((c) => c.door === startDoor) || null : null),
@@ -545,13 +557,15 @@ export function SantralFloorMap({
   return (
     <div
       style={sx(
-        "border-radius:14px;border:1px solid var(--border-subtle);background:var(--surface-card);overflow:hidden",
+        fullScreen
+          ? "position:fixed;inset:0;z-index:90;background:var(--surface-page);overflow-y:auto;padding-bottom:80px"
+          : "border-radius:14px;border:1px solid var(--border-subtle);background:var(--surface-card);overflow:hidden",
       )}
     >
       {/* Top Header: Place & Floor Summary + View Mode Switcher */}
       <div
         style={sx(
-          "padding:14px 16px;background:var(--surface-muted);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
+          "padding:12px 14px;background:var(--surface-muted);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
         )}
       >
         <div>
@@ -573,36 +587,53 @@ export function SantralFloorMap({
           </div>
         </div>
 
-        {isSantral && (
-          <div style={sx("display:flex;gap:6px;flex-wrap:wrap")}>
-            <Button
-              size="sm"
-              color={viewMode === "interactive" ? "primary" : "secondary"}
-              variant={viewMode === "interactive" ? "solid" : "outline"}
-              iconStart="map"
-              onClick={() => setViewMode("interactive")}
-            >
-              {lang === "tr" ? "İnteraktif Kat Planı" : "Interactive Map"}
-            </Button>
-            <Button
-              size="sm"
-              color={viewMode === "official" ? "primary" : "secondary"}
-              variant={viewMode === "official" ? "solid" : "outline"}
-              iconStart="floor-layer"
-              onClick={() => setViewMode("official")}
-            >
-              {lang === "tr" ? "Resmi Mimari Pafta" : "Official Blueprint"}
-            </Button>
-            <Button
-              size="sm"
-              color={viewMode === "split" ? "primary" : "secondary"}
-              variant={viewMode === "split" ? "solid" : "outline"}
-              onClick={() => setViewMode("split")}
-            >
-              {lang === "tr" ? "İkisi Birlikte" : "Split View"}
-            </Button>
-          </div>
-        )}
+        <div style={sx("display:flex;gap:6px;flex-wrap:wrap;align-items:center")}>
+          {isSantral && (
+            <>
+              <Button
+                size="sm"
+                color={viewMode === "interactive" ? "primary" : "secondary"}
+                variant={viewMode === "interactive" ? "solid" : "outline"}
+                iconStart="map"
+                onClick={() => setViewMode("interactive")}
+              >
+                {lang === "tr" ? "İnteraktif Kat Planı" : "Interactive Map"}
+              </Button>
+              <Button
+                size="sm"
+                color={viewMode === "official" ? "primary" : "secondary"}
+                variant={viewMode === "official" ? "solid" : "outline"}
+                iconStart="floor-layer"
+                onClick={() => setViewMode("official")}
+              >
+                {lang === "tr" ? "Resmi Mimari Pafta" : "Official Blueprint"}
+              </Button>
+              <Button
+                size="sm"
+                color={viewMode === "split" ? "primary" : "secondary"}
+                variant={viewMode === "split" ? "solid" : "outline"}
+                onClick={() => setViewMode("split")}
+              >
+                {lang === "tr" ? "İkisi Birlikte" : "Split View"}
+              </Button>
+            </>
+          )}
+          <Button
+            size="sm"
+            color={fullScreen ? "danger" : "accent"}
+            variant={fullScreen ? "solid" : "light"}
+            iconStart={fullScreen ? "minimize" : "maximize"}
+            onClick={() => setFullScreen((v) => !v)}
+          >
+            {fullScreen
+              ? lang === "tr"
+                ? "Tam Ekrandan Çık"
+                : "Exit Full Screen"
+              : lang === "tr"
+                ? "Tam Ekran Kroki"
+                : "Full Screen"}
+          </Button>
+        </div>
       </div>
 
       {/* Floor Selector Strip (Z, A, B, C, D, E, F) + Vertical Cross-Floor Indicator */}
@@ -719,10 +750,10 @@ export function SantralFloorMap({
           "padding:10px 14px;background:var(--surface-subtle);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
         )}
       >
-        <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
-          <span style={sx("display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
+        <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;flex-wrap:nowrap;max-width:100%")}>
+          <span style={sx("flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--color-primary);white-space:nowrap")}>
             <Icon name="pin" size={14} />
-            {lang === "tr" ? "Başlangıç Noktam (Haritadan veya Buradan Seçin):" : "My Start Point (Click Map or Select):"}
+            {lang === "tr" ? "Başlangıç Noktam:" : "My Start Point:"}
           </span>
           {ANCHORS.map((a) => {
             const on = !startCell && a.id === anchor;
@@ -735,7 +766,7 @@ export function SantralFloorMap({
                   setAnchor(a.id);
                 }}
                 style={sx(
-                  "height:28px;padding:0 10px;border-radius:6px;border:1px solid " +
+                  "flex:none;white-space:nowrap;height:28px;padding:0 10px;border-radius:6px;border:1px solid " +
                     (on ? "var(--color-primary)" : "var(--border-subtle)") +
                     ";background:" +
                     (on ? "var(--color-primary)" : "var(--surface-card)") +
@@ -820,8 +851,8 @@ export function SantralFloorMap({
           "padding:8px 14px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
         )}
       >
-        <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
-          <span style={sx("display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em")}>
+        <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;flex-wrap:nowrap;max-width:100%")}>
+          <span style={sx("flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap")}>
             <Icon name="compass" size={13} />
             {lang === "tr" ? "Kat Radarı:" : "Floor Radar:"}
           </span>
@@ -842,7 +873,7 @@ export function SantralFloorMap({
                 type="button"
                 onClick={() => setRadarCat(id)}
                 style={sx(
-                  "display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;border:1px solid " +
+                  "flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;border:1px solid " +
                     (on ? "var(--color-primary)" : "var(--border-subtle)") +
                     ";background:" +
                     (on ? "var(--color-primary)" : "var(--surface-muted)") +
@@ -886,10 +917,11 @@ export function SantralFloorMap({
 
       {/* Interactive SVG Floor Plan */}
       {(viewMode === "interactive" || viewMode === "split") && (
-        <div style={sx("padding:14px;background:var(--surface-card)")}>
+        <div style={sx("padding:10px 12px;background:var(--surface-card)")}>
           <div
+            ref={scrollContainerRef}
             style={sx(
-              "width:100%;overflow-x:auto;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-muted);padding:10px",
+              "width:100%;overflow-x:auto;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-muted);padding:10px;-webkit-overflow-scrolling:touch",
             )}
           >
             <svg
@@ -1459,6 +1491,20 @@ export function SantralFloorMap({
               >
                 {lang === "tr" ? "Esnafa Göster (Tam Ekran)" : "Show to Trader"}
               </Button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  lang === "tr"
+                    ? `📍 ${place.name} · ${currentFloorLabel} · Kapı No: ${activeCell.door}${activeCell.record ? ` (${activeCell.record.name})` : ""} konumundayım. Kat planında görmek ve yanıma gelmek için tıkla: https://han.mansis.com.tr/yer/${place.id}?kat=${floor}&kapi=${activeCell.door}`
+                    : `📍 I am at ${place.name} · ${currentFloorLabel} · Door No: ${activeCell.door}. Open indoor floor map: https://han.mansis.com.tr/yer/${place.id}?kat=${floor}&kapi=${activeCell.door}`,
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                style={sx("text-decoration:none")}
+              >
+                <Button size="sm" color="success" variant="outline" iconStart="share">
+                  {lang === "tr" ? "Bulunduğum Kapıyı Paylaş" : "Share My Door Location"}
+                </Button>
+              </a>
             </div>
           </div>
 
@@ -1477,10 +1523,18 @@ export function SantralFloorMap({
                 </span>
               </div>
               <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+                <Link
+                  href={`/tarif/${activeCell.record?.curated || activeCell.record?.id || "roza"}?han=${encodeURIComponent(place.id)}&kat=${floor}&kapi=${encodeURIComponent(activeCell.door)}&ar=1`}
+                  style={sx("text-decoration:none")}
+                >
+                  <Button size="sm" color="accent" variant="solid" iconStart="camera">
+                    {lang === "tr" ? "📷 Kamera & Sensörle Sağa/Sola Dön Rehberi" : "📷 Camera & Sensor Turn-by-Turn HUD"}
+                  </Button>
+                </Link>
                 <Button
                   size="sm"
-                  color="accent"
-                  variant="solid"
+                  color="primary"
+                  variant="light"
                   iconStart="walk"
                   onClick={() => setLiveStepIdx(liveStepIdx === null ? 0 : null)}
                 >

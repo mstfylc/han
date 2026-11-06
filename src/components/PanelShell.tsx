@@ -106,11 +106,11 @@ export function PanelShell({
           only lever that outranks the inline styles this shell is written in. */}
       <style>{`
         @media (max-width: 900px) {
-          [data-panel-head="1"] { flex-wrap: wrap !important; height: auto !important; min-height: 56px; padding-block: 8px !important; row-gap: 6px !important; }
-          [data-panel-grid="1"] { grid-template-columns: minmax(0,1fr) !important; }
-          [data-panel-grid="1"] > nav { position: static !important; max-height: none !important; flex-direction: row !important; flex-wrap: wrap !important; }
-          [data-panel-grid="1"] > nav button { width: auto !important; }
-          [data-panel-grid="1"] [data-nav-label="1"] { flex: 1 0 100%; padding-block: 8px 2px !important; }
+          [data-panel-head="1"] { flex-wrap: wrap !important; height: auto !important; min-height: 52px; padding: 8px 14px !important; row-gap: 6px !important; }
+          [data-panel-grid="1"] { grid-template-columns: minmax(0,1fr) !important; gap: 14px !important; }
+          [data-panel-grid="1"] > nav { position: sticky !important; top: 56px !important; z-index: 20 !important; max-height: none !important; flex-direction: row !important; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 6px !important; padding: 8px 10px !important; }
+          [data-panel-grid="1"] > nav button { width: auto !important; flex: none !important; white-space: nowrap !important; padding: 7px 11px !important; }
+          [data-panel-grid="1"] [data-nav-label="1"] { display: none !important; }
         }
       `}</style>
 

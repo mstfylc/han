@@ -1,11 +1,12 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import type { CuratedStore, Lang, ShopRecord } from "@/data/types";
+import IndoorWayfinder from "@/components/IndoorWayfinder";
 import SantralFloorMap from "@/components/SantralFloorMap";
 import { Alert, Badge, Button, Drawer, EmptyState, Icon } from "@/ds";
 import { W } from "@/lib/copy";
@@ -23,24 +24,46 @@ const KICKER =
   "font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)";
 
 export default function DirectionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DirectionsPageInner />
+    </Suspense>
+  );
+}
+
+function DirectionsPageInner() {
   const { state, save, toast } = useApp();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { lang } = state;
 
   const rawId = decodeURIComponent(String(params.id || ""));
+  const searchParams = useSearchParams();
+  const qKat = searchParams.get("kat");
+  const qKapi = searchParams.get("kapi");
+  const qAr = searchParams.get("ar") === "1";
   const [askTraderOpen, setAskTraderOpen] = useState(false);
 
   const target = useMemo(() => {
-    const curated = D.STORES.find((s) => s.id === rawId) as CuratedStore | undefined;
-    const rec = SC.RECORDS.find((r) => r.id === rawId || r.curated === rawId);
-    const directPlace = SC.PLACES.find((p) => p.id === rawId);
+    const normalizedId = rawId === "santral-han" ? "santral" : rawId;
+    const curated = D.STORES.find((s) => s.id === normalizedId) as CuratedStore | undefined;
+    const rec = SC.RECORDS.find((r) => r.id === normalizedId || r.curated === normalizedId);
+    const directPlace = SC.PLACES.find((p) => p.id === normalizedId);
+
+    const parseKat = (val: string | null, fallback: number) => {
+      if (!val) return fallback;
+      const up = val.trim().toUpperCase();
+      const map: Record<string, number> = { Z: 0, A: 1, B: 2, C: 3, D: 4, E: 5, F: 6 };
+      if (up in map) return map[up];
+      const num = parseInt(up, 10);
+      return Number.isFinite(num) ? num : fallback;
+    };
 
     if (curated || rec) {
       const placeId = curated?.han || rec?.place || "santral";
       const place = SC.PLACES.find((p) => p.id === placeId) || SC.PLACES[0];
-      const floor = curated ? (curated.floor ?? 0) : (rec?.floor ?? 0);
-      const door = curated ? String(curated.no) : String(rec?.door || "1");
+      const floor = parseKat(qKat, curated ? (curated.floor ?? 0) : (rec?.floor ?? 0));
+      const door = qKapi || (curated ? String(curated.no) : String(rec?.door || "1"));
       const title = curated ? curated.name : recordName(rec as ShopRecord, lang);
       return {
         kind: "shop" as const,
@@ -56,14 +79,15 @@ export default function DirectionsPage() {
     }
 
     if (directPlace) {
-      const defaultFloor = directPlace.id === "santral" && directPlace.floors.includes(1) ? 1 : (directPlace.floors[0] ?? 0);
+      const fallbackFloor = directPlace.id === "santral" && directPlace.floors.includes(1) ? 1 : (directPlace.floors[0] ?? 0);
+      const defaultFloor = parseKat(qKat, fallbackFloor);
       return {
         kind: "place" as const,
         id: directPlace.id,
-        title: directPlace.name,
+        title: qKapi ? `${directPlace.name} · Kapı No: ${qKapi}` : directPlace.name,
         place: directPlace,
         floor: defaultFloor,
-        door: null as string | null,
+        door: qKapi || ("220" as string | null),
         corridor: "Orta",
         tel: "",
         recId: null,
@@ -71,7 +95,7 @@ export default function DirectionsPage() {
     }
 
     return null;
-  }, [rawId, lang]);
+  }, [rawId, lang, qKat, qKapi]);
 
   if (!target) {
     return (
@@ -258,7 +282,20 @@ export default function DirectionsPage() {
 
       {/* Outdoor Map + Indoor Interactive Floor Map */}
       <div style={sx("display:grid;grid-template-columns:1fr;gap:18px")}>
-        {/* Layer 2: Interactive Indoor Floor Map */}
+        {/* Layer 2A: Dual-Mode Indoor Turn-by-Turn & Camera AR Wayfinder */}
+        <section>
+          <IndoorWayfinder
+            place={place}
+            floor={floor}
+            targetDoor={door}
+            targetTitle={title}
+            corridor={corridor}
+            lang={lang}
+            defaultCameraMode={qAr}
+          />
+        </section>
+
+        {/* Layer 2B: Interactive Indoor Floor Map */}
         <section>
           <div style={sx("margin-bottom:10px")}>
             <Alert

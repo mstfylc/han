@@ -7,8 +7,8 @@
 // there are, how many have a record, and what that leaves — rather than
 // pretending the directory is complete.
 
-import { useParams, useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo } from "react";
 
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
@@ -18,6 +18,7 @@ import { ImageSlot } from "@/components/ImageSlot";
 import { SantralFloorMap } from "@/components/SantralFloorMap";
 import { F, W } from "@/lib/copy";
 import { money, num, tx } from "@/lib/i18n";
+import { pagePad } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { floorLabel, placePhoto, recordName } from "@/lib/shop";
 import { sx } from "@/lib/sx";
@@ -27,12 +28,33 @@ const pk = (o: Record<string, string>, lang: Lang) => o[lang] || o.tr;
 const CARD = "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:18px 20px;box-shadow:0 3px 4px rgba(0,0,0,.03)";
 const KICKER = "font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)";
 
+function parseFloorParam(raw: string | null): number | undefined {
+  if (!raw) return undefined;
+  const u = raw.trim().toUpperCase();
+  const letterMap: Record<string, number> = { Z: 0, A: 1, B: 2, C: 3, D: 4, E: 5, F: 6 };
+  if (u in letterMap) return letterMap[u];
+  const n = Number(u);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export default function PlacePage() {
+  return (
+    <Suspense fallback={null}>
+      <PlaceScreen />
+    </Suspense>
+  );
+}
+
+function PlaceScreen() {
   const { state } = useApp();
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const sp = useSearchParams();
   const { lang } = state;
-  const id = decodeURIComponent(String(params.id || ""));
+  const rawId = decodeURIComponent(String(params.id || ""));
+  const id = rawId === "santral-han" ? "santral" : rawId;
+  const urlFloor = parseFloorParam(sp.get("kat") || sp.get("kt"));
+  const urlDoor = sp.get("kapi") || null;
 
   const place = SC.PLACES.find((p) => p.id === id) || null;
   const stats = useMemo(() => (place ? SC.placeStats(place.id) : null), [place]);
@@ -65,7 +87,7 @@ export default function PlacePage() {
   const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}&travelmode=walking`;
 
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:18px 24px 48px")}>
+    <div style={sx("max-width:1480px;margin:0 auto;" + pagePad(state.vw))}>
       <button
         type="button"
         onClick={() => router.push(href.map())}
@@ -75,12 +97,14 @@ export default function PlacePage() {
         {W(lang, "mapTitle")}
       </button>
 
-      <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:22px;margin-top:14px;align-items:start")}>
-        <div>
-          <div style={sx("border-radius:16px;overflow:hidden;border:1px solid var(--border-strong);background:var(--surface-muted);height:260px")}>
-            <ImageSlot src={placePhoto("han")} placeholder={place.name} decorative />
+      <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:20px;margin-top:14px;align-items:start")}>
+        {state.vw >= 768 && (
+          <div>
+            <div style={sx("border-radius:16px;overflow:hidden;border:1px solid var(--border-strong);background:var(--surface-muted);height:260px")}>
+              <ImageSlot src={placePhoto("han")} placeholder={place.name} decorative />
+            </div>
           </div>
-        </div>
+        )}
 
         <div>
           <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
@@ -182,6 +206,8 @@ export default function PlacePage() {
           </div>
           <SantralFloorMap
             placeId={place.id}
+            initialFloor={urlFloor}
+            initialDoor={urlDoor}
             lang={lang}
             onSelectRecord={(rid) => router.push(href.store(rid))}
           />

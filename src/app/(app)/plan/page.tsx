@@ -16,7 +16,7 @@ import SantralFloorMap from "@/components/SantralFloorMap";
 import { Alert, Badge, Button, EmptyState, Icon, Input } from "@/ds";
 import { F, W } from "@/lib/copy";
 import { convert, money, tonePair } from "@/lib/i18n";
-import { planGrid } from "@/lib/layout";
+import { pagePad, planGrid } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { buildPlan, hhmm, moveBefore, reorder, serializeRoutePts } from "@/lib/planEngine";
 import { sx } from "@/lib/sx";
@@ -142,6 +142,8 @@ export default function PlanPage() {
   const [openFloorPlaceId, setOpenFloorPlaceId] = useState<string | null>("santral");
   const [selectedShopTarget, setSelectedShopTarget] = useState<{ placeId: string; floor: number; door: string } | null>(null);
   const [showLiveMap, setShowLiveMap] = useState<boolean>(true);
+  const [mobilePlanTab, setMobilePlanTab] = useState<"route" | "list">("route");
+  const isStacked = state.vw < 1180;
 
   const trip: Trip | null = (state.trips || []).find((t) => t.id === state.tripId) || (state.trips || [])[0] || null;
 
@@ -179,7 +181,7 @@ export default function PlanPage() {
   const pctUsed = Math.min(100, Math.round((plan.used / Math.max(1, plan.budget)) * 100));
 
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:22px 24px 48px")}>
+    <div style={sx("max-width:1480px;margin:0 auto;padding:" + pagePad(state.vw))}>
       <header style={sx("display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap")}>
         <div style={sx("flex:1;min-width:240px")}>
           <h1 style={sx("font-size:26px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin:0")}>{W(lang, "planTitle")}</h1>
@@ -252,8 +254,44 @@ export default function PlanPage() {
         ))}
       </div>
 
-      <div style={sx(planGrid(state.vw))}>
-        <main>
+      {/* Mobile / Tablet Segmented Switcher: Yürüyüş Rotam vs Alım Listem */}
+      {isStacked && (
+        <div
+          style={sx(
+            "display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border-radius:12px;background:var(--surface-muted);border:1px solid var(--border-strong);margin-top:14px",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setMobilePlanTab("route")}
+            style={sx(
+              "height:38px;border-radius:9px;border:none;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;" +
+                (mobilePlanTab === "route"
+                  ? "background:var(--color-primary);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.12)"
+                  : "background:transparent;color:var(--text-body)"),
+            )}
+          >
+            <Icon name="route" size={15} />
+            {pk({ tr: `Yürüyüş Rotam (${plan.kept.length} Durak)`, en: `Walking Route (${plan.kept.length})` }, lang)}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePlanTab("list")}
+            style={sx(
+              "height:38px;border-radius:9px;border:none;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;" +
+                (mobilePlanTab === "list"
+                  ? "background:var(--color-primary);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.12)"
+                  : "background:transparent;color:var(--text-body)"),
+            )}
+          >
+            <Icon name="bag" size={15} />
+            {pk({ tr: `Alım Listem (${(trip.items || []).length} Kalem)`, en: `Buying List (${(trip.items || []).length})` }, lang)}
+          </button>
+        </div>
+      )}
+
+      <div className="han-plan-grid" style={sx(planGrid(state.vw))}>
+        <main style={sx(isStacked && mobilePlanTab === "list" ? "display:none" : "min-width:0")}>
           {/* ── 1-Click Ready-Made Smart Route Templates ───────────────── */}
           <section style={sx(CARD + ";margin-bottom:16px;border-color:var(--color-primary)")}>
             <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
@@ -909,7 +947,14 @@ export default function PlanPage() {
         </main>
 
         {/* ── buying list ────────────────────────────────────────────────── */}
-        <aside style={sx("display:flex;flex-direction:column;gap:14px;min-width:0" + (state.vw >= 1180 ? ";position:sticky;top:84px" : ""))}>
+        <aside
+          style={sx(
+            "display:" +
+              (isStacked && mobilePlanTab === "route" ? "none" : "flex") +
+              ";flex-direction:column;gap:14px;min-width:0" +
+              (state.vw >= 1180 ? ";position:sticky;top:84px" : ""),
+          )}
+        >
           <section style={sx(CARD)}>
             <div style={sx(KICKER)}>{W(lang, "listTitle")}</div>
 
