@@ -73,7 +73,7 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
 
   const loadSantralFloorSample = (fl: number) => {
     const list = SC.SANTRAL_TENANTS.filter((t) => t.floor === fl);
-    const lines = list.map((t, i) => `${t.door}; ${t.name}; ${t.groups.join("/")}; 0532${String(1000000 + fl * 100000 + i * 73).slice(0, 7)}`);
+    const lines = list.map((t, i) => `${t.door}; ${t.name}; ${t.cat}; 0532${String(1000000 + fl * 100000 + i * 73).slice(0, 7)}`);
     setF({ place: "santral", floor: String(fl), text: lines.join("\n"), bulk: true });
     setDone(null);
     say(`Santral Han · ${place.floorLabels?.[fl] || `Kat ${fl}`} resmi kat planından ${list.length} esnaf listesi yüklendi`);
