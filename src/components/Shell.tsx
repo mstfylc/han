@@ -67,8 +67,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const { lang, currency, mode, vw } = state;
   const section = sectionOf(pathname);
-  const compact = vw < 1300;
-  const twoRow = vw < 1120;
+  const compact = vw < 1380;
+  const twoRow = vw < 1340;
   const isPhone = vw < 768;
 
   // Document language + direction

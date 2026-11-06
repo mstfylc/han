@@ -367,22 +367,22 @@ export default function IndoorWayfinder({
   return (
     <div
       style={sx(
-        "border-radius:16px;border:2px solid var(--color-primary);background:var(--surface-card);overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08)",
+        "border-radius:16px;border:2px solid var(--color-primary);background:var(--surface-card);overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08);width:100%;max-width:100%;min-width:0;box-sizing:border-box",
       )}
     >
       {/* Top Mode Switcher Bar */}
       <div
         style={sx(
-          "padding:12px 16px;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
+          "padding:10px 14px;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0",
         )}
       >
-        <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
-          <Icon name="compass" size={18} />
-          <span style={sx("font-size:14.5px;font-weight:800;letter-spacing:-.01em")}>
+        <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0")}>
+          <Icon name="compass" size={17} />
+          <span style={sx("font-size:13.5px;font-weight:800;letter-spacing:-.01em")}>
             {pk(
               {
-                tr: "Han İçi Sağa / Sola Dön & Kapı Takip Rehberi",
-                en: "Indoor Turn-by-Turn & Door Sequence Wayfinder",
+                tr: "Han İçi Sağa / Sola Dön & Kapı Rehberi",
+                en: "Indoor Turn-by-Turn & Door Wayfinder",
               },
               lang,
             )}
@@ -390,10 +390,10 @@ export default function IndoorWayfinder({
           {wakeLockActive && (
             <span
               style={sx(
-                "font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.18);color:#fff",
+                "font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.18);color:#fff",
               )}
             >
-              ⚡ Ekran Açık Kalır
+              ⚡ Ekran Açık
             </span>
           )}
         </div>
@@ -401,34 +401,34 @@ export default function IndoorWayfinder({
         {/* Segmented Mode Switcher: Mod A (HUD) vs Mod B (Kamera AR) */}
         <div
           style={sx(
-            "display:inline-flex;padding:3px;border-radius:10px;background:rgba(0,0,0,.22);gap:4px",
+            "display:inline-flex;padding:3px;border-radius:10px;background:rgba(0,0,0,.22);gap:4px;max-width:100%;flex-wrap:wrap",
           )}
         >
           <button
             type="button"
             onClick={() => setMode("hud")}
             style={sx(
-              "height:32px;padding:0 12px;border-radius:8px;border:none;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" +
+              "height:30px;padding:0 10px;border-radius:7px;border:none;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" +
                 (mode === "hud"
                   ? "background:#fff;color:var(--color-primary)"
                   : "background:transparent;color:#fff"),
             )}
           >
-            <Icon name="route" size={14} />
-            {pk({ tr: "Koridor & Kapı HUD", en: "Corridor HUD" }, lang)}
+            <Icon name="route" size={13} />
+            {pk({ tr: "Koridor HUD", en: "Corridor HUD" }, lang)}
           </button>
           <button
             type="button"
             onClick={() => setMode("camera")}
             style={sx(
-              "height:32px;padding:0 12px;border-radius:8px;border:none;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" +
+              "height:30px;padding:0 10px;border-radius:7px;border:none;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" +
                 (mode === "camera"
                   ? "background:var(--color-accent);color:#fff"
                   : "background:transparent;color:#fff"),
             )}
           >
-            <Icon name="camera" size={14} />
-            {pk({ tr: "📷 Kamera AR Vizör", en: "📷 Camera AR View" }, lang)}
+            <Icon name="camera" size={13} />
+            {pk({ tr: "📷 Kamera AR", en: "📷 Camera AR" }, lang)}
           </button>
         </div>
       </div>
@@ -445,7 +445,7 @@ export default function IndoorWayfinder({
 
       {/* MODE B: Live Rear Camera AR Viewport */}
       {mode === "camera" && (
-        <div style={sx("position:relative;width:100%;height:340px;background:#090d16;overflow:hidden")}>
+        <div style={sx("position:relative;width:100%;height:clamp(230px,46dvh,340px);background:#090d16;overflow:hidden")}>
           <video
             ref={videoRef}
             autoPlay
@@ -457,14 +457,14 @@ export default function IndoorWayfinder({
           {/* Floating AR Turn Arrow & HUD Overlay */}
           <div
             style={sx(
-              "position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:14px;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 35%,transparent 60%,rgba(0,0,0,.78) 100%)",
+              "position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:10px 12px;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 35%,transparent 60%,rgba(0,0,0,.78) 100%)",
             )}
           >
             {/* Top AR Status Bar */}
-            <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:auto")}>
+            <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;pointer-events:auto")}>
               <span
                 style={sx(
-                  "padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;font-weight:800;backdrop-filter:blur(6px)",
+                  "padding:4px 9px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font-size:11.5px;font-weight:800;backdrop-filter:blur(6px)",
                 )}
               >
                 🎯 {place.name} · {flLbl} · Kapı {targetDoor || targetNum}
@@ -473,18 +473,18 @@ export default function IndoorWayfinder({
                 type="button"
                 onClick={() => setBaseHeading(heading ?? 0)}
                 style={sx(
-                  "padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.65);color:#fff;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer",
+                  "padding:4px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.65);color:#fff;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer",
                 )}
               >
-                🧭 Bakış Yönümü Sıfırla
+                🧭 Yönü Sıfırla
               </button>
             </div>
 
             {/* Center 3D-Style Floating Turn Arrow */}
-            <div style={sx("display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px")}>
+            <div style={sx("display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px")}>
               <div
                 style={sx(
-                  `width:96px;height:96px;border-radius:999px;background:${
+                  `width:74px;height:74px;border-radius:999px;background:${
                     activeStep.turn === "arrive"
                       ? "rgba(22,163,74,.9)"
                       : "rgba(217,119,6,.9)"
@@ -501,12 +501,12 @@ export default function IndoorWayfinder({
                           ? "turn-left"
                           : "turn-up"
                   }
-                  size={48}
+                  size={36}
                 />
               </div>
               <div
                 style={sx(
-                  "padding:6px 14px;border-radius:10px;background:rgba(0,0,0,.75);color:#fff;font-size:16px;font-weight:800;text-align:center;backdrop-filter:blur(6px)",
+                  "padding:5px 12px;border-radius:10px;background:rgba(0,0,0,.75);color:#fff;font-size:13.5px;font-weight:800;text-align:center;backdrop-filter:blur(6px);max-width:96%",
                 )}
               >
                 {activeStep.title}
@@ -516,13 +516,13 @@ export default function IndoorWayfinder({
             {/* Bottom AR Door Sequence Strip */}
             <div
               style={sx(
-                "padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.75);color:#fff;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;pointer-events:auto",
+                "padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.75);color:#fff;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;pointer-events:auto",
               )}
             >
-              <div style={sx("font-size:12.5px;font-weight:700")}>
-                Kapı Dizisi: {doorSequence.map((d) => (d === String(targetDoor || targetNum) ? `[🎯 ${d}]` : d)).join(" ➔ ")}
+              <div style={sx("font-size:11.5px;font-weight:700")}>
+                Kapı: {doorSequence.map((d) => (d === String(targetDoor || targetNum) ? `[🎯 ${d}]` : d)).join(" ➔ ")}
               </div>
-              <div style={sx("font-size:12px;font-weight:800;color:#fbbf24")}>
+              <div style={sx("font-size:11px;font-weight:800;color:#fbbf24")}>
                 {activeStep.sideHint}
               </div>
             </div>
@@ -531,34 +531,34 @@ export default function IndoorWayfinder({
       )}
 
       {/* MODE A & SHARED: High-Contrast Corridor HUD + Door Sequence + Instant Door Recalibration */}
-      <div style={sx("padding:16px;display:flex;flex-direction:column;gap:14px")}>
+      <div style={sx("padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0;max-width:100%")}>
         {/* 1. Anchor & Instant "What Door Is In Front Of Me?" Calibration Bar */}
         <div
           style={sx(
-            "padding:12px 14px;border-radius:12px;background:var(--surface-muted);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:10px",
+            "padding:12px;border-radius:12px;background:var(--surface-muted);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:10px;min-width:0;max-width:100%",
           )}
         >
-          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap")}>
-            <span style={sx("font-size:12px;font-weight:800;color:var(--text-heading);display:inline-flex;align-items:center;gap:6px")}>
+          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0")}>
+            <span style={sx("font-size:12px;font-weight:800;color:var(--text-heading);display:inline-flex;align-items:center;gap:6px;min-width:0")}>
               <Icon name="locate" size={15} />
               {pk(
                 {
-                  tr: "Şu An Neredesiniz? (Merdiven Seçin veya Önünüzdeki Kapı No'yu Yazın):",
-                  en: "Where Are You Now? (Pick Stairs or Enter the Door No in Front of You):",
+                  tr: "Şu An Neredesiniz? (Merdiven veya Önünüzdeki Kapı No):",
+                  en: "Where Are You Now? (Pick Stairs or Current Door No):",
                 },
                 lang,
               )}
             </span>
             <Badge color="primary" variant="light">
-              {acc.lift ? "Asansör + Merdiven" : "Merdiven Çıkışı"} · {flLbl}
+              {acc.lift ? "Asansör + Merdiven" : "Merdiven"} · {flLbl}
             </Badge>
           </div>
 
-          <div style={sx("display:flex;gap:6px;flex-wrap:wrap;align-items:center")}>
+          <div style={sx("display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-width:0")}>
             {(
               [
                 ["stairs_left", pk({ tr: "🪜 Sol Merdiven", en: "🪜 Left Stairs" }, lang)],
-                ["stairs_mid", pk({ tr: "🛗 Orta Merdiven / Asansör", en: "🛗 Center Stairs / Lift" }, lang)],
+                ["stairs_mid", pk({ tr: "🛗 Orta Merdiven", en: "🛗 Center Stairs" }, lang)],
                 ["stairs_right", pk({ tr: "🪜 Sağ Merdiven", en: "🪜 Right Stairs" }, lang)],
               ] as const
             ).map(([id, lbl]) => (
@@ -572,7 +572,7 @@ export default function IndoorWayfinder({
                   setStepsWalked(0);
                 }}
                 style={sx(
-                  "height:34px;padding:0 11px;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid " +
+                  "height:34px;padding:0 10px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border:1px solid " +
                     (anchorPoint === id
                       ? "var(--color-primary);background:var(--color-primary);color:#fff"
                       : "var(--border-strong);background:var(--surface-card);color:var(--text-body)"),
@@ -583,31 +583,33 @@ export default function IndoorWayfinder({
             ))}
 
             {/* Instant Door Number Recalibration Input */}
-            <div style={sx("display:inline-flex;align-items:center;gap:6px;flex:1;min-width:210px")}>
-              <Input
-                size="sm"
-                inputMode="numeric"
-                value={currentDoorInput}
-                onChange={(e) => setCurrentDoorInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRecalibrateDoor(currentDoorInput);
-                }}
-                placeholder={pk({ tr: "Önümdeki Kapı No (Örn: 214)", en: "Door in front of me (e.g. 214)" }, lang)}
-              />
+            <div style={sx("display:flex;align-items:center;gap:6px;flex:1 1 200px;min-width:0;max-width:100%")}>
+              <div style={sx("flex:1;min-width:0")}>
+                <Input
+                  size="sm"
+                  inputMode="numeric"
+                  value={currentDoorInput}
+                  onChange={(e) => setCurrentDoorInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRecalibrateDoor(currentDoorInput);
+                  }}
+                  placeholder={pk({ tr: "Önümdeki Kapı No (Örn: 214)", en: "Current Door No (e.g. 214)" }, lang)}
+                />
+              </div>
               <Button
                 size="sm"
                 color="accent"
                 variant="solid"
                 onClick={() => handleRecalibrateDoor(currentDoorInput)}
               >
-                {pk({ tr: "Konumla", en: "Calibrate" }, lang)}
+                {pk({ tr: "Konumla", en: "Set" }, lang)}
               </Button>
             </div>
           </div>
 
           {/* Quick Nearby Door Chips */}
-          <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:2px")} data-han-nav="1">
-            <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap")}>
+          <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:2px;min-width:0;max-width:100%")} data-han-nav="1">
+            <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap;flex:none")}>
               {pk({ tr: "Yakındaki Kapılar:", en: "Nearby Doors:" }, lang)}
             </span>
             {floorDoors.slice(0, 10).map((d) => {
@@ -623,7 +625,7 @@ export default function IndoorWayfinder({
                     handleRecalibrateDoor(s);
                   }}
                   style={sx(
-                    "height:26px;padding:0 9px;border-radius:999px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid " +
+                    "flex:none;height:26px;padding:0 9px;border-radius:999px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid " +
                       (isTarget
                         ? "var(--color-accent);background:var(--color-accent-soft);color:var(--color-accent)"
                         : isSelected
@@ -641,17 +643,17 @@ export default function IndoorWayfinder({
         {/* 2. Large High-Contrast Active Turn Card */}
         <div
           style={sx(
-            "padding:16px 18px;border-radius:14px;border:2px solid " +
+            "padding:14px;border-radius:14px;border:2px solid " +
               (activeStep.turn === "arrive" ? "var(--color-success)" : "var(--color-primary)") +
               ";background:" +
               (activeStep.turn === "arrive" ? "var(--color-success-soft)" : "var(--color-primary-soft)") +
-              ";display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap",
+              ";display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-width:0;max-width:100%",
           )}
         >
-          <div style={sx("display:flex;align-items:center;gap:14px;flex:1;min-width:240px")}>
+          <div style={sx("display:flex;align-items:flex-start;gap:12px;flex:1 1 220px;min-width:0")}>
             <div
               style={sx(
-                "width:58px;height:58px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;background:" +
+                "width:48px;height:48px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:" +
                   (activeStep.turn === "arrive" ? "var(--color-success)" : "var(--color-primary)") +
                   ";color:#fff",
               )}
@@ -666,37 +668,39 @@ export default function IndoorWayfinder({
                         ? "turn-left"
                         : "turn-up"
                 }
-                size={30}
+                size={26}
               />
             </div>
             <div style={sx("flex:1;min-width:0")}>
-              <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
                 <span style={sx("font-size:11px;font-weight:800;text-transform:uppercase;color:var(--color-primary)")}>
                   ADIM {stepIdx + 1} / {waySteps.length}
                 </span>
-                <span style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted)")}>
+                <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted)")}>
                   · {activeStep.sideHint}
                 </span>
               </div>
-              <div style={sx("font-size:20px;font-weight:800;color:var(--text-heading);margin-top:2px;line-height:1.25")}>
+              <div style={sx("font-size:17px;font-weight:800;color:var(--text-heading);margin-top:2px;line-height:1.25")}>
                 {activeStep.title}
               </div>
-              <div style={sx("font-size:13.5px;color:var(--text-body);margin-top:4px;line-height:1.45")}>
+              <div style={sx("font-size:13px;color:var(--text-body);margin-top:4px;line-height:1.45")}>
                 {activeStep.detail}
               </div>
             </div>
           </div>
 
-          <div style={sx("display:flex;flex-direction:column;align-items:flex-end;gap:6px")}>
-            {activeStep.meters > 0 && (
-              <div style={sx("text-align:right")}>
-                <div style={sx("font-size:22px;font-weight:800;color:var(--color-primary);font-variant-numeric:tabular-nums")}>
+          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;width:100%;padding-top:8px;border-top:1px solid rgba(0,0,0,.07)")}>
+            {activeStep.meters > 0 ? (
+              <div style={sx("display:flex;align-items:baseline;gap:6px")}>
+                <span style={sx("font-size:18px;font-weight:800;color:var(--color-primary);font-variant-numeric:tabular-nums")}>
                   ~{remainingMeters} m
-                </div>
-                <div style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted)")}>
+                </span>
+                <span style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted)")}>
                   (~{Math.max(1, Math.round(remainingMeters / 0.7))} adım)
-                </div>
+                </span>
               </div>
+            ) : (
+              <span />
             )}
             <Button
               size="sm"
@@ -713,25 +717,25 @@ export default function IndoorWayfinder({
         {/* 3. Visual Door Number Sequence Progression Bar */}
         <div
           style={sx(
-            "padding:12px 14px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-card);display:flex;flex-direction:column;gap:8px",
+            "padding:12px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-card);display:flex;flex-direction:column;gap:8px;min-width:0;max-width:100%",
           )}
         >
-          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap")}>
-            <span style={sx("font-size:11.5px;font-weight:800;text-transform:uppercase;color:var(--text-muted)")}>
+          <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0")}>
+            <span style={sx("font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted)")}>
               {pk(
                 {
-                  tr: "Koridor Kapı Numarası Dizisi (Yürürken Tabelaları Kontrol Edin)",
-                  en: "Corridor Door Number Sequence (Check Signs While Walking)",
+                  tr: "Koridor Kapı Dizisi (Tabelaları Takip Edin)",
+                  en: "Corridor Door Sequence (Follow Signs)",
                 },
                 lang,
               )}
             </span>
-            <span style={sx("font-size:12px;font-weight:700;color:var(--color-primary)")}>
-              {targetNum >= startNum ? "📈 Numaralar Artarak İlerler" : "📉 Numaralar Azalarak İlerler"}
+            <span style={sx("font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
+              {targetNum >= startNum ? "📈 Numaralar Artar" : "📉 Numaralar Azalır"}
             </span>
           </div>
 
-          <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;padding:4px 0")} data-han-nav="1">
+          <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;padding:4px 0;min-width:0;max-width:100%")} data-han-nav="1">
             {doorSequence.map((d, i) => {
               const isLast = i === doorSequence.length - 1;
               const isStart = i === 0;
@@ -739,7 +743,7 @@ export default function IndoorWayfinder({
                 <div key={d + "_" + i} style={sx("display:inline-flex;align-items:center;gap:6px;flex:none")}>
                   <div
                     style={sx(
-                      "padding:6px 12px;border-radius:9px;font-size:13px;font-weight:800;border:1px solid " +
+                      "padding:5px 10px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;border:1px solid " +
                         (isLast
                           ? "var(--color-accent);background:var(--color-accent);color:#fff"
                           : isStart
@@ -747,7 +751,7 @@ export default function IndoorWayfinder({
                             : "var(--border-strong);background:var(--surface-muted);color:var(--text-heading)"),
                     )}
                   >
-                    {isLast ? `🎯 Kapı ${d} (${targetTitle})` : `Kapı ${d}`}
+                    {isLast ? `🎯 Kapı ${d}` : `Kapı ${d}`}
                   </div>
                   {!isLast && <span style={sx("font-weight:800;color:var(--text-muted)")}>➔</span>}
                 </div>

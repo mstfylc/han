@@ -441,11 +441,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ── viewport ────────────────────────────────────────────────────────────
   // The template is inline-styled, so the breakpoints are computed from a
-  // measured width rather than declared as media queries.
+  // measured width rather than declared as media queries. Measure immediately
+  // on mount (do not wait for startSync network round-trip) and use clientWidth
+  // so an overflowing child never inflates the breakpoint width on mobile.
   useEffect(() => {
-    const onResize = () => set({ vw: window.innerWidth });
+    const readVw = () => {
+      const w = window.innerWidth || 1280;
+      const cw = document.documentElement?.clientWidth || w;
+      return Math.min(w, cw) || w;
+    };
+    const onResize = () => set({ vw: readVw() });
+    onResize();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+    };
   }, [set]);
 
   // ── connectivity ────────────────────────────────────────────────────────

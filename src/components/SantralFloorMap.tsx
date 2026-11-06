@@ -558,8 +558,8 @@ export function SantralFloorMap({
     <div
       style={sx(
         fullScreen
-          ? "position:fixed;inset:0;z-index:90;background:var(--surface-page);overflow-y:auto;padding-bottom:80px"
-          : "border-radius:14px;border:1px solid var(--border-subtle);background:var(--surface-card);overflow:hidden",
+          ? "position:fixed;inset:0;z-index:90;background:var(--surface-page);overflow-y:auto;padding-bottom:80px;width:100%;max-width:100%"
+          : "border-radius:14px;border:1px solid var(--border-subtle);background:var(--surface-card);overflow:hidden;width:100%;max-width:100%;min-width:0;box-sizing:border-box",
       )}
     >
       {/* Top Header: Place & Floor Summary + View Mode Switcher */}
@@ -639,10 +639,10 @@ export function SantralFloorMap({
       {/* Floor Selector Strip (Z, A, B, C, D, E, F) + Vertical Cross-Floor Indicator */}
       <div
         style={sx(
-          "padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface-card)",
+          "padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface-card);min-width:0;max-width:100%",
         )}
       >
-        <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto")}>
+        <div data-han-nav="1" style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;min-width:0;max-width:100%;padding-bottom:2px")}>
           <span style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted);margin-inline-end:4px;white-space:nowrap")}>
             {lang === "tr" ? "HEDEF KAT:" : "TARGET FLOOR:"}
           </span>
@@ -747,10 +747,10 @@ export function SantralFloorMap({
       {/* Indoor No-GPS Location Anchor Bar + Quick Search */}
       <div
         style={sx(
-          "padding:10px 14px;background:var(--surface-subtle);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
+          "padding:10px 14px;background:var(--surface-subtle);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;min-width:0;max-width:100%",
         )}
       >
-        <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;flex-wrap:nowrap;max-width:100%")}>
+        <div data-han-nav="1" style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;flex-wrap:nowrap;min-width:0;max-width:100%;padding-bottom:2px")}>
           <span style={sx("flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--color-primary);white-space:nowrap")}>
             <Icon name="pin" size={14} />
             {lang === "tr" ? "Başlangıç Noktam:" : "My Start Point:"}
@@ -799,7 +799,7 @@ export function SantralFloorMap({
           )}
         </div>
 
-        <div style={sx("min-width:220px;flex:1;max-width:310px")}>
+        <div style={sx("flex:1 1 220px;min-width:0;max-width:100%")}>
           <Input
             size="sm"
             iconLead="magnifier"
@@ -848,10 +848,10 @@ export function SantralFloorMap({
       {/* Smart Category Radar Filter Bar + Zoom Controls */}
       <div
         style={sx(
-          "padding:8px 14px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap",
+          "padding:8px 14px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;min-width:0;max-width:100%",
         )}
       >
-        <div style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;flex-wrap:nowrap;max-width:100%")}>
+        <div data-han-nav="1" style={sx("display:flex;align-items:center;gap:6px;overflow-x:auto;flex-wrap:nowrap;min-width:0;max-width:100%;padding-bottom:2px")}>
           <span style={sx("flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap")}>
             <Icon name="compass" size={13} />
             {lang === "tr" ? "Kat Radarı:" : "Floor Radar:"}
@@ -917,16 +917,16 @@ export function SantralFloorMap({
 
       {/* Interactive SVG Floor Plan */}
       {(viewMode === "interactive" || viewMode === "split") && (
-        <div style={sx("padding:10px 12px;background:var(--surface-card)")}>
+        <div style={sx("padding:10px 12px;background:var(--surface-card);min-width:0;max-width:100%;overflow:hidden")}>
           <div
             ref={scrollContainerRef}
             style={sx(
-              "width:100%;overflow-x:auto;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-muted);padding:10px;-webkit-overflow-scrolling:touch",
+              "width:100%;max-width:100%;min-width:0;overflow-x:auto;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-muted);padding:10px;-webkit-overflow-scrolling:touch;box-sizing:border-box",
             )}
           >
             <svg
               viewBox="0 0 900 385"
-              style={sx(`width:${Math.round(zoom * 100)}%;min-width:680px;height:auto;display:block;transition:width 180ms ease`)}
+              style={sx(`width:${Math.round(zoom * 100)}%;min-width:600px;height:auto;display:block;transition:width 180ms ease`)}
               role="img"
               aria-label={`${place.name} ${currentFloorLabel} Kat Planı`}
             >
@@ -1528,7 +1528,7 @@ export function SantralFloorMap({
                   style={sx("text-decoration:none")}
                 >
                   <Button size="sm" color="accent" variant="solid" iconStart="camera">
-                    {lang === "tr" ? "📷 Kamera & Sensörle Sağa/Sola Dön Rehberi" : "📷 Camera & Sensor Turn-by-Turn HUD"}
+                    {lang === "tr" ? "📷 Kamera & Koridor Rehberi" : "📷 Camera & Corridor Guide"}
                   </Button>
                 </Link>
                 <Button

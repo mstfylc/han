@@ -14,6 +14,14 @@ html,
 body {
   margin: 0;
   padding: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
@@ -137,34 +145,75 @@ textarea {
   align-self: center;
 }
 
-.han-show-mobile {
+.han-show-mobile,
+.han-only-mobile {
   display: none !important;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1319px) {
   .han-search-grid {
-    grid-template-columns: 250px minmax(0, 1fr);
+    grid-template-columns: 268px minmax(0, 1fr) !important;
+    grid-template-areas: "f l" "f d" !important;
   }
 }
 
-@media (max-width: 980px) {
-  .han-plan-grid,
+@media (max-width: 1099px) {
+  .han-plan-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 1039px) {
+  .han-search-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: "f" "l" "d" !important;
+  }
   .han-cat-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: "c" "s" !important;
   }
 }
 
 @media (max-width: 767px) {
-  .han-search-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .han-hide-mobile {
+  .han-hide-mobile,
+  .han-only-desktop {
     display: none !important;
   }
 
-  .han-show-mobile {
+  .han-show-mobile,
+  .han-only-mobile {
     display: flex !important;
+  }
+
+  .han-bottom-nav {
+    display: grid !important;
+  }
+
+  /* Allow long buttons & badges to wrap gracefully on phones instead of overflowing 100vw */
+  .mtbtn {
+    max-width: 100%;
+    white-space: normal;
+    height: auto;
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    line-height: 1.25;
+    text-align: center;
+  }
+  .mtbtn--sm {
+    min-height: 32px;
+  }
+  .mtbtn--lg {
+    min-height: 44px;
+  }
+  .mtbadge {
+    max-width: 100%;
+    white-space: normal;
+    height: auto;
+    min-height: 22px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    line-height: 1.25;
   }
 
   /* Prevent iOS Safari from auto-zooming the viewport on input focus */

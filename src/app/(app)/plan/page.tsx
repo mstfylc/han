@@ -181,7 +181,7 @@ export default function PlanPage() {
   const pctUsed = Math.min(100, Math.round((plan.used / Math.max(1, plan.budget)) * 100));
 
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:" + pagePad(state.vw))}>
+    <div style={sx("max-width:1480px;margin:0 auto;" + pagePad(state.vw))}>
       <header style={sx("display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap")}>
         <div style={sx("flex:1;min-width:240px")}>
           <h1 style={sx("font-size:26px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin:0")}>{W(lang, "planTitle")}</h1>

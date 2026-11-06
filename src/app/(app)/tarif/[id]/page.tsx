@@ -11,6 +11,7 @@ import SantralFloorMap from "@/components/SantralFloorMap";
 import { Alert, Badge, Button, Drawer, EmptyState, Icon } from "@/ds";
 import { W } from "@/lib/copy";
 import { tx } from "@/lib/i18n";
+import { pagePad } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { floorLabel, recordName } from "@/lib/shop";
 import { sx } from "@/lib/sx";
@@ -145,10 +146,10 @@ function DirectionsPageInner() {
   };
 
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:20px 24px 56px;display:flex;flex-direction:column;gap:18px")}>
+    <div style={sx("max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-width:0;width:100%;" + pagePad(state.vw))}>
       {/* Breadcrumb & Top Bar */}
-      <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
-        <div style={sx("display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--text-muted)")}>
+      <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;min-width:0")}>
+        <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text-muted);min-width:0")}>
           <button
             type="button"
             onClick={() => router.back()}
@@ -171,12 +172,12 @@ function DirectionsPageInner() {
           <span style={sx("font-weight:700;color:var(--text-heading)")}>{title}</span>
         </div>
 
-        <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+        <div style={sx("display:flex;gap:8px;flex-wrap:wrap;min-width:0")}>
           <Button size="sm" color="secondary" variant="outline" iconStart="volume" onClick={speakFullRoute}>
-            {pk({ tr: "Yol Tarifini Sesli Oku", en: "Read Directions Aloud" }, lang)}
+            {pk({ tr: "Sesli Oku", en: "Read Aloud" }, lang)}
           </Button>
           <Button size="sm" color="accent" variant="solid" iconStart="qr" onClick={() => setAskTraderOpen(true)}>
-            {pk({ tr: "Esnafa Göster (Tam Ekran Türkçe Kart)", en: "Show to Trader (Turkish Card)" }, lang)}
+            {pk({ tr: "Esnafa Göster (Yardım Kartı)", en: "Show to Trader" }, lang)}
           </Button>
           <Button
             size="sm"
@@ -199,40 +200,40 @@ function DirectionsPageInner() {
               router.push("/plan");
             }}
           >
-            {pk({ tr: "Bu Durağı Günlük Rotama Ekle", en: "Add Stop to My Route" }, lang)}
+            {pk({ tr: "Rotama Ekle", en: "Add to Route" }, lang)}
           </Button>
         </div>
       </div>
 
       {/* Hero Summary Card */}
-      <section style={sx(CARD + ";border-color:var(--color-primary)")}>
-        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap")}>
-          <div>
-            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+      <section style={sx(CARD + ";border-color:var(--color-primary);min-width:0;max-width:100%;overflow:hidden")}>
+        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;min-width:0")}>
+          <div style={sx("min-width:0;flex:1 1 240px")}>
+            <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
               <Badge color="primary" variant="solid">
-                <Icon name="compass" size={12} /> {pk({ tr: "2 Katmanlı Hibrit Navigasyon (Dış GPS + Han İçi Kat Planı)", en: "2-Layer Hybrid Navigation (Outdoor GPS + Indoor Floor Plan)" }, lang)}
+                <Icon name="compass" size={12} /> {pk({ tr: "Dış GPS + Han İçi Kat Rehberi", en: "Outdoor GPS + Indoor Guide" }, lang)}
               </Badge>
               <Badge color="accent" variant="solid">
                 {place.name} · {flLbl} {door ? `· Kapı No: ${door}` : ""}
               </Badge>
             </div>
-            <h1 style={sx("font-size:26px;font-weight:800;color:var(--text-heading);letter-spacing:-.02em;margin:10px 0 0")}>
+            <h1 style={sx("font-size:22px;font-weight:800;color:var(--text-heading);letter-spacing:-.02em;margin:10px 0 0;line-height:1.25")}>
               {title}
             </h1>
-            <p style={sx("font-size:14px;color:var(--text-body);margin-top:4px")}>
+            <p style={sx("font-size:13.5px;color:var(--text-body);margin-top:4px")}>
               {place.address || `${place.name}, ${semtObj ? tx(semtObj, lang) : "Tahtakale"} · Fatih / İstanbul`}
             </p>
           </div>
 
-          <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
-            <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none")}>
+          <div style={sx("display:flex;gap:8px;flex-wrap:wrap;min-width:0")}>
+            <a href={gmapsUrl} target="_blank" rel="noreferrer" style={sx("text-decoration:none;max-width:100%")}>
               <Button size="md" color="primary" variant="solid" iconStart="globe">
-                {pk({ tr: "1. Adım: Google Maps ile Han Kapısına Yürü", en: "Step 1: Walk to Han Gate (Google Maps)" }, lang)}
+                {pk({ tr: "Google Maps ile Han Kapısına Yürü", en: "Walk to Han Gate (Google Maps)" }, lang)}
               </Button>
             </a>
             {target.kind === "shop" && (
               <Button size="md" color="secondary" variant="outline" iconStart="shop" onClick={() => router.push(href.store(target.id))}>
-                {pk({ tr: "Dükkân Sayfasına Dön", en: "Back to Shop Page" }, lang)}
+                {pk({ tr: "Dükkâna Dön", en: "Back to Shop" }, lang)}
               </Button>
             )}
           </div>
@@ -281,9 +282,9 @@ function DirectionsPageInner() {
       </section>
 
       {/* Outdoor Map + Indoor Interactive Floor Map */}
-      <div style={sx("display:grid;grid-template-columns:1fr;gap:18px")}>
+      <div style={sx("display:grid;grid-template-columns:minmax(0,1fr);gap:18px;min-width:0;width:100%")}>
         {/* Layer 2A: Dual-Mode Indoor Turn-by-Turn & Camera AR Wayfinder */}
-        <section>
+        <section style={sx("min-width:0;max-width:100%")}>
           <IndoorWayfinder
             place={place}
             floor={floor}
@@ -296,7 +297,7 @@ function DirectionsPageInner() {
         </section>
 
         {/* Layer 2B: Interactive Indoor Floor Map */}
-        <section>
+        <section style={sx("min-width:0;max-width:100%")}>
           <div style={sx("margin-bottom:10px")}>
             <Alert
               color="info"

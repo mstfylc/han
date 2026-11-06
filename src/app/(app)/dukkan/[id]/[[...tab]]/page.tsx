@@ -126,7 +126,7 @@ export default function ShopPage() {
   const isMobile = state.vw < 768;
 
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:" + pagePad(state.vw) + (isMobile ? ";padding-bottom:136px" : ""))}>
+    <div style={sx("max-width:1480px;margin:0 auto;" + pagePad(state.vw) + (isMobile ? "padding-bottom:136px;" : ""))}>
       {/* ── breadcrumb ─────────────────────────────────────────────────── */}
       <div style={sx("display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--text-muted)")}>
         <button
