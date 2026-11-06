@@ -353,15 +353,15 @@ export function SantralFloorMap({
     if (byPlace) {
       return lang === "tr" ? byPlace.tr : byPlace.en;
     }
-    const catNames = (place.dominantCats || [])
-      .slice(0, 3)
+    const uniqueCats = Array.from(new Set(floorRecords.map((r) => r.cat).filter(Boolean))).slice(0, 3);
+    const catNames = uniqueCats
       .map((cid: string) => {
         const c = D.CATS.find((x) => x.id === cid);
         return c ? tx(c, lang) : cid;
       })
       .join(", ");
     return `${currentFloorLabel} · ${place.name}${catNames ? ` — ${catNames}` : ""}`;
-  }, [isSantral, floor, lang, place, currentFloorLabel]);
+  }, [isSantral, floor, lang, place, currentFloorLabel, floorRecords]);
 
   const officialPlanUrl = isSantral ? `/assets/santral/kat-${floor}.jpg` : null;
 
