@@ -61,11 +61,35 @@ export default function IndoorWayfinder({
   const [baseHeading, setBaseHeading] = useState<number | null>(null);
 
   const flLbl = floorLabel(floor, lang, place);
+  const targetFloorLabel = flLbl;
   const acc = SC.accessOf(place);
   const targetNum = useMemo(() => {
     const n = parseInt(String(targetDoor || "220").replace(/\D/g, ""), 10);
     return Number.isFinite(n) && n > 0 ? n : 220;
   }, [targetDoor]);
+  const door = targetDoor || String(targetNum);
+
+  const gates = useMemo(
+    () => [
+      {
+        id: "main",
+        label:
+          place.id === "santral"
+            ? pk({ tr: "Tahtakale Cd. No:7 Ana Giriş Kapısı", en: "Tahtakale St. No:7 Main Gate" }, lang)
+            : pk({ tr: `${place.name} Ana Giriş Kapısı`, en: `${place.name} Main Entrance Gate` }, lang),
+      },
+      {
+        id: "courtyard",
+        label:
+          place.id === "santral"
+            ? pk({ tr: "Orta Avlu / Yan Pasaj Girişi", en: "Center Courtyard / Side Passage Gate" }, lang)
+            : pk({ tr: `${place.name} Avlu / Yan Kapısı`, en: `${place.name} Courtyard / Side Gate` }, lang),
+      },
+    ],
+    [place.id, place.name, lang],
+  );
+  const [selectedGateId, setSelectedGateId] = useState<string>("main");
+  const selectedGate = gates.find((g) => g.id === selectedGateId) || gates[0];
 
   // Nearby doors on the same place & floor from SC.RECORDS or generated sequence
   const floorDoors = useMemo(() => {
@@ -381,8 +405,8 @@ export default function IndoorWayfinder({
           <span style={sx("font-size:13.5px;font-weight:800;letter-spacing:-.01em")}>
             {pk(
               {
-                tr: "Han İçi Sağa / Sola Dön & Kapı Rehberi",
-                en: "Indoor Turn-by-Turn & Door Wayfinder",
+                tr: "Han İçi Canlı Koridor & Kamera Rehberi",
+                en: "Live Indoor Corridor & Camera Guide",
               },
               lang,
             )}
@@ -436,12 +460,116 @@ export default function IndoorWayfinder({
       {cameraError && (
         <div
           style={sx(
-            "padding:10px 14px;background:var(--color-warning-soft);color:var(--color-warning-accent);font-size:12.5px;font-weight:700;border-bottom:1px solid var(--border-default)",
+            "padding:10px 14px;background:var(--color-warning-soft);color:var(--color-warning-accent);font-size:12.5px;font-weight:700;border-bottom:1px solid var(--border-default);min-width:0;max-width:100%;box-sizing:border-box",
           )}
         >
           {cameraError}
         </div>
       )}
+
+      {/* 📸 3 Adımlı Görsel Kavşak Rehberi (Adım Adım Kontrol Noktaları) */}
+      <div
+        style={sx(
+          "padding:12px 14px;background:var(--surface-muted);border-bottom:1px solid var(--border-strong);display:flex;flex-direction:column;gap:10px;min-width:0;max-width:100%;box-sizing:border-box",
+        )}
+      >
+        <div
+          style={sx(
+            "display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0;max-width:100%;box-sizing:border-box",
+          )}
+        >
+          <span
+            style={sx(
+              "font-size:12.5px;font-weight:800;color:var(--text-heading);letter-spacing:-.01em;min-width:0",
+            )}
+          >
+            {pk(
+              {
+                tr: "📸 3 Adımlı Görsel Kavşak Rehberi (Adım Adım Kontrol Noktaları)",
+                en: "📸 3-Step Visual Junction Guide (Step-by-Step Checkpoints)",
+              },
+              lang,
+            )}
+          </span>
+          <div style={sx("display:flex;gap:6px;flex-wrap:wrap;min-width:0")}>
+            {gates.map((g) => {
+              const on = g.id === selectedGate.id;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setSelectedGateId(g.id)}
+                  style={sx(
+                    "height:26px;padding:0 9px;border-radius:999px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;border:1px solid " +
+                      (on
+                        ? "var(--color-primary);background:var(--color-primary);color:#fff"
+                        : "var(--border-strong);background:var(--surface-card);color:var(--text-body)"),
+                  )}
+                >
+                  🚪 {g.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          style={sx(
+            "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;min-width:0;max-width:100%;box-sizing:border-box",
+          )}
+        >
+          {/* 1. Adım — Giriş Kapısı */}
+          <div
+            style={sx(
+              "padding:10px 12px;border-radius:10px;background:var(--surface-card);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%;box-sizing:border-box",
+            )}
+          >
+            <div style={sx("font-size:11px;font-weight:800;color:var(--color-primary);text-transform:uppercase")}>
+              1. Adım — Giriş Kapısı
+            </div>
+            <div style={sx("font-size:13.5px;font-weight:800;color:var(--text-heading);line-height:1.25")}>
+              {selectedGate.label}
+            </div>
+            <div style={sx("font-size:12px;color:var(--text-body);line-height:1.4")}>
+              Ana kapıdan içeri girin, 15 metre düz koridor boyunca ilerleyin.
+            </div>
+          </div>
+
+          {/* 2. Adım — Kat & Merdiven/Asansör Düğümü */}
+          <div
+            style={sx(
+              "padding:10px 12px;border-radius:10px;background:var(--surface-card);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%;box-sizing:border-box",
+            )}
+          >
+            <div style={sx("font-size:11px;font-weight:800;color:var(--color-accent);text-transform:uppercase")}>
+              2. Adım — Kat & Merdiven/Asansör Düğümü
+            </div>
+            <div style={sx("font-size:13.5px;font-weight:800;color:var(--text-heading);line-height:1.25")}>
+              {targetFloorLabel}
+            </div>
+            <div style={sx("font-size:12px;color:var(--text-body);line-height:1.4")}>
+              Orta avludaki merdiven veya asansörle hedef kata çıkın.
+            </div>
+          </div>
+
+          {/* 3. Adım — Koridor & Hedef Kapı No */}
+          <div
+            style={sx(
+              "padding:10px 12px;border-radius:10px;background:var(--color-primary-soft);border:1px solid var(--color-primary);display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%;box-sizing:border-box",
+            )}
+          >
+            <div style={sx("font-size:11px;font-weight:800;color:var(--color-primary);text-transform:uppercase")}>
+              3. Adım — Koridor & Hedef Kapı No
+            </div>
+            <div style={sx("font-size:13.5px;font-weight:800;color:var(--text-heading);line-height:1.25")}>
+              {corridor} Koridoru · Kapı No: {door}
+            </div>
+            <div style={sx("font-size:12px;color:var(--text-body);line-height:1.4")}>
+              {`Kapı No: ${door} tabelasını sağ/sol vitrin dizisinde bulun.`}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* MODE B: Live Rear Camera AR Viewport */}
       {mode === "camera" && (
@@ -543,8 +671,8 @@ export default function IndoorWayfinder({
               <Icon name="locate" size={15} />
               {pk(
                 {
-                  tr: "Şu An Neredesiniz? (Merdiven veya Önünüzdeki Kapı No):",
-                  en: "Where Are You Now? (Pick Stairs or Current Door No):",
+                  tr: "Kayboldunuz mu? Şu An Yanınızdaki Kapı Numarasını Yazın",
+                  en: "Lost? Enter the Door Number Right Next to You",
                 },
                 lang,
               )}

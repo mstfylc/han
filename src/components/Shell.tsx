@@ -66,7 +66,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const [qDoor, setQDoor] = useState("228");
 
   const { lang, currency, mode, vw } = state;
-  const section = sectionOf(pathname);
+  const rawSection = sectionOf(pathname);
+  const section = pathname.startsWith("/etkinlik") ? "etkinlik" : rawSection;
   const compact = vw < 1380;
   const twoRow = vw < 1340;
   const isPhone = vw < 768;
@@ -93,32 +94,63 @@ export function Shell({ children }: { children: ReactNode }) {
   }, []);
 
   const planCount = (state.buyList || []).length + (state.evPlan || []).length;
+  const evCount = (state.evPlan || []).length;
   const talepCount = (state.talepler || []).length;
 
   const sections = useMemo(
     () => [
-      { id: "kesfet" as const, icon: "compass", label: W(lang, "secDiscover"), short: lang === "tr" ? "Keşfet" : W(lang, "secDiscover") },
-      { id: "ara" as const, icon: "magnifier", label: W(lang, "secSearch"), short: lang === "tr" ? "Ara" : W(lang, "secSearch") },
-      { id: "harita" as const, icon: "map", label: W(lang, "secMap"), short: lang === "tr" ? "Harita" : W(lang, "secMap") },
-      { id: "plan" as const, icon: "route", label: W(lang, "secPlan"), short: lang === "tr" ? "Rotam" : W(lang, "secPlan"), count: planCount },
       {
-        id: "isler" as const,
-        icon: "handcart",
-        label:
-          ({ tr: "Talep ve Teklifler", en: "Requests & Offers", ru: "Запросы и предложения", ar: "الطلبات والعروض" } as Record<string, string>)[lang] ||
-          "Talep ve Teklifler",
-        short: ({ tr: "Teklifler", en: "Offers", ru: "Запросы", ar: "الطلبات" } as Record<string, string>)[lang] || "Teklifler",
-        count: talepCount,
+        id: "kesfet" as const,
+        icon: "compass",
+        label: W(lang, "secDiscover"),
+        short: lang === "tr" ? "Keşfet" : W(lang, "secDiscover"),
       },
-      { id: "arac" as const, icon: "calculator", label: F(lang, "secTools"), short: F(lang, "secTools") },
+      {
+        id: "ara" as const,
+        icon: "magnifier",
+        label: lang === "tr" ? "Dükkân & Ürün Ara" : W(lang, "secSearch"),
+        short: lang === "tr" ? "Ara" : W(lang, "secSearch"),
+      },
+      {
+        id: "harita" as const,
+        icon: "map",
+        label: lang === "tr" ? "Harita & İhtiyaçlar" : W(lang, "secMap"),
+        short: lang === "tr" ? "Harita" : W(lang, "secMap"),
+      },
+      {
+        id: "plan" as const,
+        icon: "route",
+        label: lang === "tr" ? "Plan & Etkinlik Rotam" : W(lang, "secPlan"),
+        short: lang === "tr" ? "Rotam" : W(lang, "secPlan"),
+        count: planCount,
+      },
+      {
+        id: "etkinlik" as const,
+        icon: "calendar",
+        label:
+          ({ tr: "Etkinlikler", en: "Events", ru: "События", ar: "الفعاليات" } as Record<string, string>)[lang] ||
+          "Etkinlikler",
+        short:
+          ({ tr: "Etkinlik", en: "Events", ru: "События", ar: "فعاليات" } as Record<string, string>)[lang] ||
+          "Etkinlik",
+        count: evCount,
+      },
     ],
-    [lang, planCount, talepCount],
+    [lang, planCount, evCount],
   );
 
   const go = useCallback(
     (id: string) => {
       setMenuOpen(false);
-      router.push(id === "isler" ? "/isler/talep" : id === "arac" ? "/arac/doviz" : pathOfSection(id as never));
+      router.push(
+        id === "etkinlik"
+          ? "/etkinlik"
+          : id === "isler"
+            ? "/isler/talep"
+            : id === "arac"
+              ? "/arac/doviz"
+              : pathOfSection(id as never),
+      );
     },
     [router],
   );
@@ -341,48 +373,35 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
 
               <div style={sx(hdrCtlStyle)}>
-                <button
-                  type="button"
-                  onClick={startVoiceSearch}
-                  title={lang === "tr" ? "Sesle Ara" : "Voice Search"}
+                {/* 1-Click Language Strip: TR | EN | RU | AR */}
+                <div
+                  role="group"
+                  aria-label={wLangLabel}
                   style={sx(
-                    "flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:" +
-                      (listening ? "#fff;color:var(--surface-brand,#14233f)" : "rgba(255,255,255,.10);color:#fff") +
-                      ";font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
+                    "flex:none;display:inline-flex;align-items:center;gap:2px;height:32px;padding:2px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10)",
                   )}
                 >
-                  <Icon name="mic" size={14} />
-                  {lang === "tr" ? "Sesle Ara" : "Voice"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDoorOpen(true)}
-                  title={lang === "tr" ? "Hızlı Kapı / QR Bulucu" : "Quick Door / QR Finder"}
-                  style={sx(
-                    "flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
-                  )}
-                >
-                  <Icon name="qr" size={14} />
-                  {lang === "tr" ? "Kapı No" : "Door"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push("/esnaf/yonet")}
-                  style={sx(
-                    "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
-                  )}
-                >
-                  {lang === "tr" ? "Esnaf" : "Trader"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push("/panel/ozet")}
-                  style={sx(
-                    "flex:none;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
-                  )}
-                >
-                  {lang === "tr" ? "Yönetim" : "Admin"}
-                </button>
+                  {(["tr", "en", "ru", "ar"] as Lang[]).map((code) => {
+                    const activeLang = lang === code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => save({ lang: code })}
+                        style={sx(
+                          "height:26px;padding:0 7px;border-radius:6px;border:0;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;" +
+                            (activeLang
+                              ? "background:#fff;color:var(--surface-brand,#14233f)"
+                              : "background:transparent;color:rgba(255,255,255,.88)"),
+                        )}
+                      >
+                        {code.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Buying Mode: Tümü / Perakende / Toptan */}
                 <select
                   onChange={(e) => save({ mode: e.target.value as Mode })}
                   value={mode}
@@ -396,71 +415,47 @@ export function Shell({ children }: { children: ReactNode }) {
                     </option>
                   ))}
                 </select>
-                <select
-                  onChange={(e) => save({ currency: e.target.value as Currency })}
-                  value={currency}
-                  aria-label={wCurLabel}
-                  title={wCurLabel}
-                  style={sx(selStyleNarrow)}
-                >
-                  {curOpts.map((o) => (
-                    <option key={o.id} value={o.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  onChange={(e) => save({ lang: e.target.value as Lang })}
-                  value={lang}
-                  aria-label={wLangLabel}
-                  title={wLangLabel}
-                  style={sx(selStyle)}
-                >
-                  {langOpts.map((o) => (
-                    <option key={o.id} value={o.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={theme}
-                  onChange={(e) => {
-                    const next = e.target.value as BrandThemeId;
-                    updateTheme(next, dark);
-                    const found = THEMES.find((t) => t.id === next);
-                    if (found) toast(found.title + " teması aktif");
-                  }}
-                  aria-label={lang === "tr" ? "Tema seçimi" : "Theme"}
-                  title={lang === "tr" ? "Marka teması" : "Brand theme"}
-                  style={sx(selStyleNarrow)}
-                >
-                  {THEMES.map((t) => (
-                    <option key={t.id} value={t.id} style={sx("color:var(--text-heading);background:var(--surface-card)")}>
-                      {"Tema · " + t.title}
-                    </option>
-                  ))}
-                </select>
+
+                {/* Voice Search (mic) */}
                 <button
                   type="button"
-                  onClick={() => updateTheme(theme, !dark)}
-                  aria-label={dark ? "Açık görünüm" : "Koyu görünüm"}
-                  title={dark ? "Açık görünüme geç" : "Koyu görünüme geç"}
+                  onClick={startVoiceSearch}
+                  title={lang === "tr" ? "Sesle Ara" : "Voice Search"}
                   style={sx(
-                    "flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;cursor:pointer",
+                    "flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:" +
+                      (listening ? "#fff;color:var(--surface-brand,#14233f)" : "rgba(255,255,255,.10);color:#fff") +
+                      ";font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
                   )}
                 >
-                  <Icon name={dark ? "sun" : "moon"} size={15} />
+                  <Icon name="mic" size={14} />
+                  {lang === "tr" ? "Sesle Ara" : "Voice"}
                 </button>
+
+                {/* Quick Door / QR Finder (qr) */}
                 <button
                   type="button"
-                  onClick={copyLink}
-                  aria-label={W(lang, "copyLink")}
-                  title={W(lang, "copyLink")}
+                  onClick={() => setDoorOpen(true)}
+                  title={lang === "tr" ? "Hızlı Kapı / QR Bulucu" : "Quick Door / QR Finder"}
                   style={sx(
-                    "flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;cursor:pointer",
+                    "flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
                   )}
                 >
-                  <Icon name={copied ? "check-circle" : "share"} size={16} />
+                  <Icon name="qr" size={14} />
+                  {lang === "tr" ? "Kapı Bul" : "Door"}
+                </button>
+
+                {/* Settings / Menu Drawer Trigger (menu) */}
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(true)}
+                  aria-label={lang === "tr" ? "Ayarlar ve Menü" : "Settings & Menu"}
+                  title={lang === "tr" ? "Ayarlar, Döviz, Tema ve B2B Girişi" : "Settings, Currency, Theme & B2B"}
+                  style={sx(
+                    "flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap",
+                  )}
+                >
+                  <Icon name="menu" size={15} />
+                  <span>{lang === "tr" ? "Menü" : "Menu"}</span>
                 </button>
               </div>
             </>
@@ -480,6 +475,77 @@ export function Shell({ children }: { children: ReactNode }) {
       <div id="han-icerik" tabIndex={-1} style={sx("outline:none")} />
 
       {loading ? <ShellSkeleton /> : children}
+
+      {/* Page Bottom Footer: Esnaf, B2B Teklifler & Yönetim Girişi */}
+      <footer
+        style={sx(
+          "max-width:1480px;margin:28px auto 0;padding:18px " +
+            (isPhone ? "14px 28px" : "24px 36px") +
+            ";border-top:1px solid var(--border-default)",
+        )}
+      >
+        <div
+          style={sx(
+            "padding:14px 16px;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface-card);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap",
+          )}
+        >
+          <div style={sx("display:flex;align-items:center;gap:10px;flex-wrap:wrap")}>
+            <span
+              style={sx(
+                "font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)",
+              )}
+            >
+              {lang === "tr"
+                ? "Esnaf, B2B Teklifler & Yönetim Girişi"
+                : "Traders, B2B Offers & Bazaar Management"}
+            </span>
+            <span style={sx("font-size:12.5px;color:var(--text-body)")}>
+              {lang === "tr"
+                ? "Toptan alım talebi bırakma, döviz/kargo hesaplama, dükkân sahiplenme ve çarşı yönetimi araçları:"
+                : "Wholesale RFQ, currency/cargo calculators, shop claim & bazaar admin portals:"}
+            </span>
+          </div>
+          <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+            <Button
+              size="sm"
+              color="primary"
+              variant="light"
+              iconStart="handcart"
+              onClick={() => router.push("/isler/talep")}
+            >
+              {(lang === "tr" ? "Toptan Talep & Teklifler" : "Wholesale Requests & Offers") +
+                (talepCount > 0 ? ` (${talepCount})` : "")}
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="light"
+              iconStart="calculator"
+              onClick={() => router.push("/arac/doviz")}
+            >
+              {lang === "tr" ? "Ticaret & Kargo Araçları" : "Trade & Cargo Tools"}
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="outline"
+              iconStart="shop"
+              onClick={() => router.push("/esnaf/yonet")}
+            >
+              {lang === "tr" ? "Esnaf Paneli" : "Trader Panel"}
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="outline"
+              iconStart="setting-2"
+              onClick={() => router.push("/panel/ozet")}
+            >
+              {lang === "tr" ? "Çarşı Yönetim Paneli" : "Bazaar Admin Panel"}
+            </Button>
+          </div>
+        </div>
+      </footer>
 
       {/* Mobile Fixed Bottom Navigation Bar (< 768px) */}
       {isPhone && (
@@ -754,42 +820,11 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          {/* Quick Tools & Panels */}
-          <div style={sx("display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px;border-top:1px solid var(--border-default)")}>
-            <Button color="primary" variant="light" size="md" iconStart="calculator" onClick={() => go("arac")}>
-              {F(lang, "secTools")}
-            </Button>
-            <Button color="primary" variant="light" size="md" iconStart="share" onClick={copyLink}>
+          {/* Share Link & PWA Offline App Install */}
+          <div style={sx("display:grid;gap:8px;padding-top:6px;border-top:1px solid var(--border-default)")}>
+            <Button color="primary" variant="light" size="md" fullWidth iconStart="share" onClick={copyLink}>
               {W(lang, "copyLink")}
             </Button>
-            <Button
-              color="primary"
-              variant="outline"
-              size="md"
-              iconStart="shop"
-              onClick={() => {
-                setMenuOpen(false);
-                router.push("/esnaf/yonet");
-              }}
-            >
-              {lang === "tr" ? "Esnaf Paneli" : "Trader Panel"}
-            </Button>
-            <Button
-              color="primary"
-              variant="outline"
-              size="md"
-              iconStart="setting-2"
-              onClick={() => {
-                setMenuOpen(false);
-                router.push("/panel/ozet");
-              }}
-            >
-              {lang === "tr" ? "Yönetim Paneli" : "Admin Panel"}
-            </Button>
-          </div>
-
-          {/* PWA Offline App Install */}
-          <div style={sx("padding-top:6px;border-top:1px solid var(--border-default)")}>
             <Button
               color="accent"
               variant="solid"
@@ -801,7 +836,7 @@ export function Shell({ children }: { children: ReactNode }) {
               {lang === "tr" ? "📲 Ana Ekrana Ekle (Çevrimdışı Kat Planı)" : "📲 Add to Home Screen (Offline Ready)"}
             </Button>
             {iosHintOpen && (
-              <div style={sx("margin-top:8px")}>
+              <div style={sx("margin-top:4px")}>
                 <Alert color="info" variant="light" title={lang === "tr" ? "Telefonunuza Uygulama Olarak Kurun" : "Install as Mobile App"}>
                   {lang === "tr"
                     ? "Tarayıcınızın altındaki 'Paylaş' (↑) veya sağ üstteki (⋮) menüsünden 'Ana Ekrana Ekle' seçeneğine dokunun. Santral Han A ve B kat planları telefonunuza indirilir ve han içinde internet çekmese bile çevrimdışı açılır."
@@ -809,6 +844,69 @@ export function Shell({ children }: { children: ReactNode }) {
                 </Alert>
               </div>
             )}
+          </div>
+
+          {/* Esnaf, B2B Teklifler & Yönetim Girişi (Bottom of Drawer) */}
+          <div
+            style={sx(
+              "padding:12px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-muted);display:grid;gap:8px",
+            )}
+          >
+            <div style={sx("font-size:12px;font-weight:800;color:var(--text-heading)")}>
+              {lang === "tr"
+                ? "Esnaf, B2B Teklifler & Yönetim Girişi"
+                : "Traders, B2B Offers & Bazaar Management"}
+            </div>
+            <div style={sx("display:grid;grid-template-columns:1fr 1fr;gap:8px")}>
+              <Button
+                color="primary"
+                variant="light"
+                size="sm"
+                iconStart="handcart"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/isler/talep");
+                }}
+              >
+                {lang === "tr" ? "Toptan Talep & Teklifler" : "B2B Requests"}
+              </Button>
+              <Button
+                color="primary"
+                variant="light"
+                size="sm"
+                iconStart="calculator"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/arac/doviz");
+                }}
+              >
+                {lang === "tr" ? "Ticaret & Kargo Araçları" : "Trade & Cargo Tools"}
+              </Button>
+              <Button
+                color="primary"
+                variant="outline"
+                size="sm"
+                iconStart="shop"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/esnaf/yonet");
+                }}
+              >
+                {lang === "tr" ? "Esnaf Paneli" : "Trader Panel"}
+              </Button>
+              <Button
+                color="primary"
+                variant="outline"
+                size="sm"
+                iconStart="setting-2"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/panel/ozet");
+                }}
+              >
+                {lang === "tr" ? "Çarşı Yönetim Paneli" : "Bazaar Admin"}
+              </Button>
+            </div>
           </div>
         </div>
       </Drawer>

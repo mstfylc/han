@@ -44,6 +44,7 @@ function DirectionsPageInner() {
   const qKapi = searchParams.get("kapi");
   const qAr = searchParams.get("ar") === "1";
   const [askTraderOpen, setAskTraderOpen] = useState(false);
+  const [qrSignOpen, setQrSignOpen] = useState(false);
 
   const target = useMemo(() => {
     const normalizedId = rawId === "santral-han" ? "santral" : rawId;
@@ -145,6 +146,79 @@ function DirectionsPageInner() {
     }
   };
 
+  const shareWhatsAppRoute = () => {
+    const pageUrl =
+      typeof window !== "undefined" ? window.location.href : `https://han.ist/tarif/${encodeURIComponent(target.id)}`;
+    const msg = [
+      `📍 *${title}* — Han İçi Yol Tarifi`,
+      `🏛️ Han: ${place.name} (${flLbl}${door ? ` · Kapı No: ${door}` : ""})`,
+      `1️⃣ ${place.name} ana giriş kapısından içeri girin`,
+      `2️⃣ ${acc.lift ? "Asansör veya merdivenle" : "Merdivenle"} ${flLbl} katına çıkın`,
+      `3️⃣ ${corridor} koridoru takip ederek ${door ? `Kapı No: ${door}` : title} vitrinine ulaşın`,
+      `🧭 Canlı Kat Planı & Kamera Rehberi: ${pageUrl}`,
+    ].join("\n");
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    if (typeof window !== "undefined") {
+      window.open(waUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const qrCells = useMemo(() => {
+    const size = 21;
+    const seedStr = `${place.id}:${floor}:${door || "0"}:${title}`;
+    let h = 2166136261;
+    for (let i = 0; i < seedStr.length; i++) {
+      h ^= seedStr.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    const isFinder = (r: number, c: number, r0: number, c0: number) => {
+      const dr = r - r0;
+      const dc = c - c0;
+      if (dr < 0 || dr > 6 || dc < 0 || dc > 6) return null;
+      if (dr === 0 || dr === 6 || dc === 0 || dc === 6) return true;
+      if (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4) return true;
+      return false;
+    };
+    const cells: { r: number; c: number }[] = [];
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const f1 = isFinder(r, c, 0, 0);
+        const f2 = isFinder(r, c, 0, size - 7);
+        const f3 = isFinder(r, c, size - 7, 0);
+        if (f1 !== null) {
+          if (f1) cells.push({ r, c });
+          continue;
+        }
+        if (f2 !== null) {
+          if (f2) cells.push({ r, c });
+          continue;
+        }
+        if (f3 !== null) {
+          if (f3) cells.push({ r, c });
+          continue;
+        }
+        // Quiet separator around finders
+        if (
+          (r <= 7 && c <= 7) ||
+          (r <= 7 && c >= size - 8) ||
+          (r >= size - 8 && c <= 7)
+        ) {
+          continue;
+        }
+        if (r === 6 || c === 6) {
+          if ((r + c) % 2 === 0) cells.push({ r, c });
+          continue;
+        }
+        h ^= (r * 31 + c * 17) & 0xff;
+        h = Math.imul(h, 16777619);
+        if ((h >>> 0) % 11 < 6) {
+          cells.push({ r, c });
+        }
+      }
+    }
+    return cells;
+  }, [place.id, floor, door, title]);
+
   return (
     <div style={sx("max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-width:0;width:100%;" + pagePad(state.vw))}>
       {/* Breadcrumb & Top Bar */}
@@ -173,6 +247,12 @@ function DirectionsPageInner() {
         </div>
 
         <div style={sx("display:flex;gap:8px;flex-wrap:wrap;min-width:0")}>
+          <Button size="sm" color="success" variant="solid" iconStart="messages" onClick={shareWhatsAppRoute}>
+            {pk({ tr: "📲 WhatsApp'tan Tarif Gönder", en: "📲 Send Route via WhatsApp" }, lang)}
+          </Button>
+          <Button size="sm" color="primary" variant="solid" iconStart="qr" onClick={() => setQrSignOpen(true)}>
+            {pk({ tr: "🖨️ Vitrin / Giriş QR Tabelası", en: "🖨️ Shopfront / Gate QR Sign" }, lang)}
+          </Button>
           <Button size="sm" color="secondary" variant="outline" iconStart="volume" onClick={speakFullRoute}>
             {pk({ tr: "Sesli Oku", en: "Read Aloud" }, lang)}
           </Button>
@@ -375,6 +455,105 @@ function DirectionsPageInner() {
             <div style={sx("font-size:14px;margin-top:12px;opacity:0.95")}>
               ({corridor} Koridor — Bu dükkâna hangi merdiven veya koridordan gidebilirim?)
             </div>
+          </div>
+        </div>
+      </Drawer>
+
+      {/* Printable Vitrin / Giriş QR Tabelası Drawer */}
+      <Drawer
+        open={qrSignOpen}
+        onClose={() => setQrSignOpen(false)}
+        title={pk({ tr: "🖨️ Vitrin / Giriş QR Tabelası", en: "🖨️ Printable Shopfront / Gate QR Sign" }, lang)}
+      >
+        <div style={sx("padding:16px;display:flex;flex-direction:column;gap:14px")}>
+          <div
+            style={sx(
+              "padding:22px 20px;border-radius:16px;border:3px solid var(--color-primary);background:#fff;color:#0f172a;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.08)",
+            )}
+          >
+            <div
+              style={sx(
+                "font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1e3a8a;background:#eff6ff;padding:4px 12px;border-radius:999px",
+              )}
+            >
+              🏛️ {place.name} · RESMİ DİJİTAL KAPI & YÖN TABELASI
+            </div>
+
+            <div style={sx("font-size:22px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:4px")}>
+              {title}
+            </div>
+
+            <div
+              style={sx(
+                "font-size:15px;font-weight:800;color:#fff;background:#1e3a8a;padding:6px 16px;border-radius:10px",
+              )}
+            >
+              {flLbl} · Kapı No: {door || "—"} ({corridor} Koridor)
+            </div>
+
+            {/* Deterministic SVG QR Code */}
+            <div
+              style={sx(
+                "padding:12px;border-radius:14px;border:2px solid #cbd5e1;background:#fff;margin:6px 0;display:inline-flex;align-items:center;justify-content:center",
+              )}
+            >
+              <svg
+                width="176"
+                height="176"
+                viewBox="0 0 25 25"
+                role="img"
+                aria-label={`${title} QR Kodu`}
+              >
+                <rect width="25" height="25" fill="#ffffff" rx="1.5" />
+                {qrCells.map((cell) => (
+                  <rect
+                    key={`${cell.r}_${cell.c}`}
+                    x={cell.c + 2}
+                    y={cell.r + 2}
+                    width="1"
+                    height="1"
+                    fill="#0f172a"
+                  />
+                ))}
+              </svg>
+            </div>
+
+            <div
+              style={sx(
+                "font-size:13px;font-weight:800;color:#0f172a;background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:10px;line-height:1.45;max-width:100%",
+              )}
+            >
+              3 Adımda Bulun: 1. Kapıdaki QR&apos;ı Okutun → 2. Kat ve Koridor Okunu Takip Edin → 3. Kapı No&apos;ya Ulaşın
+            </div>
+
+            <div style={sx("font-size:11.5px;color:#475569;font-weight:600")}>
+              han.ist/tarif/{target.id}
+            </div>
+          </div>
+
+          <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+            <Button
+              size="md"
+              color="primary"
+              variant="solid"
+              iconStart="printer"
+              fullWidth
+              onClick={() => {
+                if (typeof window !== "undefined") window.print();
+              }}
+            >
+              {pk({ tr: "🖨️ Tabelayı Yazdır", en: "🖨️ Print Sign" }, lang)}
+            </Button>
+            <Button
+              size="md"
+              color="success"
+              variant="outline"
+              iconStart="messages"
+              fullWidth
+              onClick={shareWhatsAppRoute}
+            >
+              {pk({ tr: "📲 WhatsApp'tan Tarif Gönder", en: "📲 Share via WhatsApp" }, lang)}
+            </Button>
           </div>
         </div>
       </Drawer>

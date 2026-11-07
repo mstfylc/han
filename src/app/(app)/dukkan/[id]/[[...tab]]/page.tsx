@@ -313,6 +313,36 @@ export default function ShopPage() {
                 {isSaved ? W(lang, "unsave") : W(lang, "save")}
               </Button>
             </div>
+            <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+              <Button
+                variant="outline"
+                color="success"
+                size="md"
+                iconStart="messages"
+                fullWidth
+                onClick={() => {
+                  const origin = typeof window !== "undefined" ? window.location.origin : "https://han.ist";
+                  const tarifUrl = `${origin}${href.directions(view.id)}`;
+                  const msg = [
+                    `📍 *${view.name}* — Han Konum & İç Tarif`,
+                    `🏛️ ${view.where}`,
+                    `🧭 Adım adım han içi kat/koridor rehberi: ${tarifUrl}`,
+                  ].join("\n");
+                  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                  if (typeof window !== "undefined") {
+                    window.open(waUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+              >
+                {pk(
+                  {
+                    tr: "📲 WhatsApp Konum & İç Tarif Paylaş",
+                    en: "📲 Share Location & Indoor Guide on WhatsApp",
+                  },
+                  lang,
+                )}
+              </Button>
+            </div>
             {view.tel && (
               <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
                 <a

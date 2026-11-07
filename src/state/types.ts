@@ -24,8 +24,14 @@ export interface Trip {
   day: string;
   start: number;
   hours: number;
-  /** what the day is for — browsing or business */
-  intent: "gez" | "is";
+  /** what the day is for — browsing, business, or event/occasion prep */
+  intent: "gez" | "is" | "etkinlik";
+  /** occasion archetype when planning for a wedding/engagement/party/boutique/tour */
+  occasion?: "dugun" | "mevlut" | "butik" | "kultur";
+  /** guest or package count for automatic quantity + 10% buffer calculation */
+  guestCount?: number;
+  /** optional total budget ceiling in TRY */
+  budgetLimit?: number;
   /** how much the buyer can carry: by hand, trolley, courier */
   carry: string;
   items: BuyItem[];

@@ -524,6 +524,133 @@ export default function DiscoverPage() {
         </div>
       </div>
 
+      {/* ── Çarşıya Hangi Amaçla Geldiniz? (Ziyaretçi Modu) + Acil Saha İhtiyaçları ── */}
+      <section
+        style={sx(
+          "margin-top:20px;border-radius:16px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 6px rgba(0,0,0,.04);padding:18px 20px;display:flex;flex-direction:column;gap:16px",
+        )}
+      >
+        <div>
+          <div style={sx("font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--color-primary)")}>
+            {pk(
+              {
+                tr: "Çarşıya Hangi Amaçla Geldiniz? (Ziyaretçi Modu)",
+                en: "What Brings You to the Bazaar Today? (Visitor Mode)",
+              },
+              lang,
+            )}
+          </div>
+          <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:10px;margin-top:10px")}>
+            <button
+              type="button"
+              onClick={() => {
+                save({ mode: "perakende" });
+                router.push("/plan");
+              }}
+              style={sx(
+                "display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:13px 15px;border-radius:12px;border:1.5px solid var(--color-accent);background:var(--color-accent-soft);font-family:inherit;text-align:start;cursor:pointer",
+              )}
+            >
+              <span style={sx("font-size:14.5px;font-weight:800;color:var(--text-heading)")}>
+                {pk({ tr: "💍 Düğün · Çeyiz · Özel Gün Sihirbazı", en: "💍 Wedding · Dowry · Occasion Wizard" }, lang)}
+              </span>
+              <span style={sx("font-size:12.5px;color:var(--text-body);line-height:1.4")}>
+                {pk(
+                  {
+                    tr: "Tek tek aramayın; altın, takı, çeyiz, kına ve hediyelik için hazır çarşı rotasını açın.",
+                    en: "Open curated bazaar routes for wedding gold, dowry, henna, and gifts.",
+                  },
+                  lang,
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                save({ mode: "perakende" });
+                router.push("/yer/santral");
+              }}
+              style={sx(
+                "display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:13px 15px;border-radius:12px;border:1.5px solid var(--color-primary);background:var(--color-primary-soft);font-family:inherit;text-align:start;cursor:pointer",
+              )}
+            >
+              <span style={sx("font-size:14.5px;font-weight:800;color:var(--text-heading)")}>
+                {pk({ tr: "🛍️ Bireysel Alışveriş & Han Keşfi", en: "🛍️ Retail Shopping & Han Discovery" }, lang)}
+              </span>
+              <span style={sx("font-size:12.5px;color:var(--text-body);line-height:1.4")}>
+                {pk(
+                  {
+                    tr: "Perakende satış yapan dükkânları, kat planlarını ve tarihi avlu kahvelerini keşfedin.",
+                    en: "Browse retail-friendly shops, indoor floor plans, and historic courtyard cafes.",
+                  },
+                  lang,
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                save({ mode: "toptan", qty: "200" });
+                router.push(href.search());
+              }}
+              style={sx(
+                "display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:13px 15px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-muted);font-family:inherit;text-align:start;cursor:pointer",
+              )}
+            >
+              <span style={sx("font-size:14.5px;font-weight:800;color:var(--text-heading)")}>
+                {pk({ tr: "📦 Toptan · Koli · İhracat Alımı", en: "📦 Wholesale · Bulk · Export Buying" }, lang)}
+              </span>
+              <span style={sx("font-size:12.5px;color:var(--text-body);line-height:1.4")}>
+                {pk(
+                  {
+                    tr: "Minimum sipariş adedi (MOQ), koli fiyatı ve kargo/ambar noktalarıyla toptan arama yapın.",
+                    en: "Filter by MOQ, carton price bands, and same-day cargo/freight dispatch.",
+                  },
+                  lang,
+                )}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div style={sx("padding-top:12px;border-top:1px solid var(--border-default);display:flex;flex-direction:column;gap:8px")}>
+          <div style={sx("font-size:12px;font-weight:800;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase")}>
+            {pk(
+              {
+                tr: "🚻 Acil Saha İhtiyaçları (WC · ATM/Döviz · Tarihi Kahve Molası · Kargo · Düz Ayak Ulaşım)",
+                en: "🚻 Urgent Field Essentials (WC · ATM/Exchange · Historic Coffee Break · Cargo · Flat Transit)",
+              },
+              lang,
+            )}
+          </div>
+          <div style={sx("display:flex;gap:8px;flex-wrap:wrap;align-items:center")}>
+            {(
+              [
+                ["/harita?poi=wc", pk({ tr: "🚻 En Yakın WC & Mescit", en: "🚻 Nearest WC & Prayer" }, lang)],
+                ["/harita?poi=atm", pk({ tr: "🏧 Komisyonsuz ATM & Döviz", en: "🏧 ATM & Licensed Exchange" }, lang)],
+                ["/harita?poi=mola", pk({ tr: "☕ Tarihi Han Kahve & Avlu Molası", en: "☕ Historic Courtyard Coffee Break" }, lang)],
+                ["/harita?poi=kargo", pk({ tr: "📦 Kargo & Poşet Emanet", en: "📦 Cargo & Bag Drop" }, lang)],
+                ["/harita?poi=ulasim", pk({ tr: "🚊 Yokuşsuz Tramvay & Otopark", en: "🚊 Flat-Walk Tram & Parking" }, lang)],
+                ["/plan", pk({ tr: "✨ Özel Gün & Çeyiz Sihirbazı", en: "✨ Occasion & Dowry Wizard" }, lang)],
+              ] as const
+            ).map(([url, label]) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => router.push(url)}
+                style={sx(
+                  "height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--text-heading);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Historic Peninsula Multi-Han Interactive Floor Directory Showcase ── */}
       <section
         style={sx(

@@ -10,12 +10,14 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 
+import * as AD from "@/data/han-admin";
+import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
 import SantralFloorMap from "@/components/SantralFloorMap";
 import { Alert, Badge, Button, EmptyState, Icon, Input } from "@/ds";
 import { F, W } from "@/lib/copy";
-import { convert, money, tonePair } from "@/lib/i18n";
+import { convert, money, tonePair, tx } from "@/lib/i18n";
 import { pagePad, planGrid } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { buildPlan, hhmm, moveBefore, reorder, serializeRoutePts } from "@/lib/planEngine";
@@ -31,6 +33,92 @@ const KICKER = "font-size:11.5px;font-weight:700;letter-spacing:.07em;text-trans
 const chip = (on: boolean) =>
   "height:34px;padding:0 13px;border-radius:8px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid " +
   (on ? "var(--color-primary);background:var(--color-primary);color:#fff" : "var(--border-strong);background:var(--surface-card);color:var(--text-body)");
+
+const OCCASION_PACKAGES: {
+  id: NonNullable<Trip["occasion"]>;
+  title: Record<string, string>;
+  desc: Record<string, string>;
+  hours: number;
+  carry: string;
+  items: { name: string; perGuest: boolean; baseQty: number; retailPrice: number; wholesalePrice: number }[];
+}[] = [
+  {
+    id: "dugun",
+    title: {
+      tr: "💍 Söz · Nişan · Kına & Düğün Paketi",
+      en: "💍 Engagement · Henna & Wedding Package",
+    },
+    desc: {
+      tr: "Santral Han Gelin Tacı & Bijuteri Takı, Şark Han Söz Tepsisi & Mum Süs, Kürkçü Han Çeyiz Havlu Seti, Sultan Han Nikah Şekeri Kutusu & Kurdele",
+      en: "Santral Han Bridal Tiara & Jewelry, Şark Han Engagement Tray & Candles, Kürkçü Han Dowry Towel Set, Sultan Han Favor Boxes & Ribbon",
+    },
+    hours: 4,
+    carry: "araba",
+    items: [
+      { name: "Roza Bijuteri · Gelin Tacı & Bijuteri Takı", perGuest: false, baseQty: 4, retailPrice: 180, wholesalePrice: 110 },
+      { name: "Emre Aksesuar · Söz Tepsisi & Mum Süs", perGuest: true, baseQty: 100, retailPrice: 45, wholesalePrice: 28 },
+      { name: "Sultan Tekstil · Çeyiz Havlu Seti", perGuest: false, baseQty: 12, retailPrice: 180, wholesalePrice: 115 },
+      { name: "Demir Poşet · Nikah Şekeri Kutusu & Kurdele", perGuest: true, baseQty: 100, retailPrice: 18, wholesalePrice: 11 },
+    ],
+  },
+  {
+    id: "mevlut",
+    title: {
+      tr: "🍼 Bebek Mevlidi · Doğum Günü & Sünnet Paketi",
+      en: "🍼 Baby Shower · Birthday & Celebration Package",
+    },
+    desc: {
+      tr: "Şark Han Parti & Balon Süsü, Santral Han Doğaltaş Tesbih & Nazar Bileklik, Mısır Çarşısı Lokum/Şekerleme, Sultan Han Hediyelik Tül Kese",
+      en: "Şark Han Party & Balloon Decor, Santral Han Natural Stone Rosary & Evil Eye Bracelets, Spice Bazaar Turkish Delight, Sultan Han Tulle Pouches",
+    },
+    hours: 3,
+    carry: "el",
+    items: [
+      { name: "Emre Aksesuar · Parti & Balon Süsü", perGuest: false, baseQty: 20, retailPrice: 45, wholesalePrice: 28 },
+      { name: "Roza Bijuteri · Doğaltaş Tesbih & Nazar Bileklik", perGuest: true, baseQty: 100, retailPrice: 65, wholesalePrice: 40 },
+      { name: "Arif Bey Baharat · Lokum & Şekerleme", perGuest: false, baseQty: 6, retailPrice: 320, wholesalePrice: 210 },
+      { name: "Demir Poşet · Hediyelik Tül Kese", perGuest: true, baseQty: 100, retailPrice: 14, wholesalePrice: 8 },
+    ],
+  },
+  {
+    id: "butik",
+    title: {
+      tr: "🏪 Yeni Butik · E-Ticaret & Kermes Standı Başlangıç Paketi",
+      en: "🏪 New Boutique · E-Commerce & Pop-up Starter Pack",
+    },
+    desc: {
+      tr: "Santral Han 316L Çelik Takı Karma Stok, Zenta Telefon Aksesuar, Yıldız Saat Standı, Demir Baskılı Kraft Poşet & Kutu",
+      en: "Santral Han Stainless Steel Jewelry Assortment, Zenta Phone Accessories, Yıldız Watch Stand, Demir Printed Kraft Bags & Boxes",
+    },
+    hours: 4,
+    carry: "kargo",
+    items: [
+      { name: "Roza Bijuteri · Çelik Takı Karma Stok", perGuest: true, baseQty: 100, retailPrice: 95, wholesalePrice: 60 },
+      { name: "Zenta Elektronik · Telefon Aksesuar", perGuest: false, baseQty: 40, retailPrice: 85, wholesalePrice: 55 },
+      { name: "Yıldız Saat · Saat Standı", perGuest: false, baseQty: 20, retailPrice: 240, wholesalePrice: 155 },
+      { name: "Demir Poşet · Baskılı Kraft Poşet & Kutu", perGuest: true, baseQty: 100, retailPrice: 15, wholesalePrice: 9 },
+    ],
+  },
+  {
+    id: "kultur",
+    title: {
+      tr: "🧭 Kültür, Zanaat Atölyesi & Tadım Günü (Turist & Gezgin)",
+      en: "🧭 Culture, Craft Workshop & Tasting Day (Traveler)",
+    },
+    desc: {
+      tr: "Mısır Çarşısı Safran Tadımı, Zincirli Han Sadekarlık Atölyesi, Büyük Yeni Han Tarihi Avlu & Halı/Gümüş, Santral Han Vitrin Katları",
+      en: "Spice Bazaar Saffron Tasting, Zincirli Han Goldsmith Workshop, Büyük Yeni Han Courtyard & Silver/Carpets, Santral Han Showrooms",
+    },
+    hours: 4,
+    carry: "el",
+    items: [
+      { name: "Arif Bey Baharat · Safran Tadımı", perGuest: false, baseQty: 2, retailPrice: 320, wholesalePrice: 220 },
+      { name: "Anadolu Halı · Zincirli Han Sadekarlık Atölyesi", perGuest: false, baseQty: 1, retailPrice: 4500, wholesalePrice: 3200 },
+      { name: "Kaya Gümüş · Tarihi Avlu & Gümüş", perGuest: false, baseQty: 2, retailPrice: 950, wholesalePrice: 650 },
+      { name: "Roza Bijuteri · Santral Han Vitrin Katları", perGuest: false, baseQty: 3, retailPrice: 150, wholesalePrice: 95 },
+    ],
+  },
+];
 
 const ROUTE_TEMPLATES = [
   {
@@ -178,7 +266,78 @@ export default function PlanPage() {
     const q = Number(it.qty) || 0;
     return t > 0 && q > 0 ? n + t * q : n;
   }, 0);
+  const totalItemQty = (trip.items || []).reduce((n, it) => n + (Number(it.qty) || 0), 0);
+  const activeGuestCount = trip.guestCount || 100;
+  const activeOccasion = trip.occasion || "dugun";
   const pctUsed = Math.min(100, Math.round((plan.used / Math.max(1, plan.budget)) * 100));
+
+  const applyOccasionWizard = (
+    occId: NonNullable<Trip["occasion"]>,
+    gCount: number,
+    targetMode: typeof mode = mode,
+  ) => {
+    const pkg = OCCASION_PACKAGES.find((p) => p.id === occId) || OCCASION_PACKAGES[0];
+    const qtyWithFire = Math.ceil(gCount * 1.1);
+    const items = pkg.items.map((it, idx) => ({
+      id: `occ_${occId}_${Date.now()}_${idx}`,
+      name: it.name,
+      qty: String(it.perGuest ? qtyWithFire : it.baseQty),
+      target: String(targetMode === "toptan" ? it.wholesalePrice : it.retailPrice),
+    }));
+    patchTrip({
+      name: pk(pkg.title, lang),
+      intent: "etkinlik",
+      occasion: occId,
+      guestCount: gCount,
+      hours: pkg.hours,
+      carry: pkg.carry,
+      items,
+      done: [],
+      order: null,
+      phase: "rota",
+    });
+    save({ buyList: items });
+    setOpenFloorPlaceId("santral");
+    toast(
+      pk(
+        {
+          tr: `${pk(pkg.title, lang)} (${gCount} kişi + %10 fire = ${qtyWithFire} adet) rotaya yüklendi!`,
+          en: `${pk(pkg.title, lang)} (${qtyWithFire} pcs incl. 10% buffer) loaded!`,
+        },
+        lang,
+      ),
+    );
+  };
+
+  const shareOnWhatsApp = () => {
+    const stopLines = plan.kept.map(
+      (k, idx) =>
+        `• ${idx + 1}. ${k.stop.place.name} (${hhmm(k.arrive)}–${hhmm(k.arrive + k.dwell)})${
+          k.floorSequence && k.floorSequence.length > 0 ? `\n   🏢 ${k.floorSequence.join(" → ")}` : ""
+        }`,
+    );
+    const itemLines = (trip.items || []).map(
+      (it) => `• ${it.name}${it.qty ? ` × ${it.qty}` : ""}${it.target ? ` (₺${it.target})` : ""}`,
+    );
+    const text = [
+      `🧭 *HAN · ${trip.name}*`,
+      `⏱️ Süre: ${trip.hours} saat (${plan.kept.length} durak)`,
+      ...(stopLines.length ? ["\n📍 *Rota & Kapı Numaraları:*", ...stopLines] : []),
+      ...(itemLines.length ? ["\n🛍️ *Alınacaklar Listesi:*", ...itemLines] : []),
+      total > 0 ? `\n💰 Hedef Toplam: ${money(total)}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    if (typeof window !== "undefined") {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const liveEvents = AD.mergeContent(D.EVENTS || [], "events");
+  const estimatedWholesaleSaving = Math.max(
+    1850,
+    Math.round((total > 0 ? total : activeGuestCount * 85) * 0.38),
+  );
 
   return (
     <div style={sx("max-width:1480px;margin:0 auto;" + pagePad(state.vw))}>
@@ -187,23 +346,34 @@ export default function PlanPage() {
           <h1 style={sx("font-size:26px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin:0")}>{W(lang, "planTitle")}</h1>
           <p style={sx("font-size:14px;color:var(--text-muted);margin-top:4px;max-width:70ch;text-wrap:pretty")}>{W(lang, "planSub")}</p>
         </div>
-        <Button
-          variant="outline"
-          color="primary"
-          size="md"
-          onClick={() => {
-            const t: Trip = {
-              id: "t" + Date.now(),
-              name: pk({ tr: "Yeni plan", en: "New plan", ru: "Новый план", ar: "خطة جديدة" }, lang),
-              day: "today", start: 10, hours: 3,
-              intent: mode === "toptan" ? "is" : "gez",
-              carry: "el", items: [], done: [], phase: "niyet",
-            };
-            save({ trips: (state.trips || []).concat([t]), tripId: t.id });
-          }}
-        >
-          {pk({ tr: "Yeni plan", en: "New plan", ru: "Новый план", ar: "خطة جديدة" }, lang)}
-        </Button>
+        <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+          <Button
+            variant="solid"
+            color="success"
+            size="md"
+            iconStart="share"
+            onClick={shareOnWhatsApp}
+          >
+            {pk({ tr: "📲 Planı WhatsApp'tan Gönder", en: "📲 Send Plan via WhatsApp" }, lang)}
+          </Button>
+          <Button
+            variant="outline"
+            color="primary"
+            size="md"
+            onClick={() => {
+              const t: Trip = {
+                id: "t" + Date.now(),
+                name: pk({ tr: "Yeni plan", en: "New plan", ru: "Новый план", ar: "خطة جديدة" }, lang),
+                day: "today", start: 10, hours: 3,
+                intent: mode === "toptan" ? "is" : "gez",
+                carry: "el", items: [], done: [], phase: "niyet",
+              };
+              save({ trips: (state.trips || []).concat([t]), tripId: t.id });
+            }}
+          >
+            {pk({ tr: "Yeni plan", en: "New plan", ru: "Новый план", ar: "خطة جديدة" }, lang)}
+          </Button>
+        </div>
       </header>
 
       {/* named plans */}
@@ -292,6 +462,224 @@ export default function PlanPage() {
 
       <div className="han-plan-grid" style={sx(planGrid(state.vw))}>
         <main style={sx(isStacked && mobilePlanTab === "list" ? "display:none" : "min-width:0")}>
+          {/* ── 💍 Özel Gün & Etkinlik Alışveriş Sihirbazı (Davetli Sayısı + Bütçe + Fire Hesaplayıcı) ── */}
+          <section
+            style={sx(
+              CARD +
+                ";margin-bottom:16px;border-color:var(--color-accent);background:linear-gradient(180deg,var(--surface-card) 0%,var(--surface-muted) 100%)",
+            )}
+          >
+            <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
+              <div>
+                <div style={sx(KICKER + ";color:var(--color-accent);display:inline-flex;align-items:center;gap:6px")}>
+                  <Icon name="star" size={14} />{" "}
+                  {pk(
+                    {
+                      tr: "💍 Özel Gün & Etkinlik Alışveriş Sihirbazı (Davetli Sayısı + Bütçe + Fire Hesaplayıcı)",
+                      en: "💍 Occasion & Event Shopping Wizard (Guest Count + Budget + 10% Buffer Calculator)",
+                    },
+                    lang,
+                  )}
+                </div>
+                <div style={sx("font-size:13.5px;color:var(--text-body);margin-top:4px")}>
+                  {pk(
+                    {
+                      tr: "Özel gün paketinizi ve davetli sayınızı seçin; hediyelik, kutu ve kese adetleri %10 fire payıyla otomatik hesaplansın ve han/kat sırasına göre rotanız kurulsun.",
+                      en: "Select your occasion package and guest count; favor, box and pouch quantities are auto-calculated with a +10% buffer.",
+                    },
+                    lang,
+                  )}
+                </div>
+              </div>
+
+              {/* Davetli / Kişi Sayısı Seçici (50, 100, 200, 300 Kişi) */}
+              <div style={sx("display:flex;flex-direction:column;gap:5px")}>
+                <span style={sx("font-size:11.5px;font-weight:800;color:var(--text-heading)")}>
+                  {pk(
+                    {
+                      tr: `👥 Davetli / Kişi Sayısı (%10 Fire Dahil = ${Math.ceil(activeGuestCount * 1.1)} Adet):`,
+                      en: `👥 Guest Count (+10% Buffer = ${Math.ceil(activeGuestCount * 1.1)} pcs):`,
+                    },
+                    lang,
+                  )}
+                </span>
+                <div style={sx("display:flex;gap:6px;flex-wrap:wrap")}>
+                  {[50, 100, 200, 300].map((cnt) => {
+                    const on = activeGuestCount === cnt;
+                    return (
+                      <button
+                        key={cnt}
+                        type="button"
+                        onClick={() => applyOccasionWizard(activeOccasion, cnt)}
+                        style={sx(
+                          "height:32px;padding:0 11px;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;border:1px solid " +
+                            (on
+                              ? "var(--color-accent);background:var(--color-accent);color:#fff"
+                              : "var(--border-strong);background:var(--surface-card);color:var(--text-heading)"),
+                        )}
+                      >
+                        {cnt} {pk({ tr: "Kişi", en: "Guests" }, lang)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Özel Gün Paketi (occasion) */}
+            <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:10px;margin-top:12px")}>
+              {OCCASION_PACKAGES.map((pkg) => {
+                const isSelected = trip.intent === "etkinlik" && trip.occasion === pkg.id;
+                return (
+                  <div
+                    key={pkg.id}
+                    style={sx(
+                      "padding:12px 14px;border-radius:12px;border:1px solid " +
+                        (isSelected ? "var(--color-accent)" : "var(--border-strong)") +
+                        ";background:" +
+                        (isSelected ? "var(--color-accent-soft)" : "var(--surface-card)") +
+                        ";display:flex;flex-direction:column;justify-content:space-between;gap:10px",
+                    )}
+                  >
+                    <div>
+                      <div style={sx("font-size:14px;font-weight:800;color:var(--text-heading)")}>
+                        {pk(pkg.title, lang)}
+                      </div>
+                      <div style={sx("font-size:12px;color:var(--text-body);margin-top:4px;line-height:1.45")}>
+                        {pk(pkg.desc, lang)}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      color={isSelected ? "accent" : "primary"}
+                      variant="solid"
+                      iconStart="bolt"
+                      fullWidth
+                      onClick={() => applyOccasionWizard(pkg.id, activeGuestCount)}
+                    >
+                      {pk(
+                        {
+                          tr: `${activeGuestCount} Kişilik Paketi Yükle (${Math.ceil(activeGuestCount * 1.1)} Adet)`,
+                          en: `Load for ${activeGuestCount} Guests (${Math.ceil(activeGuestCount * 1.1)} pcs)`,
+                        },
+                        lang,
+                      )}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Perakende vs. Toptan (MOQ) Tasarruf Simülatörü */}
+            {(activeGuestCount >= 50 || totalItemQty >= 50) && (
+              <div
+                style={sx(
+                  "margin-top:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--color-success);background:var(--color-success-soft);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap",
+                )}
+              >
+                <div style={sx("flex:1;min-width:240px;font-size:13px;font-weight:700;color:var(--text-heading);line-height:1.45")}>
+                  {pk(
+                    {
+                      tr: `💡 50+ adetlik özel gün alımlarında Santral Han ve Sultan Han üreticileri Toptan (MOQ) fiyatı uygular: Perakende yerine Toptan moduna geçerek yaklaşık %35–40 (${money(estimatedWholesaleSaving)}) tasarruf edebilirsiniz`,
+                      en: `💡 On 50+ pcs occasion orders, Santral Han & Sultan Han makers apply Wholesale (MOQ) pricing: switch to Wholesale mode to save ~35–40% (${money(estimatedWholesaleSaving)})`,
+                    },
+                    lang,
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  color="success"
+                  variant={mode === "toptan" ? "outline" : "solid"}
+                  iconStart="check-circle"
+                  onClick={() => {
+                    save({ mode: "toptan" });
+                    if (trip.occasion) {
+                      applyOccasionWizard(trip.occasion, activeGuestCount, "toptan");
+                    } else {
+                      toast(
+                        pk(
+                          {
+                            tr: "Toptan (MOQ) fiyat modu aktif edildi!",
+                            en: "Wholesale (MOQ) pricing mode enabled!",
+                          },
+                          lang,
+                        ),
+                      );
+                    }
+                  }}
+                >
+                  {mode === "toptan"
+                    ? pk({ tr: "✓ Toptan Fiyat Modu Aktif", en: "✓ Wholesale Mode Active" }, lang)
+                    : pk({ tr: "Toptan Fiyat Modunu Aktif Et", en: "Activate Wholesale Pricing Mode" }, lang)}
+                </Button>
+              </div>
+            )}
+          </section>
+
+          {/* ── 📅 Çarşıdaki Canlı Etkinlik & Atölyeleri Günüme Ekle ────────── */}
+          {liveEvents.length > 0 && (
+            <section style={sx(CARD + ";margin-bottom:16px")}>
+              <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
+                <div style={sx(KICKER + ";display:inline-flex;align-items:center;gap:6px")}>
+                  <Icon name="calendar" size={14} />{" "}
+                  {pk(
+                    {
+                      tr: "📅 Çarşıdaki Canlı Etkinlik & Atölyeleri Günüme Ekle",
+                      en: "📅 Add Live Bazaar Events & Workshops to My Day",
+                    },
+                    lang,
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/etkinlik")}
+                  style={sx(
+                    "background:none;border:0;padding:0;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--color-primary);cursor:pointer",
+                  )}
+                >
+                  {pk({ tr: "Tüm Etkinlikleri Gör →", en: "See All Events →" }, lang)}
+                </button>
+              </div>
+              <div style={sx("display:flex;gap:8px;flex-wrap:wrap;margin-top:10px")}>
+                {liveEvents.map((ev) => {
+                  const evId = String(ev.id);
+                  const inPlan = (state.evPlan || []).includes(evId);
+                  const han = D.HANS.find((h) => h.id === ev.han);
+                  return (
+                    <button
+                      key={evId}
+                      type="button"
+                      onClick={() => {
+                        const next = inPlan
+                          ? (state.evPlan || []).filter((x) => x !== evId)
+                          : (state.evPlan || []).concat(evId);
+                        save({ evPlan: next });
+                        toast(inPlan ? F(lang, "evRemove") : F(lang, "evAdd"));
+                      }}
+                      style={sx(
+                        "display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:10px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid " +
+                          (inPlan
+                            ? "var(--color-accent);background:var(--color-accent-soft);color:var(--color-accent-accent)"
+                            : "var(--border-strong);background:var(--surface-muted);color:var(--text-heading)"),
+                      )}
+                    >
+                      <span
+                        style={sx(
+                          "padding:2px 6px;border-radius:6px;font-size:11px;font-weight:800;background:var(--surface-card);color:var(--color-primary)",
+                        )}
+                      >
+                        {String(ev.time || "10:00")}
+                      </span>
+                      <span>{tx(ev, lang)}</span>
+                      {han && <span style={sx("font-size:11.5px;color:var(--text-muted)")}>· {String(han.name)}</span>}
+                      <span style={sx("font-weight:800")}>{inPlan ? "✓" : "+"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* ── 1-Click Ready-Made Smart Route Templates ───────────────── */}
           <section style={sx(CARD + ";margin-bottom:16px;border-color:var(--color-primary)")}>
             <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
@@ -398,8 +786,11 @@ export default function PlanPage() {
                 </Field>
 
                 <Field label={pk({ tr: "Niyet", en: "Intent", ru: "Цель", ar: "الغرض" }, lang)}>
-                  {([["gez", pk({ tr: "Geziyorum", en: "Browsing", ru: "Гуляю", ar: "أتجول" }, lang)],
-                     ["is", pk({ tr: "İş için", en: "For business", ru: "По делу", ar: "للعمل" }, lang)]] as [Trip["intent"], string][]).map(([id, label]) => (
+                  {([
+                    ["gez", pk({ tr: "Geziyorum", en: "Browsing", ru: "Гуляю", ar: "أتجول" }, lang)],
+                    ["is", pk({ tr: "İş için", en: "For business", ru: "По делу", ar: "للعمل" }, lang)],
+                    ["etkinlik", pk({ tr: "🎉 Etkinlik & Özel Gün Hazırlığı", en: "🎉 Event & Occasion Prep", ru: "🎉 Особый случай", ar: "🎉 مناسبة خاصة" }, lang)],
+                  ] as [Trip["intent"], string][]).map(([id, label]) => (
                     <button key={id} type="button" onClick={() => patchTrip({ intent: id })} style={sx(chip(trip.intent === id))}>{label}</button>
                   ))}
                 </Field>
@@ -635,6 +1026,39 @@ export default function PlanPage() {
                                   : pk({ tr: "el arabası giremez", en: "no handcart", ru: "без тележки", ar: "لا عربة" }, lang)}
                               </span>
                             </div>
+
+                            {/* Han İçi Dikey Kat & Kapı Sırası Gösterimi (k.floorSequence) */}
+                            {k.floorSequence && k.floorSequence.length > 0 && (
+                              <div
+                                style={sx(
+                                  "margin-top:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--border-default);background:var(--surface-subtle);display:flex;align-items:center;gap:6px;flex-wrap:wrap",
+                                )}
+                              >
+                                <span style={sx("font-size:11.5px;font-weight:800;color:var(--text-heading)")}>
+                                  {pk(
+                                    {
+                                      tr: "🏢 Han İçi Ziyaret Sırası (Kattan Kata):",
+                                      en: "🏢 Indoor Floor-by-Floor Sequence:",
+                                    },
+                                    lang,
+                                  )}
+                                </span>
+                                {k.floorSequence.map((seq, seqIdx) => (
+                                  <span key={seq} style={sx("display:inline-flex;align-items:center;gap:6px")}>
+                                    {seqIdx > 0 && (
+                                      <span style={sx("font-size:12px;font-weight:800;color:var(--text-muted)")}>→</span>
+                                    )}
+                                    <span
+                                      style={sx(
+                                        "display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:700;background:var(--color-primary-soft);color:var(--color-primary-accent)",
+                                      )}
+                                    >
+                                      {seq}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
 
                             {/* Interactive Shop Buttons inside Stop: Click to highlight on indoor floor plan */}
                             <div style={sx("display:flex;flex-direction:column;gap:6px;margin-top:10px")}>

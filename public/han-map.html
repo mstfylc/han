@@ -36,6 +36,12 @@
   .pin-me{background:#0BC33F;box-shadow:0 0 0 6px rgba(11,195,63,.26)}
   .pin-stop{background:#1F3864;width:34px;height:34px;font-size:14px}
   .pin-risk{background:#ED143B;width:34px;height:34px;font-size:14px}
+  .pin-poi{width:34px;height:34px;font-size:15px;border:2px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.32)}
+  .pin-poi-wc{background:#0284c7}
+  .pin-poi-atm{background:#16a34a}
+  .pin-poi-mola{background:#b45309}
+  .pin-poi-kargo{background:#7c3aed}
+  .pin-poi-ulasim{background:#0f172a}
   .pop{font-family:Inter,system-ui,sans-serif;min-width:165px}
   .pop b{display:block;font-size:14px;color:#1B1C22;letter-spacing:-.01em}
   .pop span{display:block;font-size:12px;color:#78829D;margin-top:2px}
@@ -274,11 +280,63 @@ Object.keys(pins).forEach(id => {
   });
 });
 
+const poiLayer = L.layerGroup().addTo(map);
+let poiMarkers = {};
+const poiIconOf = (k) => {
+  const emoji = k === "wc" ? "🚻" : k === "atm" ? "🏧" : k === "mola" ? "☕" : k === "kargo" ? "📦" : "🚊";
+  const cls = "pin-poi pin-poi-" + (k || "wc");
+  return L.divIcon({ html: '<div class="pin ' + cls + '">' + emoji + "</div>", className: "", iconSize: [34, 34], iconAnchor: [17, 17] });
+};
+const buildPoiPopup = (p) => {
+  const titleStr = typeof p.title === "object" ? (p.title[lang] || p.title.tr || "") : (p.title || "");
+  const subStr = typeof p.sub === "object" ? (p.sub[lang] || p.sub.tr || "") : (p.sub || "");
+  const tipStr = typeof p.tip === "object" ? (p.tip[lang] || p.tip.tr || "") : (p.tip || "");
+  const gmaps = "https://www.google.com/maps/dir/?api=1&destination=" + p.lat + "," + p.lng + "&travelmode=walking";
+  return '<div class="pop"><b>' + titleStr + "</b>" +
+    (subStr ? "<span>📍 " + subStr + "</span>" : "") +
+    (p.hours ? "<span>🕒 " + p.hours + "</span>" : "") +
+    (tipStr ? '<span style="color:#1e293b;margin-top:4px">' + tipStr + "</span>" : "") +
+    '<a href="' + gmaps + '" target="_blank" rel="noreferrer" style="display:block;margin-top:7px;text-align:center;line-height:28px;height:28px;border-radius:6px;background:#1F3864;color:#fff;text-decoration:none;font-size:11.5px;font-weight:700">🌍 Google Maps Yürüyüş</a></div>';
+};
+
 window.addEventListener("message", (e) => {
   const m = e.data;
   if (!m || m.source !== "han-web") return;
   if (m.kind === "focus") setActive(m.id);
   if (m.kind === "locate") gpsBtn.click();
+  if (m.kind === "show-pois") {
+    poiLayer.clearLayers();
+    poiMarkers = {};
+    const list = Array.isArray(m.pois) ? m.pois : [];
+    const pts = [];
+    list.forEach((poi) => {
+      if (!poi || typeof poi.lat !== "number" || typeof poi.lng !== "number") return;
+      const mk = L.marker([poi.lat, poi.lng], { icon: poiIconOf(poi.kind) })
+        .addTo(poiLayer)
+        .bindPopup(buildPoiPopup(poi));
+      poiMarkers[poi.id] = mk;
+      pts.push([poi.lat, poi.lng]);
+    });
+    if (pts.length > 1) {
+      map.fitBounds(L.latLngBounds(pts).pad(0.25));
+    } else if (pts.length === 1) {
+      map.flyTo(pts[0], 17);
+    }
+  }
+  if (m.kind === "focus-poi" && m.poi) {
+    const poi = m.poi;
+    if (typeof poi.lat === "number" && typeof poi.lng === "number") {
+      let mk = poiMarkers[poi.id];
+      if (!mk) {
+        mk = L.marker([poi.lat, poi.lng], { icon: poiIconOf(poi.kind) })
+          .addTo(poiLayer)
+          .bindPopup(buildPoiPopup(poi));
+        poiMarkers[poi.id] = mk;
+      }
+      map.flyTo([poi.lat, poi.lng], 18);
+      mk.openPopup();
+    }
+  }
   if (m.kind === "simulate-gate") {
     const target = HANS.find(h => h.id === (m.id || "santral")) || HANS[0];
     if (target) {

@@ -47,15 +47,56 @@ function MapScreen() {
   const isPhone = state.vw < 768;
 
   const layer = getStr(sp, PARAM.mapMode, "sehir");
+  const initialPoiParam = sp.get("poi");
   const frame = useRef<HTMLIFrameElement | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
   const [box, setBox] = useState<string[] | null>(null);
   const [mobileTab, setMobileTab] = useState<"map" | "list">("map");
   const [geofenceHan, setGeofenceHan] = useState<{ id: string; name: string; dist: number } | null>(null);
+  const [poiFilter, setPoiFilter] = useState<"all" | SC.ServicePoiKind | null>(() => {
+    if (
+      initialPoiParam === "wc" ||
+      initialPoiParam === "atm" ||
+      initialPoiParam === "mola" ||
+      initialPoiParam === "kargo" ||
+      initialPoiParam === "ulasim"
+    ) {
+      return initialPoiParam;
+    }
+    if (initialPoiParam === "all") return "all";
+    return null;
+  });
+  const [activePoiId, setActivePoiId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const p = sp.get("poi");
+    if (p === "wc" || p === "atm" || p === "mola" || p === "kargo" || p === "ulasim") {
+      setPoiFilter(p);
+    } else if (p === "all") {
+      setPoiFilter("all");
+    }
+  }, [sp]);
+
+  const filteredPois = useMemo(() => {
+    if (!poiFilter) return [];
+    if (poiFilter === "all") return SC.SERVICE_POIS;
+    return SC.SERVICE_POIS.filter((item) => item.kind === poiFilter);
+  }, [poiFilter]);
 
   const post = useCallback((msg: Record<string, unknown>) => {
     frame.current?.contentWindow?.postMessage({ source: "han-web", ...msg }, "*");
   }, []);
+
+  useEffect(() => {
+    if (!poiFilter) {
+      post({ kind: "show-pois", pois: [] });
+      return;
+    }
+    const timer = setTimeout(() => {
+      post({ kind: "show-pois", pois: filteredPois });
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [poiFilter, filteredPois, post]);
 
   // ── map → web ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -266,6 +307,141 @@ function MapScreen() {
           </Alert>
         </div>
       )}
+
+      {/* 🧭 Saha İhtiyaç Noktaları (WC · ATM/Döviz · Kahve/Avlu · Kargo · Ulaşım) */}
+      <section
+        style={sx(
+          CARD +
+            ";margin-top:12px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:100%;box-sizing:border-box",
+        )}
+      >
+        <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap")}>
+          <div style={sx("font-size:13px;font-weight:800;color:var(--text-heading)")}>
+            {pk(
+              {
+                tr: "🧭 Saha İhtiyaç Noktaları (WC · ATM/Döviz · Kahve/Avlu · Kargo · Ulaşım)",
+                en: "🧭 Field Essentials (WC · ATM/Exchange · Coffee/Courtyard · Cargo · Transit)",
+              },
+              lang,
+            )}
+          </div>
+          {poiFilter && (
+            <button
+              type="button"
+              onClick={() => {
+                setPoiFilter(null);
+                setActivePoiId(null);
+              }}
+              style={sx(
+                "background:none;border:none;padding:0;font-family:inherit;font-size:12px;font-weight:700;color:var(--color-primary);cursor:pointer",
+              )}
+            >
+              {pk({ tr: "İhtiyaç Pinlerini Gizle ×", en: "Hide Pins ×" }, lang)}
+            </button>
+          )}
+        </div>
+
+        <div style={sx("display:flex;gap:6px;flex-wrap:wrap;align-items:center")} data-han-nav="1">
+          {(
+            [
+              ["all", pk({ tr: "Tümü", en: "All" }, lang)],
+              ["wc", pk({ tr: "🚻 WC & Mescit", en: "🚻 WC & Prayer" }, lang)],
+              ["atm", pk({ tr: "🏧 ATM & Döviz", en: "🏧 ATM & Exchange" }, lang)],
+              ["mola", pk({ tr: "☕ Kahve & Mola", en: "☕ Coffee & Break" }, lang)],
+              ["kargo", pk({ tr: "📦 Kargo & Emanet", en: "📦 Cargo & Bag Drop" }, lang)],
+              ["ulasim", pk({ tr: "🚊 Tramvay & Otopark", en: "🚊 Tram & Parking" }, lang)],
+            ] as const
+          ).map(([id, label]) => {
+            const on = poiFilter === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  const next = poiFilter === id ? null : id;
+                  setPoiFilter(next);
+                  setActivePoiId(null);
+                }}
+                style={sx(
+                  "height:34px;padding:0 12px;border-radius:999px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid " +
+                    (on
+                      ? "var(--color-primary);background:var(--color-primary);color:#fff"
+                      : "var(--border-strong);background:var(--surface-muted);color:var(--text-heading)"),
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {poiFilter && filteredPois.length > 0 && (
+          <div
+            style={sx(
+              "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:10px;margin-top:4px",
+            )}
+          >
+            {filteredPois.map((poi) => {
+              const isSelected = activePoiId === poi.id;
+              const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${poi.lat},${poi.lng}&travelmode=walking`;
+              return (
+                <div
+                  key={poi.id}
+                  onClick={() => {
+                    setActivePoiId(poi.id);
+                    setMobileTab("map");
+                    frame.current?.contentWindow?.postMessage(
+                      { source: "han-web", kind: "focus-poi", poi },
+                      "*",
+                    );
+                  }}
+                  style={sx(
+                    "padding:12px 14px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;gap:5px;border:1.5px solid " +
+                      (isSelected
+                        ? "var(--color-accent);background:var(--color-accent-soft)"
+                        : "var(--border-strong);background:var(--surface-card)"),
+                  )}
+                >
+                  <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:8px")}>
+                    <div style={sx("font-size:13.5px;font-weight:800;color:var(--text-heading);line-height:1.25")}>
+                      {tx(poi.title, lang)}
+                    </div>
+                    <span
+                      style={sx(
+                        "flex:none;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-muted);color:var(--text-muted)",
+                      )}
+                    >
+                      🕒 {poi.hours}
+                    </span>
+                  </div>
+                  <div style={sx("font-size:12px;font-weight:700;color:var(--color-primary)")}>
+                    📍 {tx(poi.sub, lang)}
+                  </div>
+                  <div style={sx("font-size:12px;color:var(--text-body);line-height:1.4")}>
+                    💡 {tx(poi.tip, lang)}
+                  </div>
+                  <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px")}>
+                    <span style={sx("font-size:11.5px;font-weight:800;color:var(--color-accent)")}>
+                      {pk({ tr: "🎯 Haritada Göster", en: "🎯 Focus on Map" }, lang)}
+                    </span>
+                    <a
+                      href={gmapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(ev) => ev.stopPropagation()}
+                      style={sx(
+                        "font-size:11.5px;font-weight:700;color:var(--color-primary);text-decoration:none",
+                      )}
+                    >
+                      🌍 Google Haritalar Yürüyüş ↗
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Mobile Segmented Switcher: Harita vs Liste */}
       {isPhone && (

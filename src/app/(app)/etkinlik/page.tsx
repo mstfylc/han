@@ -15,12 +15,41 @@ import { Button, EmptyState } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
 import { F, W } from "@/lib/copy";
 import { loc, tx } from "@/lib/i18n";
+import { pagePad } from "@/lib/layout";
 import { PARAM, getStr, href } from "@/lib/routes";
 import { placePhoto } from "@/lib/shop";
 import { sx } from "@/lib/sx";
 import { useApp } from "@/state/AppState";
 
 const KIND_TONE: Record<string, string> = { fair: "primary", tour: "success", workshop: "warning", market: "info" };
+
+const EVENT_COMPANION_ITEMS: Record<string, { name: string; qty: string; target: string }[]> = {
+  zincirli: [
+    { name: "Anadolu Halı", qty: "1", target: "4500" },
+    { name: "Kaya Gümüş", qty: "2", target: "850" },
+    { name: "Roza Bijuteri", qty: "6", target: "120" },
+  ],
+  kurkcu: [
+    { name: "Sultan Tekstil", qty: "12", target: "180" },
+    { name: "Roza Bijuteri", qty: "10", target: "95" },
+    { name: "Demir Poşet", qty: "50", target: "14" },
+  ],
+  buyukYeni: [
+    { name: "Kaya Gümüş", qty: "3", target: "750" },
+    { name: "Roza Bijuteri", qty: "8", target: "110" },
+    { name: "Arif Bey Baharat", qty: "2", target: "320" },
+  ],
+  misir: [
+    { name: "Arif Bey Baharat", qty: "3", target: "320" },
+    { name: "Roza Bijuteri", qty: "6", target: "110" },
+    { name: "Emre Aksesuar", qty: "12", target: "45" },
+  ],
+  default: [
+    { name: "Roza Bijuteri", qty: "10", target: "95" },
+    { name: "Arif Bey Baharat", qty: "2", target: "320" },
+    { name: "Kaya Gümüş", qty: "2", target: "750" },
+  ],
+};
 
 export default function EventsPage() {
   return (
@@ -63,6 +92,8 @@ function EventsScreen() {
           title: tx(e, lang),
           body: loc(e, "body", lang),
           time: e.time as string,
+          hanId: (e.han as string) || "",
+          areaId: (e.area as string) || "",
           where: [han ? (han.name as string) : "", area ? tx(area, lang) : ""].filter(Boolean).join(" · "),
           kind: e.kind as string,
           bucket,
@@ -88,8 +119,91 @@ function EventsScreen() {
     toast(had ? F(lang, "evRemove") : F(lang, "evAdd"));
   };
 
+  const launchHalfDayWithEvent = (ev: { id: string; title: string; hanId: string; areaId: string }) => {
+    const nextEvPlan = (state.evPlan || []).includes(ev.id)
+      ? state.evPlan
+      : (state.evPlan || []).concat(ev.id);
+    const companion =
+      EVENT_COMPANION_ITEMS[ev.hanId] ||
+      EVENT_COMPANION_ITEMS[ev.areaId] ||
+      EVENT_COMPANION_ITEMS.default;
+    const newItems = companion.map((c, idx) => ({
+      id: `ev_${ev.id}_${Date.now()}_${idx}`,
+      name: c.name,
+      qty: c.qty,
+      target: c.target,
+    }));
+    const activeTrip = (state.trips || []).find((t) => t.id === state.tripId) || (state.trips || [])[0];
+    const updatedTrips = activeTrip
+      ? (state.trips || []).map((t) =>
+          t.id === activeTrip.id
+            ? {
+                ...t,
+                name: ev.title,
+                hours: 4,
+                intent: "etkinlik" as const,
+                items: newItems,
+                done: [],
+                order: null,
+                phase: "rota" as const,
+              }
+            : t,
+        )
+      : state.trips;
+
+    save({
+      evPlan: nextEvPlan,
+      buyList: newItems,
+      trips: updatedTrips,
+    });
+    toast(
+      lang === "tr"
+        ? `"${ev.title}" etkinliği ve çevresindeki han duraklarıyla yarım günlük rota kuruldu!`
+        : `Half-day route built around "${ev.title}"!`,
+    );
+    router.push(href.plan());
+  };
+
   return (
-    <div style={sx("max-width:1480px;margin:0 auto;padding:22px 24px 48px")}>
+    <div style={sx("max-width:1480px;margin:0 auto;" + pagePad(state.vw))}>
+      {/* Quick Banner: Özel Gün Alışverişi mi Planlıyorsunuz? */}
+      <div
+        onClick={() => router.push(href.plan())}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") router.push(href.plan());
+        }}
+        style={sx(
+          "margin-bottom:18px;padding:14px 18px;border-radius:14px;border:1px solid var(--color-accent);background:var(--color-accent-soft);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer",
+        )}
+      >
+        <div style={sx("display:flex;align-items:center;gap:10px;flex-wrap:wrap")}>
+          <span style={sx("font-size:15px;font-weight:800;color:var(--text-heading)")}>
+            {lang === "tr"
+              ? "💍 Özel Gün Alışverişi mi Planlıyorsunuz? (Söz · Nişan · Düğün · Mevlüt · Butik)"
+              : "💍 Planning Occasion Shopping? (Engagement · Wedding · Baby Shower · Boutique)"}
+          </span>
+          <span style={sx("font-size:13px;color:var(--text-body)")}>
+            {lang === "tr"
+              ? "Davetli sayısına göre %10 fireli adet hesaplayıcı ve toptan (MOQ) tasarruf sihirbazıyla rotanızı tek tıkla kurun."
+              : "Auto-calculate quantities with +10% buffer and wholesale (MOQ) savings in the Route Planner."}
+          </span>
+        </div>
+        <Button
+          size="sm"
+          color="accent"
+          variant="solid"
+          iconEnd="arrow-right"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(href.plan());
+          }}
+        >
+          {lang === "tr" ? "Özel Gün Sihirbazını Aç" : "Open Occasion Wizard"}
+        </Button>
+      </div>
+
       <header style={sx("display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap")}>
         <div style={sx("flex:1;min-width:240px")}>
           <h1 style={sx("font-size:26px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin:0")}>{T.eventsTitle}</h1>
@@ -170,9 +284,18 @@ function EventsScreen() {
                       {e.body && <p style={sx("font-size:13.5px;color:var(--text-body);margin-top:8px;line-height:1.5;text-wrap:pretty")}>{e.body}</p>}
 
                       {!e.past && (
-                        <div style={sx("margin-top:14px")}>
+                        <div style={sx("margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
                           <Button variant={on ? "solid" : "light"} color={on ? "accent" : "primary"} size="sm" onClick={() => toggle(e.id)}>
                             {on ? F(lang, "evIn") : F(lang, "evAdd")}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            color="primary"
+                            size="sm"
+                            iconStart="rocket"
+                            onClick={() => launchHalfDayWithEvent(e)}
+                          >
+                            {lang === "tr" ? "🚀 Bu Etkinlikle Yarım Günlük Rota Kur" : "🚀 Build Half-Day Route with Event"}
                           </Button>
                         </div>
                       )}

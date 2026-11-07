@@ -1613,3 +1613,157 @@ export const SCALE_TOTALS = {
   bulkPlaces: BULK_APPROVED.length,
   semtler: SEMTLER.length
 };
+
+// ── Saha İhtiyaç Noktaları (WC/Mescit, ATM/Döviz, Kahve/Avlu, Kargo, Ulaşım) ──
+export type ServicePoiKind = "wc" | "atm" | "mola" | "kargo" | "ulasim";
+
+export interface ServicePoi {
+  id: string;
+  kind: ServicePoiKind;
+  lat: number;
+  lng: number;
+  placeId?: string;
+  semt: string;
+  hours: string;
+  free?: boolean;
+  title: L10n;
+  sub: L10n;
+  tip: L10n;
+}
+
+export const SERVICE_POIS: ServicePoi[] = [
+  // WC & Mescit
+  {
+    id: "poi_wc_santral",
+    kind: "wc",
+    lat: 41.01518,
+    lng: 28.96845,
+    placeId: "santral",
+    semt: "tahtakale",
+    hours: "08:30 – 19:00",
+    free: true,
+    title: { tr: "Santral Han Kat WC & Lavabo", en: "Santral Han Floor Restrooms", ru: "Туалет Santral Han", ar: "دورات مياه خان سنترال" },
+    sub: { tr: "Santral Han · A ve B Kat koridor sonu (Merdiven yanı)", en: "Santral Han · End of Floors A & B corridors", ru: "Santral Han · Этажи A и B", ar: "خان سنترال · نهاية ممر الطابقين A وB" },
+    tip: { tr: "Han ziyaretçileri ve müşteriler için temiz kat lavaboları.", en: "Clean floor washrooms for han visitors.", ru: "Чистые туалеты на этажах.", ar: "مرافق نظيفة لزوار الخان." }
+  },
+  {
+    id: "poi_wc_yenicami",
+    kind: "wc",
+    lat: 41.0166,
+    lng: 28.9712,
+    semt: "misircarsisi",
+    hours: "07:00 – 22:00",
+    free: false,
+    title: { tr: "Yeni Cami & Mısır Çarşısı WC / Mescit / Bebek Bakım", en: "New Mosque & Spice Bazaar WC / Prayer / Baby Care", ru: "Туалет и мечеть Йени Джами", ar: "مسجد يني جامي ودورات المياه وغرفة الأطفال" },
+    sub: { tr: "Mısır Çarşısı Çiçek Pazarı çıkışı, meydan alt geçit yanı", en: "Spice Bazaar Flower Market exit", ru: "Выход у цветочного рынка", ar: "مخرج سوق الزهور بجوار السوق المصري" },
+    tip: { tr: "İstanbulkart geçerli, bebek bakım odası ve şadırvan mevcut.", en: "Istanbulkart accepted; baby care room available.", ru: "Принимается Istanbulkart; есть комната матери и ребёнка.", ar: "تُقبل بطاقة إسطنبول؛ تتوفر غرفة رعاية الأطفال." }
+  },
+  {
+    id: "poi_wc_nuruosmaniye",
+    kind: "wc",
+    lat: 41.0103,
+    lng: 28.9707,
+    semt: "nuruosmaniye",
+    hours: "07:30 – 21:00",
+    free: true,
+    title: { tr: "Nuruosmaniye Camii Avlusu WC & Mescit", en: "Nuruosmaniye Mosque Courtyard WC & Prayer", ru: "Туалет во дворе мечети Нуруосмание", ar: "دورات مياه وساحة جامع نور عثمانية" },
+    sub: { tr: "Kapalıçarşı 1 Nolu Kapı çıkışı, gölge taş avlu", en: "Grand Bazaar Gate 1 exit, shaded courtyard", ru: "У ворот №1 Гранд-базара", ar: "مخرج البوابة ١ للسوق المسقوف" },
+    tip: { tr: "Kapalıçarşı ve Çuhacı Han hattındaki en ferah dinlenme ve abdest avlusu.", en: "Calmest courtyard restroom & prayer point near Grand Bazaar.", ru: "Самый просторный двор у Гранд-базара.", ar: "أهدأ ساحة استراحة ووضوء قرب البازار الكبير." }
+  },
+  // ATM & Döviz
+  {
+    id: "poi_atm_tahtakale",
+    kind: "atm",
+    lat: 41.0156,
+    lng: 28.9692,
+    semt: "tahtakale",
+    hours: "7/24 ATM · Döviz 09:00–18:30",
+    free: true,
+    title: { tr: "Tahtakale Caddesi Banka ATM Kümesi & Yetkili Döviz", en: "Tahtakale St. Bank ATMs & Licensed Exchange", ru: "Банкоматы и обмен валюты на Тахтакале", ar: "صرافات آلية ومكتب صرافة معتمد في تحتة قلعة" },
+    sub: { tr: "Santral Han çıkışından sağa 60 metre (Ziraat, İş, Garanti, Yapı Kredi)", en: "60m right from Santral Han main gate", ru: "60 м направо от входа в Santral Han", ar: "٦٠ مترًا يمين مدخل خان سنترال" },
+    tip: { tr: "Toptan ödemeler için komisyonsuz para çekme ve dar makaslı USD/EUR/SAR bozdurma.", en: "Multi-bank ATMs and tight-spread currency exchange.", ru: "Банкоматы основных банков и выгодный курс обмена.", ar: "صرافات متعددة البنوك وأسعار صرف تنافسية." }
+  },
+  {
+    id: "poi_atm_mercan",
+    kind: "atm",
+    lat: 41.0138,
+    lng: 28.9686,
+    semt: "mercan",
+    hours: "08:30 – 19:00",
+    free: true,
+    title: { tr: "Mercan & Uzunçarşı Döviz + Altın Gişesi", en: "Mercan & Uzunçarşı Currency & Gold Desk", ru: "Обмен валюты и золота Мерджан", ar: "صرافة وذهب مرجان وأوزون تشارشي" },
+    sub: { tr: "Uzunçarşı Cd. ile Mercan Yokuşu kesişimi", en: "Intersection of Uzunçarşı St. and Mercan Slope", ru: "Перекрёсток Узунчарши и Мерджан", ar: "تقاطع شارع أوزون تشارشي ومنحدر مرجان" },
+    tip: { tr: "Nakit çalışan hanlarda alışveriş öncesi en hızlı döviz bozdurma noktası.", en: "Fastest cash exchange before entering cash-only wholesale hans.", ru: "Быстрый обмен наличных перед оптовыми покупками.", ar: "أسرع نقطة لصرف النقد قبل التسوق." }
+  },
+  // Kahve, Şerbet & Gölge Avlu Molası
+  {
+    id: "poi_mola_betayeni",
+    kind: "mola",
+    lat: 41.0154,
+    lng: 28.9689,
+    semt: "tahtakale",
+    hours: "08:30 – 19:30",
+    title: { tr: "Beta Yeni Han (1554) Tarihi Kahve Fırını & Gölge Avlu", en: "Beta Yeni Han (1554) Historic Coffee Roastery & Courtyard", ru: "Исторический двор и кофейня Beta Yeni Han", ar: "ساحة ومحمصة قهوة بيتا يني خان التاريخية" },
+    sub: { tr: "Santral Han'a 45 metre · Tahtakale Hamamı Sk.", en: "45m from Santral Han · Open stone courtyard", ru: "45 м от Santral Han · каменный двор", ar: "٤٥ مترًا من خان سنترال · ساحة حجرية مظللة" },
+    tip: { tr: "16. yüzyıl taş avlusunda oturup közde Türk kahvesi, demirhindi şerbeti ve taze lokum molası.", en: "Sit in a 16th-century courtyard for sand-brewed Turkish coffee and tamarind sherbet.", ru: "Кофе на песке и шербет в османском дворе XVI века.", ar: "قهوة تركية على الرمل وشربات التمر الهندي في ساحة عثمانية." }
+  },
+  {
+    id: "poi_mola_buyukyenihan",
+    kind: "mola",
+    lat: 41.0132,
+    lng: 28.9695,
+    placeId: "buyukyeni",
+    semt: "mahmutpasa",
+    hours: "09:00 – 18:30",
+    title: { tr: "Büyük Yeni Han (1764) Çınaraltı Çay & Kahve Ocağı", en: "Büyük Yeni Han (1764) Courtyard Tea & Coffee House", ru: "Чайная во дворе Büyük Yeni Han (1764)", ar: "مقهى ساحة خان يني الكبير (١٧٦٤)" },
+    sub: { tr: "Çakmakçılar Yokuşu No: 31 · Zemin iç avlu", en: "Çakmakçılar Slope No: 31 · Ground courtyard", ru: "Чакмакджылар 31 · внутренний двор", ar: "منحدر تشاكماكجيلار ٣١ · الساحة الداخلية" },
+    tip: { tr: "Poşetleri bırakıp serin taş kemerler altında taze adaçayı ve Türk kahvesi içebileceğiniz en sakin mola yeri.", en: "Quiet vaulted stone courtyard to rest your bags and enjoy fresh sage tea.", ru: "Тихий каменный двор, чтобы отдохнуть с покупками.", ar: "ساحة حجرية هادئة للاستراحة من التسوق." }
+  },
+  {
+    id: "poi_mola_sarkkahvesi",
+    kind: "mola",
+    lat: 41.0108,
+    lng: 28.9692,
+    semt: "kapalicarsi",
+    hours: "09:00 – 19:00",
+    title: { tr: "Kapalıçarşı Şark Kahvesi & Ev Yemekleri Molası", en: "Grand Bazaar Şark Kahvesi & Traditional Lunch Stop", ru: "Шарк Кахвеси в Гранд-базаре", ar: "مقهى ومطعم شرق في البازار الكبير" },
+    sub: { tr: "Yağlıkçılar Cd. · Kalpakçılar kesişimi", en: "Yağlıkçılar St. inside Grand Bazaar", ru: "Ул. Яглыкджылар внутри Гранд-базара", ar: "شارع ياغليكجيلار داخل السوق المسقوف" },
+    tip: { tr: "Közde kahve, soğuk limonata ve öğle yemeği için çarşı esnafının klasik durağı.", en: "Classic trader stop for sand coffee, homemade lemonade and lunch.", ru: "Классическое место для обеда и кофе на песке.", ar: "محطة تقليدية للغداء والقهوة وعصير الليمون." }
+  },
+  // Kargo & Paket Emanet
+  {
+    id: "poi_kargo_tahtakale",
+    kind: "kargo",
+    lat: 41.0158,
+    lng: 28.9679,
+    semt: "tahtakale",
+    hours: "08:30 – 17:30 (Son Çıkış 16:30)",
+    title: { tr: "Tahtakale Kargo, Ambar & Paket Emanet Merkezi", en: "Tahtakale Cargo, Freight & Bag Drop Center", ru: "Центр карго и хранения сумок Тахтакале", ar: "مركز الشحن وحفظ الأكياس في تحتة قلعة" },
+    sub: { tr: "Santral Han batı çıkışı · Kantarcılar Cd. (Yurtiçi, Aras, PTT, Ambar)", en: "West of Santral Han · Kantarcılar St.", ru: "К западу от Santral Han · ул. Кантарджылар", ar: "غرب خان سنترال · شارع قانتارجيلار" },
+    tip: { tr: "Aldığınız kolileri/poşetleri elinizde taşımayın; buradan evinize veya mağazanıza aynı gün kargolayın.", en: "Don't carry heavy bags all day — ship your parcels directly to your hotel or city.", ru: "Не носите тяжёлые пакеты — отправьте покупки карго.", ar: "لا تحمل الأكياس الثقيلة طوال اليوم — اشحنها مباشرة." }
+  },
+  // Ulaşım & Otopark
+  {
+    id: "poi_ulasim_eminonu",
+    kind: "ulasim",
+    lat: 41.0175,
+    lng: 28.9708,
+    semt: "misircarsisi",
+    hours: "06:00 – 00:00",
+    title: { tr: "Eminönü T1 Tramvay, Vapur İskelesi & Katlı Otopark", en: "Eminönü T1 Tram, Ferry Pier & Multi-Storey Parking", ru: "Трамвай T1 Эминёню, паром и парковка", ar: "ترام إمينونو T1 وميناء العبارات وموقف السيارات" },
+    sub: { tr: "Santral Han'a düz ayak 4 dk (320 m) — Yokuşsuz rota!", en: "Flat 4-min walk (320m) to Santral Han — zero uphill!", ru: "4 мин пешком без подъёма до Santral Han", ar: "٤ دقائق مشيًا بدون صعود إلى خان سنترال" },
+    tip: { tr: "Elinde poşet veya bebek arabası olanlar Beyazıt yokuşu yerine Eminönü'nden düz yürüyerek girmeli.", en: "Visitors with bags or strollers should enter from Eminönü for a completely flat walk.", ru: "С сумками или коляской заходите со стороны Эминёню (ровная дорога).", ar: "مع الأكياس أو عربة الأطفال ادخل من إمينونو فالمسار مستوٍ تمامًا." }
+  },
+  {
+    id: "poi_ulasim_beyazit",
+    kind: "ulasim",
+    lat: 41.0096,
+    lng: 28.9652,
+    semt: "kapalicarsi",
+    hours: "06:00 – 00:00",
+    title: { tr: "Beyazıt-Kapalıçarşı T1 Tramvay & Taksi Durağı", en: "Beyazıt-Grand Bazaar T1 Tram & Taxi Stand", ru: "Трамвай T1 Беязыт и стоянка такси", ar: "ترام بايزيد-السوق المسقوف T1 وموقف التاكسي" },
+    sub: { tr: "Kapalıçarşı Beyazıt Kapısı önü (Yukarıdan aşağıya iniş başlangıcı)", en: "In front of Grand Bazaar Beyazıt Gate (downhill start)", ru: "У ворот Беязыт (начало спуска вниз к морю)", ar: "أمام بوابة بايزيد (بداية النزول نحو البحر)" },
+    tip: { tr: "Tam gün gezecekseniz Beyazıt'ta inip yokuş aşağı Mahmutpaşa → Santral Han → Eminönü yönünde yürüyün.", en: "For a full-day walk, start at Beyazıt and walk downhill through Mahmutpaşa → Santral Han → Eminönü.", ru: "Для прогулки на весь день начните в Беязыте и идите под горку к Эминёню.", ar: "لجولة يوم كامل ابدأ من بايزيد وانزل تدريجيًا نحو خان سنترال وإمينونو." }
+  }
+];
+

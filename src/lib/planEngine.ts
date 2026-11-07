@@ -52,6 +52,8 @@ export interface KeptStop {
   /** why the arrival moved, when it did */
   shiftNote: string;
   heavy: boolean;
+  /** vertical floor & door visiting order inside the han (Z -> A -> B...) */
+  floorSequence: string[];
 }
 
 export interface CutStop {
@@ -182,12 +184,74 @@ export function buildPlan(
   const kept: KeptStop[] = [];
   const cut: CutStop[] = [];
 
+  // Fixed time-window anchors from selected events & appointments so stops
+  // schedule cleanly around them instead of blindly colliding.
+  const fixedAnchors: { at: number; end: number; title: string }[] = [];
+  (opts.events || []).forEach((id) => {
+    const e = AD.mergeContent(D.EVENTS || [], "events").find((x) => x.id === id);
+    if (!e) return;
+    const m = /^(\d{1,2})[:.](\d{2})(?:\s*[–-]\s*(\d{1,2})[:.](\d{2}))?/.exec(String(e.time || ""));
+    if (!m) return;
+    const at = Number(m[1]) * 60 + Number(m[2]);
+    const rawEnd = m[3] ? Number(m[3]) * 60 + Number(m[4] || 0) : at + 60;
+    // Cap long all-day exhibition windows to a 60-min visit block so the rest of the day remains routable
+    const end = Math.min(rawEnd, at + 60);
+    fixedAnchors.push({ at, end, title: String((e[lang] as string) || (e.tr as string) || "") });
+  });
+  (opts.appointments || []).forEach((ap) => {
+    const m = /^(\d{1,2})[:.](\d{2})/.exec(String(ap.time || ""));
+    if (!m) return;
+    const at = Number(m[1]) * 60 + Number(m[2]);
+    fixedAnchors.push({ at, end: at + 30, title: ap.title });
+  });
+  fixedAnchors.sort((a, b) => a.at - b.at);
+
+  const flName = (fl: number, placeId: string) => {
+    if (placeId === "santral") {
+      const codes = ["Z Kat", "A Kat", "B Kat", "C Kat", "D Kat", "E Kat", "F Kat"];
+      return codes[fl] || `${fl}. Kat`;
+    }
+    return fl === 0 ? (lang === "tr" ? "Zemin Kat" : "Ground Fl.") : `${fl}. ${lang === "tr" ? "Kat" : "Fl."}`;
+  };
+
   stops.forEach((s, i) => {
+    // Vertical floor & door sorting inside the han (bottom-up Z -> A -> B -> C, then door number)
+    s.recs.sort((a, b) => {
+      if ((a.floor ?? 0) !== (b.floor ?? 0)) return (a.floor ?? 0) - (b.floor ?? 0);
+      return (parseInt(String(a.door || "0"), 10) || 0) - (parseInt(String(b.door || "0"), 10) || 0);
+    });
+
+    const seenDoors = new Set<string>();
+    const floorSequence: string[] = [];
+    s.recs.forEach((r) => {
+      const key = `${r.floor}_${r.door}`;
+      if (seenDoors.has(key)) return;
+      seenDoors.add(key);
+      floorSequence.push(`${flName(r.floor ?? 0, s.place.id)} · Kapı No: ${r.door}`);
+    });
+
     const walk = i === 0 ? 0 : Math.max(4, Math.round(dist(stops[i - 1].place, s.place) * 13));
     const dwell = 20 + (isHeavy(s) ? 10 : 0) + Math.min(15, (s.items.length - 1) * 6);
 
     let arrive = clock + walk;
     let shiftNote = "";
+
+    // Shift around fixed event/appointment anchors if overlapping
+    for (const anc of fixedAnchors) {
+      if (arrive < anc.end && arrive + dwell > anc.at) {
+        arrive = anc.end + 5;
+        shiftNote = pk(
+          {
+            tr: `Etkinlik/Randevu saati korundu (${hhmm(anc.at)}) — ${hhmm(arrive)} sonrasına alındı`,
+            en: `Scheduled after event/appointment (${hhmm(anc.at)}) → ${hhmm(arrive)}`,
+            ru: `Сдвинуто после события (${hhmm(anc.at)}) → ${hhmm(arrive)}`,
+            ar: `نُقل لما بعد الفعالية (${hhmm(anc.at)}) → ${hhmm(arrive)}`,
+          },
+          lang,
+        );
+      }
+    }
+
     const probe = new Date(when.getTime());
     probe.setHours(Math.floor(arrive / 60), arrive % 60, 0, 0);
 
@@ -219,7 +283,7 @@ export function buildPlan(
       return;
     }
 
-    kept.push({ stop: s, arrive, dwell, walk, shiftNote, heavy: isHeavy(s) });
+    kept.push({ stop: s, arrive, dwell, walk, shiftNote, heavy: isHeavy(s), floorSequence });
     clock = arrive + dwell;
   });
 
