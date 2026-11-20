@@ -69,27 +69,45 @@ export async function POST() {
   let elements: OverpassElement[] = [];
   let sourceNote = "overpass-live";
 
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 16000);
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "User-Agent": "HAN-Bazaar-OS/2.0 (https://han.mansis.com.tr)",
-      },
-      body: "data=" + encodeURIComponent(query),
-      signal: ctrl.signal,
-      cache: "no-store",
-    });
-    clearTimeout(timer);
-    if (!res.ok) {
-      throw new Error(`Overpass HTTP ${res.status}`);
+  const mirrors = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+  ];
+
+  let lastErr = "";
+  for (const mirror of mirrors) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 11000);
+      const res = await fetch(mirror, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          Accept: "application/json",
+          "User-Agent": "HAN-Bazaar-OS/2.0 (https://han.mansis.com.tr)",
+        },
+        body: "data=" + encodeURIComponent(query),
+        signal: ctrl.signal,
+        cache: "no-store",
+      });
+      clearTimeout(timer);
+      if (!res.ok) {
+        lastErr = `HTTP ${res.status}`;
+        continue;
+      }
+      const json = (await res.json()) as { elements?: OverpassElement[] };
+      elements = Array.isArray(json.elements) ? json.elements : [];
+      sourceNote = `overpass-live:${new URL(mirror).hostname}`;
+      lastErr = "";
+      break;
+    } catch (e) {
+      lastErr = String((e as Error).message || e);
     }
-    const json = (await res.json()) as { elements?: OverpassElement[] };
-    elements = Array.isArray(json.elements) ? json.elements : [];
-  } catch (e) {
-    sourceNote = "overpass-unavailable:" + String((e as Error).message || e);
+  }
+
+  if (lastErr && elements.length === 0) {
+    sourceNote = "overpass-unavailable:" + lastErr;
     return NextResponse.json({
       ok: true,
       syncedPois: 0,

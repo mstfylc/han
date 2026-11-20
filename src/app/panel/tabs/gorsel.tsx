@@ -25,8 +25,10 @@ import { H1, Pill, SUB, num, type PanelTabProps } from "./shared";
 
 /** public/assets içindeki yerleşik görsel havuzu. */
 const ASSETS: { value: string; label: string }[] = [
-  { value: "/assets/editorial-han.jpg", label: "★ Editoryal · Tarihi Han Avlusu" },
+  { value: "/assets/editorial-han.jpg", label: "★ Editoryal · Tarihi Han Galerisi" },
+  { value: "/assets/editorial-avlu.jpg", label: "★ Editoryal · Tarihi Taş Avlu & Çay" },
   { value: "/assets/editorial-bijuteri.jpg", label: "★ Editoryal · Bijuteri & Takı" },
+  { value: "/assets/editorial-elektronik.jpg", label: "★ Editoryal · Elektronik, Kılıf & Saat" },
   { value: "/assets/editorial-tekstil.jpg", label: "★ Editoryal · Tekstil & Çeyiz" },
   { value: "/assets/editorial-baharat.jpg", label: "★ Editoryal · Baharat & Hediyelik" },
   { value: "/assets/ph-shop.png", label: "Dükkân vitrini" },

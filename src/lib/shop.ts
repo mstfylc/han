@@ -162,9 +162,9 @@ export function priceOf(s: CuratedStore, mode: Mode): { value: number | null; la
 
 const PLACE_PHOTO: Record<string, string> = {
   han: "/assets/editorial-han.jpg",
-  gate: "/assets/editorial-han.jpg",
-  landmark: "/assets/editorial-han.jpg",
-  area: "/assets/editorial-han.jpg",
+  gate: "/assets/editorial-avlu.jpg",
+  landmark: "/assets/editorial-avlu.jpg",
+  area: "/assets/editorial-avlu.jpg",
   campaign: "/assets/editorial-bijuteri.jpg",
 };
 
@@ -172,7 +172,10 @@ const EDITORIAL_CAT_PHOTO: Record<string, string> = {
   bijuteri: "/assets/editorial-bijuteri.jpg",
   taki: "/assets/editorial-bijuteri.jpg",
   gumus: "/assets/editorial-bijuteri.jpg",
-  saat: "/assets/editorial-bijuteri.jpg",
+  saat: "/assets/editorial-elektronik.jpg",
+  kilif: "/assets/editorial-elektronik.jpg",
+  sarj: "/assets/editorial-elektronik.jpg",
+  elektronik: "/assets/editorial-elektronik.jpg",
   tekstil: "/assets/editorial-tekstil.jpg",
   hali: "/assets/editorial-tekstil.jpg",
   deri: "/assets/editorial-tekstil.jpg",
@@ -182,6 +185,7 @@ const EDITORIAL_CAT_PHOTO: Record<string, string> = {
   gida: "/assets/editorial-baharat.jpg",
   lokum: "/assets/editorial-baharat.jpg",
   hediyelik: "/assets/editorial-baharat.jpg",
+  poset: "/assets/editorial-avlu.jpg",
 };
 
 /** Local placeholder for a place-kind image (han · gate · landmark · area). */
