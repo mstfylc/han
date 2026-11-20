@@ -217,6 +217,7 @@ export function SantralFloorMap({
   const [entryFloor, setEntryFloor] = useState<number>(place.id === "santral" && place.floors.includes(1) ? 1 : (place.floors[0] ?? 0));
   const [radarCat, setRadarCat] = useState<string>("all");
   const [zoom, setZoom] = useState<number>(1);
+  const [isIso3D, setIsIso3D] = useState<boolean>(false);
   const [liveStepIdx, setLiveStepIdx] = useState<number | null>(null);
   const [filterText, setFilterText] = useState("");
   const [selectedDoor, setSelectedDoor] = useState<string | null>(effectiveDoor);
@@ -896,7 +897,30 @@ export function SantralFloorMap({
           })}
         </div>
 
-        <div style={sx("display:flex;align-items:center;gap:4px")}>
+        <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+          <button
+            type="button"
+            onClick={() => setIsIso3D((v) => !v)}
+            aria-pressed={isIso3D}
+            style={sx(
+              "height:26px;padding:0 10px;border-radius:999px;border:1px solid " +
+                (isIso3D ? "var(--color-accent)" : "var(--border-strong)") +
+                ";background:" +
+                (isIso3D ? "var(--color-accent)" : "var(--surface-muted)") +
+                ";color:" +
+                (isIso3D ? "#fff" : "var(--text-heading)") +
+                ";font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px",
+            )}
+          >
+            <Icon name="floor-layer" size={12} />
+            {isIso3D
+              ? lang === "tr"
+                ? "3B İzometrik"
+                : "3D Isometric"
+              : lang === "tr"
+                ? "2B Düz Plan"
+                : "2D Flat Plan"}
+          </button>
           <span style={sx("display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--text-muted);margin-inline-end:4px")}>
             <Icon name="zoom-in" size={13} />
             {lang === "tr" ? "Yakınlaştır:" : "Zoom:"}
@@ -928,9 +952,10 @@ export function SantralFloorMap({
           <div
             ref={scrollContainerRef}
             style={sx(
-              "width:100%;max-width:100%;min-width:0;overflow-x:auto;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-muted);padding:10px;-webkit-overflow-scrolling:touch;box-sizing:border-box",
+              "width:100%;max-width:100%;min-width:0;overflow-x:auto;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-muted);padding:10px;-webkit-overflow-scrolling:touch;box-sizing:border-box;perspective:1100px",
             )}
           >
+            <div data-iso-3d={isIso3D ? "1" : "0"} style={{ width: "100%" }}>
             <svg
               viewBox="0 0 900 385"
               style={sx(`width:${Math.round(zoom * 100)}%;min-width:600px;height:auto;display:block;transition:width 180ms ease`)}
@@ -1326,6 +1351,7 @@ export function SantralFloorMap({
                 </g>
               )}
             </svg>
+            </div>
           </div>
 
           {/* Legend */}

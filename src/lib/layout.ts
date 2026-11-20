@@ -39,10 +39,10 @@ export function pagePad(vw: number): string {
 /** A card: 1px border first, shadow second. Depth in this system comes from the
  *  border; the shadow is deliberately almost invisible. */
 export const CARD_BOX =
-  "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:18px;box-shadow:0 3px 4px rgba(0,0,0,.03);";
+  "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-card, 16px);padding:18px;box-shadow:var(--shadow-card, 0 2px 10px rgba(15,23,42,.045));";
 
 export const TREE_BOX =
-  "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:10px;box-shadow:0 3px 4px rgba(0,0,0,.03);";
+  "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-card, 16px);padding:10px;box-shadow:var(--shadow-card, 0 2px 10px rgba(15,23,42,.045));";
 
 export const areaOn = (name: string) => "grid-area:" + name + ";min-width:0;";
 

@@ -161,27 +161,44 @@ export function priceOf(s: CuratedStore, mode: Mode): { value: number | null; la
 // page's "photo honesty" block exists to prevent.
 
 const PLACE_PHOTO: Record<string, string> = {
-  han: "/assets/ph-han.png",
-  gate: "/assets/ph-gate.png",
-  landmark: "/assets/ph-landmark.png",
-  area: "/assets/ph-shop.png",
-  campaign: "/assets/ph-kampanya.png",
+  han: "/assets/editorial-han.jpg",
+  gate: "/assets/editorial-han.jpg",
+  landmark: "/assets/editorial-han.jpg",
+  area: "/assets/editorial-han.jpg",
+  campaign: "/assets/editorial-bijuteri.jpg",
+};
+
+const EDITORIAL_CAT_PHOTO: Record<string, string> = {
+  bijuteri: "/assets/editorial-bijuteri.jpg",
+  taki: "/assets/editorial-bijuteri.jpg",
+  gumus: "/assets/editorial-bijuteri.jpg",
+  saat: "/assets/editorial-bijuteri.jpg",
+  tekstil: "/assets/editorial-tekstil.jpg",
+  hali: "/assets/editorial-tekstil.jpg",
+  deri: "/assets/editorial-tekstil.jpg",
+  ceyiz: "/assets/editorial-tekstil.jpg",
+  konfeksiyon: "/assets/editorial-tekstil.jpg",
+  baharat: "/assets/editorial-baharat.jpg",
+  gida: "/assets/editorial-baharat.jpg",
+  lokum: "/assets/editorial-baharat.jpg",
+  hediyelik: "/assets/editorial-baharat.jpg",
 };
 
 /** Local placeholder for a place-kind image (han · gate · landmark · area). */
 export function placePhoto(kind: string): string {
-  return PLACE_PHOTO[kind] || "/assets/ph-shop.png";
+  return PLACE_PHOTO[kind] || "/assets/editorial-han.jpg";
 }
 
 /** Photo for a curated store: its own category's picture, which at least shows
  *  the right kind of goods. */
 export function storePhoto(s: CuratedStore | null): string {
-  if (!s) return "/assets/ph-shop.png";
+  if (!s) return "/assets/editorial-han.jpg";
   const cat = (s.cats || [])[0];
-  return cat ? catPhoto(cat) : "/assets/ph-shop.png";
+  return cat ? catPhoto(cat) : "/assets/editorial-han.jpg";
 }
 
 export function catPhoto(id: string): string {
+  if (EDITORIAL_CAT_PHOTO[id]) return EDITORIAL_CAT_PHOTO[id];
   return toPublic(L.catPhoto(D, id));
 }
 

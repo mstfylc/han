@@ -7,8 +7,16 @@
 // han, which floor, which door — then three doors by intent, then the live
 // state of the bazaar, then what is on this week.
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+
+const Map3D = dynamic(() => import("@/components/Map3D"), {
+  ssr: false,
+  loading: () => (
+    <div style={{ width: "100%", height: "248px", background: "var(--surface-muted)" }} />
+  ),
+});
 
 import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
@@ -184,9 +192,9 @@ export default function DiscoverPage() {
         title: tx(c, lang),
         sub: loc(c, "sub", lang),
         until: loc(c, "until", lang),
-        // A campaign that names a shop shows that shop; otherwise the campaign
-        // placeholder. Local either way — remote Commons URLs broke offline.
-        photoSrc: st ? storePhoto(st) : "/assets/ph-kampanya.png",
+        // A campaign that names a shop shows that shop; otherwise the editorial
+        // campaign cover. Local either way — remote URLs broke offline.
+        photoSrc: st ? storePhoto(st) : "/assets/editorial-bijuteri.jpg",
         tagStyle:
           "position:absolute;top:11px;inset-inline-start:11px;display:inline-flex;align-items:center;height:25px;padding:0 11px;border-radius:6px;font-size:12px;font-weight:700;background:var(--color-" +
           (c.tone || "primary") + ");color:#fff",
@@ -230,27 +238,6 @@ export default function DiscoverPage() {
     { n: String(SC.PLACES.length), label: pk({ tr: "han · çarşı · cadde", en: "hans · bazaars · streets", ru: "ханов · базаров · улиц", ar: "خان · سوق · شارع" }, lang) },
     { n: String(D.AREAS.length), label: pk({ tr: "çarşı bölgesi", en: "bazaar areas", ru: "районов", ar: "مناطق" }, lang) },
     { n: String(D.HANS.length), label: pk({ tr: "tarihi han", en: "historic hans", ru: "ханов", ar: "خانات" }, lang) },
-  ];
-
-  const heroDoors = [
-    {
-      icon: "rocket",
-      title: pk({ tr: "Çarşıyı ilk kez geziyorum", en: "First time in the bazaar", ru: "Впервые на базаре", ar: "أول زيارة للسوق" }, lang),
-      sub: pk({ tr: "Hangi kapıdan girip nereden başlayacağınızı gösterelim.", en: "We show which gate to enter and where to start.", ru: "Покажем, с каких ворот войти и с чего начать.", ar: "نوضح من أي باب تدخل وأين تبدأ." }, lang),
-      go: () => router.push(href.map("yogunluk")),
-    },
-    {
-      icon: "magnifier",
-      title: pk({ tr: "Belirli bir şey arıyorum", en: "Looking for one thing", ru: "Ищу конкретную вещь", ar: "أبحث عن شيء محدد" }, lang),
-      sub: pk({ tr: "Ürün adını yazın; satan dükkânları kapı numarasıyla sıralayalım.", en: "Name the product; we list the shops with door numbers.", ru: "Назовите товар — покажем лавки с номерами дверей.", ar: "اذكر المنتج ونعرض المتاجر مع أرقام الأبواب." }, lang),
-      go: () => router.push(href.search()),
-    },
-    {
-      icon: "handcart",
-      title: pk({ tr: "Toptan alacağım", en: "Buying wholesale", ru: "Покупаю оптом", ar: "أشتري بالجملة" }, lang),
-      sub: pk({ tr: "Adedi yazın; minimumu tutan dükkânlar öne gelsin.", en: "Enter your quantity; shops whose minimum fits come first.", ru: "Укажите количество — подходящие лавки выйдут вперёд.", ar: "أدخل الكمية لتتقدم المتاجر المناسبة." }, lang),
-      go: () => { save({ mode: "toptan", qty: "200" }); router.push(href.search()); },
-    },
   ];
 
   const popularQ = (D.CATS || []).slice(0, 6).map((c) => ({ label: tx(c, lang), value: tx(c, lang) }));
@@ -364,17 +351,17 @@ export default function DiscoverPage() {
         {/* ── hero ───────────────────────────────────────────────────────── */}
         <div
           style={sx(
-            "position:relative;overflow:hidden;background:var(--surface-brand, #14233f);background-image:radial-gradient(120% 130% at 100% 0%, rgba(224,138,43,.34) 0%, rgba(224,138,43,0) 46%), radial-gradient(90% 120% at 0% 100%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 55%);border-radius:16px;padding:30px 32px 26px;box-shadow:0 3px 8px rgba(0,0,0,.07)",
+            "position:relative;overflow:hidden;background:var(--surface-brand, #14233f);background-image:linear-gradient(125deg, rgba(16,28,50,.92) 0%, rgba(16,28,50,.84) 55%, rgba(16,28,50,.68) 100%), url('/assets/editorial-han.jpg');background-size:cover;background-position:center;border-radius:var(--radius-card, 16px);padding:32px 32px 28px;box-shadow:var(--shadow-float, 0 8px 24px rgba(0,0,0,.10))",
           )}
         >
           <div style={sx("display:flex;align-items:center;gap:9px")}>
-            <span style={sx("width:7px;height:7px;border-radius:999px;background:var(--color-accent)")} />
-            <span style={sx("font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.72)")}>
-              {pk({ tr: "Tarihi Yarımada · Fatih", en: "Historic Peninsula · Fatih", ru: "Исторический полуостров · Фатих", ar: "شبه الجزيرة التاريخية · الفاتح" }, lang)}
+            <span style={sx("width:8px;height:8px;border-radius:999px;background:var(--color-accent)")} />
+            <span style={sx("font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.78)")}>
+              {pk({ tr: "Tarihi Yarımada · Fatih · 39 Han & Çarşı", en: "Historic Peninsula · Fatih · 39 Hans", ru: "Исторический полуостров · 39 ханов", ar: "شبه الجزيرة التاريخية · ٣٩ خانًا" }, lang)}
             </span>
           </div>
 
-          <h1 style={sx("font-size:38px;font-weight:700;color:#fff;letter-spacing:-.025em;line-height:1.1;margin-top:14px;max-width:19ch;text-wrap:pretty")}>
+          <h1 style={sx("font-size:clamp(26px, 3.2vw, 38px);font-weight:700;color:#fff;letter-spacing:-.025em;line-height:1.12;margin-top:14px;max-width:20ch;text-wrap:pretty")}>
             {pk({
               tr: "Hangi hana, hangi kata, hangi kapıya gideceğinizi söyleriz",
               en: "We tell you which han, which floor, which door",
@@ -383,17 +370,17 @@ export default function DiscoverPage() {
             }, lang)}
           </h1>
 
-          <p style={sx("font-size:16px;color:rgba(255,255,255,.82);margin-top:12px;max-width:58ch;text-wrap:pretty")}>
+          <p style={sx("font-size:15.5px;color:rgba(255,255,255,.84);margin-top:12px;max-width:56ch;text-wrap:pretty;line-height:1.5")}>
             {pk({
-              tr: "Kapalıçarşı'dan Tahtakale'ye 30 binden fazla dükkânın tek kaydı. Ne aradığınızı yazın; kapıdan tezgâha kadar tarif edelim.",
-              en: "One registry for 30,000+ shops from the Grand Bazaar to Tahtakale. Say what you need; we walk you from the gate to the counter.",
-              ru: "Единый реестр 30 000+ лавок от Гранд-базара до Тахтакале. Напишите, что ищете, — доведём от ворот до прилавка.",
-              ar: "سجل واحد لأكثر من ٣٠ ألف متجر من السوق المسقوف إلى تحتة قلعة. اكتب ما تبحث عنه ونرشدك من الباب إلى المحل.",
+              tr: "Kapalıçarşı'dan Tahtakale'ye 30 binden fazla dükkânın tek kaydı. Yazın, fotoğraf çekin ya da konuşun — kapı numarasıyla tarif edelim.",
+              en: "One registry for 30,000+ shops from Grand Bazaar to Tahtakale. Type, snap a photo, or speak — we guide you to the exact door.",
+              ru: "Единый реестр 30 000+ лавок. Напишите, сфотографируйте или скажите — приведём прямо к двери.",
+              ar: "سجل واحد لأكثر من ٣٠ ألف متجر. اكتب أو صوّر أو تحدث لنرشدك حتى رقم الباب.",
             }, lang)}
           </p>
 
           <form
-            style={sx("display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;max-width:740px;min-width:0;width:100%")}
+            style={sx("display:flex;flex-wrap:wrap;gap:9px;margin-top:22px;max-width:740px;min-width:0;width:100%")}
             onSubmit={(e) => { e.preventDefault(); goSearch(); }}
           >
             <div style={sx("flex:1 1 220px;min-width:0")}>
@@ -412,14 +399,21 @@ export default function DiscoverPage() {
             <button
               type="button"
               onClick={() => router.push("/ara?visual=1")}
-              style={sx("height:48px;padding:0 15px;border-radius:11px;border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px")}
+              style={sx("height:48px;padding:0 14px;border-radius:11px;border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.14);backdrop-filter:blur(8px);color:#fff;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px")}
             >
-              {pk({ tr: "📷 Fotoğrafla Ara", en: "📷 Visual Search", ru: "📷 Поиск по фото", ar: "📷 بحث بالصورة" }, lang)}
+              {pk({ tr: "📷 Fotoğraf", en: "📷 Photo", ru: "📷 Фото", ar: "📷 صورة" }, lang)}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/ara?voice=1")}
+              style={sx("height:48px;padding:0 14px;border-radius:11px;border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.14);backdrop-filter:blur(8px);color:#fff;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px")}
+            >
+              {pk({ tr: "🎤 Sesli Sor", en: "🎤 Voice", ru: "🎤 Голос", ar: "🎤 صوت" }, lang)}
             </button>
           </form>
 
           <div style={sx("display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px")}>
-            <span style={sx("font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)")}>
+            <span style={sx("font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.65)")}>
               {pk({ tr: "Sık aranan", en: "Popular", ru: "Часто ищут", ar: "الأكثر بحثًا" }, lang)}
             </span>
             {popularQ.map((p) => (
@@ -427,51 +421,29 @@ export default function DiscoverPage() {
                 key={p.label}
                 type="button"
                 onClick={() => goSearch(p.value)}
-                style={sx("height:30px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.08);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer")}
+                style={sx("height:30px;padding:0 12px;border-radius:var(--radius-pill, 999px);border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer")}
               >
                 {p.label}
               </button>
             ))}
           </div>
 
-          <div style={sx("display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.16)")}>
+          <div style={sx("display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.18)")}>
             {heroStats.map((s) => (
-              <div key={s.label} style={sx("font-size:14px;color:rgba(255,255,255,.72)")}>
+              <div key={s.label} style={sx("font-size:14px;color:rgba(255,255,255,.76)")}>
                 <span style={sx("font-weight:700;color:#fff")}>{s.n}</span> {s.label}
               </div>
             ))}
           </div>
-
-          <div style={sx("margin-top:18px")}>
-            <div style={sx("font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)")}>
-              {pk({ tr: "Ne yapmak istiyorsunuz?", en: "What are you here to do?", ru: "Что вы хотите сделать?", ar: "ماذا تريد أن تفعل؟" }, lang)}
-            </div>
-            <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(184px,100%),1fr));gap:10px;margin-top:11px")}>
-              {heroDoors.map((d) => (
-                <button
-                  key={d.title}
-                  type="button"
-                  onClick={d.go}
-                  style={sx("display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:14px 15px;border-radius:13px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);font-family:inherit;text-align:start;cursor:pointer")}
-                >
-                  <span style={sx("display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.16);color:#fff")}>
-                    <Icon name={d.icon} size={18} />
-                  </span>
-                  <span style={sx("display:block;font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.25;text-wrap:pretty")}>{d.title}</span>
-                  <span style={sx("display:block;font-size:12.5px;color:rgba(255,255,255,.68);line-height:1.4;text-wrap:pretty")}>{d.sub}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* ── mini map ───────────────────────────────────────────────────── */}
-        <div style={sx("background:var(--surface-card);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 3px 4px rgba(0,0,0,.03);overflow:hidden")}>
+        {/* ── mini map (3B WebGL + 2B Hafif) ───────────────────────────────── */}
+        <div style={sx("background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-card, 16px);box-shadow:var(--shadow-card, 0 2px 8px rgba(0,0,0,.04));overflow:hidden")}>
           <div style={sx("padding:18px 20px 14px")}>
             <div style={sx("display:flex;align-items:center;gap:10px")}>
               <div style={sx("flex:1;min-width:0")}>
                 <div style={sx("font-size:19px;font-weight:700;color:var(--text-heading);letter-spacing:-.015em")}>
-                  {pk({ tr: "Çarşı haritası", en: "Bazaar map", ru: "Карта базара", ar: "خريطة السوق" }, lang)}
+                  {pk({ tr: "3B Çarşı haritası", en: "3D Bazaar map", ru: "3D карта базара", ar: "خريطة السوق ثلاثية الأبعاد" }, lang)}
                 </div>
                 <div style={sx("font-size:13px;color:var(--text-muted);margin-top:3px;text-wrap:pretty")}>{live.sub}</div>
               </div>
@@ -490,17 +462,19 @@ export default function DiscoverPage() {
           </div>
 
           <div style={sx("position:relative;border-top:1px solid var(--border-default);border-bottom:1px solid var(--border-default);background:var(--surface-muted)")}>
-            <iframe
-              src={"/han-map.html?lang=" + lang}
-              title={pk({ tr: "Çarşı haritası", en: "Bazaar map", ru: "Карта базара", ar: "خريطة السوق" }, lang)}
-              style={sx("display:block;width:100%;height:236px;border:none")}
+            <Map3D
+              places={SC.PLACES}
+              lang={lang}
+              height="248px"
+              fallbackIframeSrc={"/han-map.html?lang=" + lang}
+              onSelectPlace={(placeId) => router.push(href.place(placeId))}
             />
             <button
               type="button"
               onClick={() => router.push(href.map())}
-              style={sx("position:absolute;inset-inline-end:12px;bottom:12px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-heading);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.07)")}
+              style={sx("position:absolute;inset-inline-end:12px;bottom:12px;z-index:12;height:34px;padding:0 14px;border-radius:var(--radius-pill, 999px);border:1px solid var(--border-strong);background:var(--surface-glass, var(--surface-card));backdrop-filter:blur(12px);color:var(--text-heading);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-float, 0 4px 12px rgba(0,0,0,.12))")}
             >
-              {pk({ tr: "Haritayı büyüt", en: "Open full map", ru: "Открыть карту", ar: "تكبير الخريطة" }, lang)}
+              {pk({ tr: "Tam ekran harita ↗", en: "Open full map ↗", ru: "Открыть карту ↗", ar: "تكبير الخريطة ↗" }, lang)}
             </button>
           </div>
 
@@ -822,8 +796,9 @@ export default function DiscoverPage() {
             <button
               key={c.id}
               type="button"
+              className="han-card-lift"
               onClick={c.go}
-              style={sx("display:flex;flex-direction:column;align-items:stretch;padding:0;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);overflow:hidden;font-family:inherit;text-align:start;cursor:pointer")}
+              style={sx("display:flex;flex-direction:column;align-items:stretch;padding:0;border-radius:var(--radius-card, 16px);border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:var(--shadow-card, 0 2px 8px rgba(0,0,0,.04));overflow:hidden;font-family:inherit;text-align:start;cursor:pointer")}
             >
               <span style={sx("position:relative;display:block;height:132px;background:var(--surface-muted)")}>
                 <ImageSlot src={c.photoSrc} placeholder={c.title} decorative />
@@ -862,8 +837,9 @@ export default function DiscoverPage() {
               <button
                 key={id}
                 type="button"
+                className="han-card-lift"
                 onClick={() => router.push(href.category((group?.id as string) || null, id))}
-                style={sx("display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:0 3px 4px rgba(0,0,0,.03);font-family:inherit;text-align:start;cursor:pointer")}
+                style={sx("display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:var(--radius-card, 16px);border:1px solid var(--border-strong);background:var(--surface-card);box-shadow:var(--shadow-card, 0 2px 8px rgba(0,0,0,.04));font-family:inherit;text-align:start;cursor:pointer")}
               >
                 <span style={sx("display:block;width:100%;height:96px;border-radius:10px;overflow:hidden;background:var(--surface-muted)")}>
                   <ImageSlot src={catPhoto(id)} placeholder={label} decorative />

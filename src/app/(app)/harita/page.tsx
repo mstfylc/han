@@ -3,10 +3,19 @@
 // M3 · the map, talking both ways with the list, plus live GPS & Han Gate
 // Geofence Handoff (Outdoor GPS -> Indoor Floor Plan & Wayfinder).
 
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import type { Map3DPoi } from "@/components/Map3D";
 import * as D from "@/data/han-data";
+
+const Map3D = dynamic(() => import("@/components/Map3D"), {
+  ssr: false,
+  loading: () => (
+    <div style={{ width: "100%", height: "100%", minHeight: "380px", background: "var(--surface-muted)" }} />
+  ),
+});
 import * as SC from "@/data/han-scale";
 import type { Lang } from "@/data/types";
 import { Alert, Button, EmptyState, Icon } from "@/ds";
@@ -217,6 +226,24 @@ function MapScreen() {
       .map((pl) => ({ place: pl! }));
     return serializeRoutePts(fallbackStops);
   }, [layer, state.trips, state.tripId, state.evPlan, state.appts, mode, lang]);
+
+  const map3DPois = useMemo<Map3DPoi[]>(
+    () =>
+      filteredPois.map((p) => ({
+        id: p.id,
+        kind: p.kind,
+        lat: p.lat,
+        lng: p.lng,
+        title: tx(p.title, lang),
+        sub: tx(p.sub, lang),
+      })),
+    [filteredPois, lang],
+  );
+
+  const focusedMap3DPoi = useMemo<Map3DPoi | null>(
+    () => map3DPois.find((p) => p.id === activePoiId) || null,
+    [map3DPois, activePoiId],
+  );
 
   const mapSrc =
     "/han-map.html?lang=" + lang + (routePoints ? "&pts=" + encodeURIComponent(routePoints) : "");
@@ -477,14 +504,19 @@ function MapScreen() {
 
       <div style={sx("display:grid;grid-template-columns:" + (state.vw >= 1100 ? "minmax(0,1fr) 340px" : "minmax(0,1fr)") + ";gap:16px;margin-top:14px;align-items:start")}>
         {(!isPhone || mobileTab === "map") && (
-          <div style={sx("border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface-muted)")}>
-            <iframe
-              ref={frame}
-              src={mapSrc}
-              title={W(lang, "mapTitle")}
-              style={sx("display:block;width:100%;height:" + (state.vw >= 1100 ? "620px" : isPhone ? "calc(100dvh - 250px);min-height:380px" : "460px") + ";border:none")}
-            />
-          </div>
+          <Map3D
+            places={SC.PLACES}
+            pois={map3DPois}
+            focusPlaceId={focus}
+            focusPoi={focusedMap3DPoi}
+            lang={lang}
+            height={state.vw >= 1100 ? "620px" : isPhone ? "calc(100dvh - 250px)" : "460px"}
+            fallbackIframeSrc={mapSrc}
+            onSelectPlace={(placeId) => setFocus(placeId)}
+            onFrameRef={(el) => {
+              frame.current = el;
+            }}
+          />
         )}
 
         {(!isPhone || mobileTab === "list" || !!focusInfo) && (
