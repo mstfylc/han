@@ -174,10 +174,10 @@ export async function POST(request: Request) {
   }
 
   // Zero-hallucination guarantee: EVERY shop result comes strictly from deterministic han-search (SC.RECORDS)
-  const searchRes = SE.search(extracted.query, { cat: extracted.category }, { mode, lang });
-  const fallbackRes = searchRes.items.length
-    ? searchRes
-    : SE.search(extracted.query, {}, { mode, lang });
+  const baseRes = SE.search(extracted.query, {}, { mode, lang });
+  const catFiltered = baseRes.items.filter((item) => item.rec.cat === extracted!.category);
+  const pickedItems = catFiltered.length ? catFiltered : baseRes.items;
+  const fallbackRes = { total: catFiltered.length || baseRes.total, items: pickedItems };
 
   const matches = fallbackRes.items.slice(0, 8).map((item) => {
     const rec = item.rec;
