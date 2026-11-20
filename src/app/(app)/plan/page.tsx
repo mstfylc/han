@@ -22,6 +22,7 @@ import { pagePad, planGrid } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { buildPlan, hhmm, moveBefore, reorder, serializeRoutePts } from "@/lib/planEngine";
 import { sx } from "@/lib/sx";
+import { trackEvent } from "@/lib/telemetry";
 import { useApp } from "@/state/AppState";
 import type { Trip } from "@/state/types";
 
@@ -373,6 +374,9 @@ export default function PlanPage() {
         done: [],
         order: null,
         phase: "rota",
+      });
+      trackEvent("ai_plan_intent", {
+        meta: { intent: parsed.intent, occasion: parsed.occasion || "", hours: parsed.hours, items: items.length },
       });
       save({ buyList: items });
       setAiExplanation(parsed.explanationTr);

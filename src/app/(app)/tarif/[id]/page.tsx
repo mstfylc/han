@@ -15,6 +15,7 @@ import { pagePad } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { floorLabel, recordName } from "@/lib/shop";
 import { sx } from "@/lib/sx";
+import { trackEvent } from "@/lib/telemetry";
 import { useApp } from "@/state/AppState";
 
 const pk = (o: Record<string, string>, lang: Lang) => o[lang] || o.tr;
@@ -248,10 +249,28 @@ function DirectionsPageInner() {
         </div>
 
         <div style={sx("display:flex;gap:8px;flex-wrap:wrap;min-width:0")}>
-          <Button size="sm" color="success" variant="solid" iconStart="messages" onClick={shareWhatsAppRoute}>
+          <Button
+            size="sm"
+            color="success"
+            variant="solid"
+            iconStart="messages"
+            onClick={() => {
+              trackEvent("whatsapp_share", { placeId: place.id, recordId: target.recId });
+              shareWhatsAppRoute();
+            }}
+          >
             {pk({ tr: "📲 WhatsApp'tan Tarif Gönder", en: "📲 Send Route via WhatsApp" }, lang)}
           </Button>
-          <Button size="sm" color="primary" variant="solid" iconStart="qr" onClick={() => setQrSignOpen(true)}>
+          <Button
+            size="sm"
+            color="primary"
+            variant="solid"
+            iconStart="qr"
+            onClick={() => {
+              trackEvent("qr_scan", { placeId: place.id, recordId: target.recId });
+              setQrSignOpen(true);
+            }}
+          >
             {pk({ tr: "🖨️ Vitrin / Giriş QR Tabelası", en: "🖨️ Shopfront / Gate QR Sign" }, lang)}
           </Button>
           <Button size="sm" color="secondary" variant="outline" iconStart="volume" onClick={speakFullRoute}>

@@ -23,6 +23,7 @@ import { CARD_BOX, STICKY_TOP, areaOn, breaks, searchGrid } from "@/lib/layout";
 import { PARAM, getList, getNum, getPanel, getStr, href, panelParam, withParams } from "@/lib/routes";
 import { floorLabel, medStyle } from "@/lib/shop";
 import { sx } from "@/lib/sx";
+import { trackEvent } from "@/lib/telemetry";
 import { useApp } from "@/state/AppState";
 import type { Panel, SavedSearch } from "@/state/types";
 
@@ -156,6 +157,9 @@ function SearchScreen() {
         extracted: data.extracted,
         totalMatches: data.totalMatches ?? (data.matches?.length || 0),
         matches: data.matches || [],
+      });
+      trackEvent("ai_visual_search", {
+        meta: { category: data.extracted.category, matches: data.matches?.length || 0, provider: data.provider || "fallback" },
       });
       toast(
         pk(

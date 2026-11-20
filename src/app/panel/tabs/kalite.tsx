@@ -13,7 +13,7 @@
 // bileşenler olduğundan aynı form (gorevler.tsx'ten) burada açılır — kaydeden
 // yine AD.addTask, görev Saha Görevleri listesine düşer.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
@@ -40,6 +40,28 @@ export default function Kalite({ role, readOnly, refresh, say }: PanelTabProps) 
   const [picked, setPicked] = useState<AD.QualityRule | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [formInit, setFormInit] = useState<TaskFormInit | undefined>(undefined);
+  const [health, setHealth] = useState<{
+    ok?: boolean;
+    db?: string;
+    uptimeSec?: number;
+    aiConfigured?: boolean;
+    r2Configured?: boolean;
+    counts?: { documents: number; decisions: number; analytics: number };
+  } | null>(null);
+  const [telemetry, setTelemetry] = useState<{ event_name: string; count: number }[]>([]);
+
+  useEffect(() => {
+    let live = true;
+    fetch("/api/health", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (live) setHealth(d); })
+      .catch(() => {});
+    fetch("/api/analytics", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (live && Array.isArray(d?.summary)) setTelemetry(d.summary); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   const RU = AD.QUALITY_RULES;
   const rules = Object.keys(RU) as AD.QualityRule[];
@@ -74,6 +96,48 @@ export default function Kalite({ role, readOnly, refresh, say }: PanelTabProps) 
       <p style={sx(SUB)}>
         Eksik kayıtların sayısı değil listesi: kime gidilecek, ne toplanacak.
       </p>
+
+      {/* Canlı Sistem Sağlığı & Saha Telemetrisi */}
+      <section style={sx(CARD + ";margin-top:16px;border-color:var(--color-primary)")}>
+        <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
+          <div>
+            <div style={sx("font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--color-primary)")}>
+              📊 Canlı Sistem Sağlığı &amp; 30 Günlük Saha Telemetrisi
+            </div>
+            <div style={sx("font-size:13px;color:var(--text-muted);margin-top:2px")}>
+              PostgreSQL durumu, Delta Sync dokümanları, AI/R2 bağlantısı ve saha etkileşim sayaçları.
+            </div>
+          </div>
+          <div style={sx("display:flex;gap:6px;flex-wrap:wrap")}>
+            <Pill label={health?.db === "ok" ? "DB: Çevrimiçi" : "DB: Kontrol ediliyor"} t={health?.db === "ok" ? "success" : "warning"} />
+            <Pill label={health?.aiConfigured ? "AI: Gemini Aktif" : "AI: Yerel Fallback"} t={health?.aiConfigured ? "success" : "info"} />
+            <Pill label={health?.r2Configured ? "Medya: Cloudflare R2" : "Medya: Yerel Disk"} t={health?.r2Configured ? "success" : "primary"} />
+          </div>
+        </div>
+        <div style={sx("display:flex;flex-wrap:wrap;gap:8px;margin-top:12px")}>
+          {health?.counts && (
+            <>
+              <span style={sx("padding:5px 10px;border-radius:8px;background:var(--surface-muted);font-size:12.5px;font-weight:700")}>
+                Doküman: {num(health.counts.documents)}
+              </span>
+              <span style={sx("padding:5px 10px;border-radius:8px;background:var(--surface-muted);font-size:12.5px;font-weight:700")}>
+                Karar Defteri: {num(health.counts.decisions)}
+              </span>
+              <span style={sx("padding:5px 10px;border-radius:8px;background:var(--surface-muted);font-size:12.5px;font-weight:700")}>
+                Toplam Telemetri: {num(health.counts.analytics)}
+              </span>
+            </>
+          )}
+          {telemetry.map((ev) => (
+            <span
+              key={ev.event_name}
+              style={sx("padding:5px 10px;border-radius:8px;border:1px solid var(--border-default);background:var(--surface-card);font-size:12.5px;font-weight:600")}
+            >
+              {ev.event_name}: <strong style={sx("color:var(--color-primary)")}>{num(ev.count)}</strong>
+            </span>
+          ))}
+        </div>
+      </section>
 
       <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:14px;margin-top:18px")}>
         {rules.map((k) => {
