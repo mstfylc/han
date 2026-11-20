@@ -157,3 +157,69 @@ CREATE TABLE IF NOT EXISTS trader_otps (
   used_at     TIMESTAMPTZ,
   PRIMARY KEY (tel, code_hash)
 );
+
+-- ── HAN 2.0 Kademe 2: external live data, OSM POIs, candidate queue & KVKK invites ──
+CREATE TABLE IF NOT EXISTS external_cache (
+  cache_key   TEXT        PRIMARY KEY,
+  payload     JSONB       NOT NULL,
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS external_pois (
+  id          TEXT        PRIMARY KEY,
+  source      TEXT        NOT NULL DEFAULT 'osm',
+  kind        TEXT        NOT NULL,
+  name        TEXT        NOT NULL,
+  sub         TEXT        NOT NULL DEFAULT '',
+  tip         TEXT        NOT NULL DEFAULT '',
+  hours       TEXT        NOT NULL DEFAULT '',
+  lat         DOUBLE PRECISION NOT NULL,
+  lng         DOUBLE PRECISION NOT NULL,
+  tags        JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS external_pois_kind_idx ON external_pois (kind);
+
+CREATE TABLE IF NOT EXISTS candidate_shops (
+  id           TEXT        PRIMARY KEY,
+  source       TEXT        NOT NULL DEFAULT 'osm',
+  external_id  TEXT,
+  name         TEXT        NOT NULL,
+  cat          TEXT        NOT NULL DEFAULT '',
+  place_id     TEXT,
+  semt         TEXT,
+  floor        INTEGER,
+  door         TEXT,
+  tel          TEXT        NOT NULL DEFAULT '',
+  address      TEXT        NOT NULL DEFAULT '',
+  lat          DOUBLE PRECISION,
+  lng          DOUBLE PRECISION,
+  status       TEXT        NOT NULL DEFAULT 'pending',
+  invite_token TEXT        UNIQUE,
+  notes        TEXT        NOT NULL DEFAULT '',
+  raw          JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS candidate_shops_status_idx ON candidate_shops (status, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS opt_out_contacts (
+  contact_norm TEXT        PRIMARY KEY,
+  reason       TEXT        NOT NULL DEFAULT 'kvkk-optout',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS invite_logs (
+  id           BIGSERIAL   PRIMARY KEY,
+  candidate_id TEXT,
+  contact_norm TEXT        NOT NULL,
+  channel      TEXT        NOT NULL DEFAULT 'whatsapp',
+  token        TEXT,
+  officer      TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS invite_logs_contact_idx ON invite_logs (contact_norm, created_at DESC);

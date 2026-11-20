@@ -13,7 +13,7 @@
 //
 // "HAN Panel.dc.html" isIceAktar bölümü + importVals()'ın portu.
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import { CATS, type DataRow } from "@/data/han-data";
@@ -64,6 +64,108 @@ function matchCat(list: string[]): string[] {
 export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
   const [f, setF] = useState<ImportForm>({ place: "santral", floor: "1", text: "", bulk: true });
   const [done, setDone] = useState<ImportDone | null>(null);
+
+  // Kademe 2: Live OSM Overpass Sync + Candidate Approval Queue + KVKK WhatsApp/QR Invite
+  const [osmBusy, setOsmBusy] = useState(false);
+  const [osmResult, setOsmResult] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<
+    Array<{
+      id: string;
+      name: string;
+      cat: string;
+      place_id: string | null;
+      floor: number | null;
+      door: string | null;
+      tel: string;
+      address: string;
+      status: string;
+      invite_token: string | null;
+      source: string;
+    }>
+  >([]);
+  const [candBusyId, setCandBusyId] = useState<string | null>(null);
+  const [inviteOut, setInviteOut] = useState<{ shopName: string; inviteUrl: string; whatsappUrl: string } | null>(null);
+
+  const loadCandidates = useCallback(() => {
+    fetch("/api/external/candidates?status=all")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && Array.isArray(d.candidates)) setCandidates(d.candidates);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadCandidates();
+  }, [loadCandidates]);
+
+  const runOsmSync = async () => {
+    if (readOnly) return say("Salt okuma rolü senkron çalıştıramaz");
+    setOsmBusy(true);
+    setOsmResult(null);
+    try {
+      const res = await fetch("/api/external/osm-sync", { method: "POST" });
+      const d = await res.json();
+      if (!res.ok || !d.ok) {
+        setOsmResult("Senkron başarısız: " + (d?.error || res.status));
+      } else {
+        const msg = `OSM senkronu tamamlandı: ${d.syncedPois} hizmet noktası (WC/ATM/Eczane) · ${d.syncedCandidates} aday dükkân (${d.source})`;
+        setOsmResult(msg);
+        say(msg);
+        loadCandidates();
+      }
+    } catch {
+      setOsmResult("Sunucuya ulaşılamadı.");
+    } finally {
+      setOsmBusy(false);
+    }
+  };
+
+  const actCandidate = async (id: string, action: "approve" | "field" | "reject") => {
+    if (readOnly) return say("Salt okuma rolü aday güncelleyemez");
+    setCandBusyId(id);
+    try {
+      const res = await fetch("/api/external/candidates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action }),
+      });
+      const d = await res.json();
+      if (res.ok && d.ok) {
+        say(action === "approve" ? "Aday onaylandı" : action === "field" ? "Saha görevine aktarıldı" : "Aday reddedildi");
+        loadCandidates();
+      }
+    } finally {
+      setCandBusyId(null);
+    }
+  };
+
+  const buildInvite = async (c: { id: string; name: string; tel: string; invite_token: string | null }, channel: "whatsapp" | "qr") => {
+    if (readOnly) return say("Salt okuma rolü davet oluşturamaz");
+    setCandBusyId(c.id);
+    try {
+      const res = await fetch("/api/external/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidateId: c.id,
+          shopName: c.name,
+          contact: c.tel,
+          channel,
+          token: c.invite_token || undefined,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) {
+        say(d?.message || d?.error || "Davet oluşturulamadı");
+      } else {
+        setInviteOut({ shopName: c.name, inviteUrl: d.inviteUrl, whatsappUrl: d.whatsappUrl });
+        say(`${c.name} için KVKK uyumlu davet bağlantısı hazırlandı`);
+      }
+    } finally {
+      setCandBusyId(null);
+    }
+  };
 
   const parsed = AD.parseImport(f.text);
   const placeOpts = SC.PLACES.slice().sort((a, b) => (a.id === "santral" ? -1 : b.id === "santral" ? 1 : b.units - a.units)).slice(0, 40);
@@ -324,6 +426,103 @@ export default function IceAktar({ readOnly, refresh, say }: PanelTabProps) {
           )}
         </div>
       </div>
+
+      {/* Kademe 2: Canlı OpenStreetMap Senkronizasyonu + Aday Esnaf Hızlı Onay & KVKK Davet Kuyruğu */}
+      <section style={sx(CARD + ";margin-top:20px;padding:20px;display:flex;flex-direction:column;gap:14px")}>
+        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
+          <div>
+            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <Pill label="CANLI OSM OVERPASS · ADAY KUYRUĞU" t="info" />
+              <span style={sx("font-size:12px;color:var(--text-muted)")}>
+                {candidates.length} aday kayıt · © OpenStreetMap contributors
+              </span>
+            </div>
+            <div style={sx("font-size:15px;font-weight:700;color:var(--text-heading);margin-top:6px")}>
+              Bölge Canlı Veri Senkronu &amp; KVKK Uyumlu Esnaf Davet Kuyruğu
+            </div>
+            <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:3px")}>
+              Tarihi Yarımada bbox alanından WC, ATM, eczane ve aday dükkânları çeker; tek tıkla onaylar, sahaya gönderir veya KVKK ret/30-gün korumalı WhatsApp &amp; QR davet linki üretir.
+            </div>
+          </div>
+          {!readOnly && (
+            <Button color="primary" size="sm" disabled={osmBusy} onClick={runOsmSync}>
+              {osmBusy ? "OSM Çekiliyor…" : "🌍 Canlı OSM Senkronunu Çalıştır"}
+            </Button>
+          )}
+        </div>
+
+        {osmResult && <Alert color="info" variant="light">{osmResult}</Alert>}
+
+        {inviteOut && (
+          <Alert color="success" variant="light" title={`KVKK Daveti Hazır: ${inviteOut.shopName}`}>
+            <div style={sx("display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px")}>
+              <a
+                href={inviteOut.whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={sx("display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;background:var(--color-success);color:#fff;font-size:12.5px;font-weight:700;text-decoration:none")}
+              >
+                💬 WhatsApp ile Gönder ↗
+              </a>
+              <a
+                href={inviteOut.inviteUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={sx("font-size:12px;font-family:var(--font-mono);color:var(--color-primary)")}
+              >
+                {inviteOut.inviteUrl}
+              </a>
+            </div>
+          </Alert>
+        )}
+
+        {candidates.length === 0 ? (
+          <div style={sx("font-size:13px;color:var(--text-muted);padding:12px;border-radius:10px;background:var(--surface-muted)")}>
+            Henüz bekleyen aday esnaf yok. Yukarıdaki &quot;Canlı OSM Senkronunu Çalıştır&quot; butonuyla bölgedeki açık kaynak dükkânları kuyruğa alabilirsiniz.
+          </div>
+        ) : (
+          <div style={sx("display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto")}>
+            {candidates.slice(0, 25).map((c) => (
+              <div
+                key={c.id}
+                style={sx(
+                  "display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;border:1px solid var(--border-default);background:var(--surface-muted)",
+                )}
+              >
+                <div style={sx("min-width:200px;flex:1")}>
+                  <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+                    <span style={sx("font-size:13.5px;font-weight:700;color:var(--text-heading)")}>{c.name}</span>
+                    <Pill
+                      label={c.status}
+                      t={c.status === "approved" ? "success" : c.status === "rejected" || c.status === "opted_out" ? "danger" : "warning"}
+                    />
+                    <span style={sx("font-size:11.5px;color:var(--text-muted)")}>{c.source} · {c.cat || "genel"}</span>
+                  </div>
+                  <div style={sx("font-size:12px;color:var(--text-muted);margin-top:2px")}>
+                    {[c.address, c.tel ? `Tel: ${c.tel}` : "Tel yok"].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                {!readOnly && (
+                  <div style={sx("display:flex;gap:6px;flex-wrap:wrap")}>
+                    <Button size="sm" color="primary" disabled={candBusyId === c.id} onClick={() => actCandidate(c.id, "approve")}>
+                      ✓ Onayla
+                    </Button>
+                    <Button size="sm" variant="outline" color="secondary" disabled={candBusyId === c.id} onClick={() => actCandidate(c.id, "field")}>
+                      📍 Sahaya At
+                    </Button>
+                    <Button size="sm" variant="light" color="accent" disabled={candBusyId === c.id} onClick={() => buildInvite(c, c.tel ? "whatsapp" : "qr")}>
+                      {c.tel ? "💬 WhatsApp Davet" : "🔗 QR Davet Linki"}
+                    </Button>
+                    <Button size="sm" variant="outline" color="danger" disabled={candBusyId === c.id} onClick={() => actCandidate(c.id, "reject")}>
+                      Reddet
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </>
   );
 }

@@ -332,3 +332,255 @@ export async function readDecisions(limit = 200): Promise<
   );
   return rows;
 }
+
+// ── HAN 2.0 Kademe 2: external cache, POIs, candidate shops & KVKK invites ──
+
+export async function readExternalCache<T = unknown>(
+  key: string,
+): Promise<{ payload: T; fetchedAt: string; fresh: boolean } | null> {
+  try {
+    await ready();
+    const { rows } = await pool().query<{ payload: T; fetched_at: string; fresh: boolean }>(
+      `SELECT payload, fetched_at, (expires_at > now()) AS fresh
+         FROM external_cache
+        WHERE cache_key = $1`,
+      [key],
+    );
+    if (!rows.length) return null;
+    return { payload: rows[0].payload, fetchedAt: rows[0].fetched_at, fresh: Boolean(rows[0].fresh) };
+  } catch {
+    return null;
+  }
+}
+
+export async function writeExternalCache(key: string, payload: unknown, ttlSeconds: number): Promise<void> {
+  try {
+    await ready();
+    await pool().query(
+      `INSERT INTO external_cache (cache_key, payload, fetched_at, expires_at)
+            VALUES ($1, $2, now(), now() + ($3 || ' seconds')::interval)
+       ON CONFLICT (cache_key) DO UPDATE
+              SET payload = EXCLUDED.payload,
+                  fetched_at = now(),
+                  expires_at = EXCLUDED.expires_at`,
+      [key, JSON.stringify(payload), String(Math.max(30, Math.round(ttlSeconds)))],
+    );
+  } catch {
+    // Non-blocking cache write
+  }
+}
+
+export interface ExternalPoiRow {
+  id: string;
+  source: string;
+  kind: string;
+  name: string;
+  sub: string;
+  tip: string;
+  hours: string;
+  lat: number;
+  lng: number;
+  tags: Record<string, unknown>;
+  updated_at?: string;
+}
+
+export async function upsertExternalPois(items: ExternalPoiRow[]): Promise<number> {
+  if (!items.length) return 0;
+  await ready();
+  let count = 0;
+  for (const p of items) {
+    await pool().query(
+      `INSERT INTO external_pois (id, source, kind, name, sub, tip, hours, lat, lng, tags, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
+       ON CONFLICT (id) DO UPDATE
+              SET name = EXCLUDED.name,
+                  sub = EXCLUDED.sub,
+                  tip = EXCLUDED.tip,
+                  hours = EXCLUDED.hours,
+                  lat = EXCLUDED.lat,
+                  lng = EXCLUDED.lng,
+                  tags = EXCLUDED.tags,
+                  updated_at = now()`,
+      [p.id, p.source, p.kind, p.name, p.sub, p.tip, p.hours, p.lat, p.lng, JSON.stringify(p.tags || {})],
+    );
+    count += 1;
+  }
+  return count;
+}
+
+export async function readExternalPois(kind?: string | null): Promise<ExternalPoiRow[]> {
+  try {
+    await ready();
+    const { rows } = await pool().query<ExternalPoiRow>(
+      kind && kind !== "all"
+        ? "SELECT id, source, kind, name, sub, tip, hours, lat, lng, tags, updated_at FROM external_pois WHERE kind = $1 ORDER BY updated_at DESC LIMIT 200"
+        : "SELECT id, source, kind, name, sub, tip, hours, lat, lng, tags, updated_at FROM external_pois ORDER BY updated_at DESC LIMIT 250",
+      kind && kind !== "all" ? [kind] : [],
+    );
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+export interface CandidateShopRow {
+  id: string;
+  source: string;
+  external_id: string | null;
+  name: string;
+  cat: string;
+  place_id: string | null;
+  semt: string | null;
+  floor: number | null;
+  door: string | null;
+  tel: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+  invite_token: string | null;
+  notes: string;
+  raw?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function upsertCandidateShop(row: Omit<CandidateShopRow, "created_at" | "updated_at">): Promise<CandidateShopRow> {
+  await ready();
+  const { rows } = await pool().query<CandidateShopRow>(
+    `INSERT INTO candidate_shops
+       (id, source, external_id, name, cat, place_id, semt, floor, door, tel, address, lat, lng, status, invite_token, notes, raw, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,now())
+     ON CONFLICT (id) DO UPDATE
+       SET name = EXCLUDED.name,
+           cat = COALESCE(NULLIF(EXCLUDED.cat, ''), candidate_shops.cat),
+           tel = COALESCE(NULLIF(EXCLUDED.tel, ''), candidate_shops.tel),
+           address = COALESCE(NULLIF(EXCLUDED.address, ''), candidate_shops.address),
+           lat = COALESCE(EXCLUDED.lat, candidate_shops.lat),
+           lng = COALESCE(EXCLUDED.lng, candidate_shops.lng),
+           updated_at = now()
+     RETURNING *`,
+    [
+      row.id, row.source, row.external_id, row.name, row.cat,
+      row.place_id, row.semt, row.floor, row.door, row.tel,
+      row.address, row.lat, row.lng, row.status, row.invite_token,
+      row.notes, JSON.stringify(row.raw || {}),
+    ],
+  );
+  return rows[0];
+}
+
+export async function listCandidateShops(status?: string | null, limit = 100): Promise<CandidateShopRow[]> {
+  await ready();
+  const { rows } = await pool().query<CandidateShopRow>(
+    status && status !== "all"
+      ? "SELECT * FROM candidate_shops WHERE status = $1 ORDER BY updated_at DESC LIMIT $2"
+      : "SELECT * FROM candidate_shops ORDER BY updated_at DESC LIMIT $1",
+    status && status !== "all" ? [status, limit] : [limit],
+  );
+  return rows;
+}
+
+export async function updateCandidateShop(
+  id: string,
+  patch: Partial<Pick<CandidateShopRow, "status" | "name" | "cat" | "place_id" | "floor" | "door" | "tel" | "notes" | "invite_token">>,
+): Promise<CandidateShopRow | null> {
+  await ready();
+  const { rows } = await pool().query<CandidateShopRow>(
+    `UPDATE candidate_shops
+        SET status = COALESCE($2, status),
+            name = COALESCE($3, name),
+            cat = COALESCE($4, cat),
+            place_id = COALESCE($5, place_id),
+            floor = COALESCE($6, floor),
+            door = COALESCE($7, door),
+            tel = COALESCE($8, tel),
+            notes = COALESCE($9, notes),
+            invite_token = COALESCE($10, invite_token),
+            updated_at = now()
+      WHERE id = $1
+      RETURNING *`,
+    [
+      id,
+      patch.status ?? null,
+      patch.name ?? null,
+      patch.cat ?? null,
+      patch.place_id ?? null,
+      patch.floor ?? null,
+      patch.door ?? null,
+      patch.tel ?? null,
+      patch.notes ?? null,
+      patch.invite_token ?? null,
+    ],
+  );
+  return rows[0] || null;
+}
+
+export async function findCandidateByToken(token: string): Promise<CandidateShopRow | null> {
+  await ready();
+  const { rows } = await pool().query<CandidateShopRow>(
+    "SELECT * FROM candidate_shops WHERE invite_token = $1 LIMIT 1",
+    [token],
+  );
+  return rows[0] || null;
+}
+
+export async function isContactOptedOut(contactNorm: string): Promise<boolean> {
+  if (!contactNorm) return false;
+  await ready();
+  const { rows } = await pool().query<{ contact_norm: string }>(
+    "SELECT contact_norm FROM opt_out_contacts WHERE contact_norm = $1 LIMIT 1",
+    [contactNorm],
+  );
+  return rows.length > 0;
+}
+
+export async function addContactOptOut(contactNorm: string, reason = "kvkk-optout"): Promise<void> {
+  if (!contactNorm) return;
+  await ready();
+  await pool().query(
+    `INSERT INTO opt_out_contacts (contact_norm, reason)
+          VALUES ($1, $2)
+     ON CONFLICT (contact_norm) DO UPDATE SET reason = EXCLUDED.reason`,
+    [contactNorm, reason],
+  );
+}
+
+export async function hasRecentInvite(contactNorm: string, days = 30): Promise<boolean> {
+  if (!contactNorm) return false;
+  await ready();
+  const { rows } = await pool().query<{ id: string }>(
+    `SELECT id::text FROM invite_logs
+      WHERE contact_norm = $1
+        AND created_at > now() - ($2 || ' days')::interval
+      LIMIT 1`,
+    [contactNorm, String(days)],
+  );
+  return rows.length > 0;
+}
+
+export async function logInvite(entry: {
+  candidateId?: string | null;
+  contactNorm: string;
+  channel: string;
+  token?: string | null;
+  officer?: string | null;
+}): Promise<void> {
+  await ready();
+  await pool().query(
+    `INSERT INTO invite_logs (candidate_id, contact_norm, channel, token, officer)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [entry.candidateId || null, entry.contactNorm, entry.channel, entry.token || null, entry.officer || null],
+  );
+}
+
+export async function listInviteLogs(limit = 50): Promise<
+  { id: string; candidate_id: string | null; contact_norm: string; channel: string; officer: string | null; created_at: string }[]
+> {
+  await ready();
+  const { rows } = await pool().query(
+    "SELECT id::text, candidate_id, contact_norm, channel, officer, created_at FROM invite_logs ORDER BY created_at DESC LIMIT $1",
+    [limit],
+  );
+  return rows;
+}

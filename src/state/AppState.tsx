@@ -332,6 +332,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     syncFromOtherSurfaces(overrides, reports);
 
+    // Live TCMB exchange rates refresh (silently falls back to D.RATES when offline)
+    fetch("/api/external/rates")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.ok && data.rates && typeof data.rates === "object") {
+          Object.assign(D.RATES, data.rates);
+          dispatch({ type: "patchFn", fn: (s) => ({ tick: s.tick + 1 }) });
+        }
+      })
+      .catch(() => {});
+
     const g0 = (D.CAT_GROUPS || [])[0];
     const defaultTripName =
       ({ tr: "Çarşı günüm", en: "My bazaar day", ru: "Мой день на базаре", ar: "يومي في السوق" } as Record<string, string>)[lang] ||

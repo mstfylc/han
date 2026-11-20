@@ -7,7 +7,7 @@
 // share a shape: each answers a question the shop list cannot.
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
@@ -123,8 +123,37 @@ function ToolHead({ title, sub }: { title: string; sub?: string }) {
 function Converter({ lang }: { lang: Lang }) {
   const { state, set } = useApp();
   const [amount, setAmount] = useState(state.fxAmount || "1000");
+  const [liveFx, setLiveFx] = useState<{
+    source: string;
+    bulletinDate: string | null;
+    rates: Record<string, number>;
+    tryPerUnit: Record<string, number>;
+  } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/external/rates")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d?.ok && d.rates) {
+          Object.assign(D.RATES, d.rates);
+          setLiveFx({
+            source: d.source || "fallback",
+            bulletinDate: d.bulletinDate || null,
+            rates: d.rates,
+            tryPerUnit: d.tryPerUnit || {},
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const CU = D.CU;
   const value = Number(String(amount).replace(/[^\d.]/g, "")) || 0;
+  const activeRates = liveFx?.rates || (D.RATES as Record<string, number>);
 
   const rows = (D.CURRENCIES || [])
     .filter((c) => c.id !== "TRY")
@@ -132,13 +161,30 @@ function Converter({ lang }: { lang: Lang }) {
       id: c.id as string,
       label: (c.label as string) || (c.id as string),
       sym: (c.sym as string) || "",
-      value: value * ((D.RATES as Record<string, number>)[c.id as string] || 0),
+      value: value * (activeRates[c.id as string] || 0),
+      tryUnit: liveFx?.tryPerUnit?.[c.id as string] || null,
     }));
 
   return (
     <>
       <ToolHead title={tx(CU.title, lang)} sub={tx(CU.sub, lang)} />
       <section style={sx(CARD)}>
+        <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px")}>
+          <span
+            style={sx(
+              "display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;background:" +
+                (liveFx?.source === "tcmb-live" ? "var(--color-success-soft);color:var(--color-success)" : "var(--surface-muted);color:var(--text-muted)"),
+            )}
+          >
+            <span>{liveFx?.source === "tcmb-live" ? "● TCMB Canlı Kur" : "○ Referans Kur"}</span>
+            {liveFx?.bulletinDate && <span>· {liveFx.bulletinDate}</span>}
+          </span>
+          {liveFx?.tryPerUnit?.USD && (
+            <span style={sx("font-size:12.5px;font-weight:700;color:var(--text-heading);font-variant-numeric:tabular-nums")}>
+              1 USD = {liveFx.tryPerUnit.USD.toFixed(2)} ₺ · 1 EUR = {(liveFx.tryPerUnit.EUR || 0).toFixed(2)} ₺
+            </span>
+          )}
+        </div>
         <Input
           label={tx(CU.amount, lang)}
           inputMode="decimal"
@@ -153,13 +199,21 @@ function Converter({ lang }: { lang: Lang }) {
                 {r.sym}
                 {r.value >= 100 ? Math.round(r.value).toLocaleString() : r.value.toFixed(2)}
               </div>
+              {r.tryUnit && (
+                <div style={sx("font-size:11px;color:var(--text-muted);margin-top:3px")}>
+                  1 {r.id} ≈ {r.tryUnit.toFixed(2)} ₺
+                </div>
+              )}
             </div>
           ))}
         </div>
 
         <div style={sx("display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;font-size:13px;color:var(--text-muted)")}>
           <span>
-            <b style={sx("color:var(--text-body)")}>{tx(CU.rateSource, lang)}:</b> {tx(CU.rateSourceVal, lang)}
+            <b style={sx("color:var(--text-body)")}>{tx(CU.rateSource, lang)}:</b>{" "}
+            {liveFx?.source === "tcmb-live"
+              ? pk({ tr: "T.C. Merkez Bankası (TCMB) Canlı XML", en: "Central Bank of Türkiye (TCMB) Live XML", ru: "ЦБ Турции (TCMB) Онлайн", ar: "البنك المركزي التركي (مباشر)" }, lang)
+              : tx(CU.rateSourceVal, lang)}
           </span>
         </div>
 

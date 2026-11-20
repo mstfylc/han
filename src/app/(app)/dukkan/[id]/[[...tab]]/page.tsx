@@ -13,7 +13,7 @@
 // One template, two data sources (see lib/shopView.ts).
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
@@ -52,8 +52,38 @@ export default function ShopPage() {
   const tab = ((params.tab?.[0] || "urun") as Tab);
   const [reviewText, setReviewText] = useState("");
   const [stars, setStars] = useState(5);
+  const [googleBridge, setGoogleBridge] = useState<{
+    rating: number | null;
+    reviewCount: number | null;
+    mapsUrl: string;
+    attribution: string;
+  } | null>(null);
 
   const view = useMemo(() => resolveShop(id, lang, mode), [id, lang, mode]);
+
+  useEffect(() => {
+    if (!view?.name) return;
+    let alive = true;
+    const areaHint = [view.place?.name, "Fatih İstanbul"].filter(Boolean).join(" ");
+    fetch(
+      `/api/external/google-place?name=${encodeURIComponent(view.name)}&area=${encodeURIComponent(areaHint)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && d?.ok && d.mapsUrl) {
+          setGoogleBridge({
+            rating: typeof d.rating === "number" ? d.rating : null,
+            reviewCount: typeof d.reviewCount === "number" ? d.reviewCount : null,
+            mapsUrl: d.mapsUrl,
+            attribution: d.attribution || "Google Maps",
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [view?.name, view?.place?.name]);
   const similar = useMemo(() => (view ? similarShops(view) : []), [view]);
 
   // K3 · only a buyer who ACCEPTED an offer from this shop may write a review.
@@ -200,6 +230,30 @@ export default function ShopPage() {
               </span>
             )}
             <span style={sx("font-size:14px;color:var(--text-muted)")}>{view.where}</span>
+            <a
+              href={
+                googleBridge?.mapsUrl ||
+                "https://www.google.com/maps/search/?api=1&query=" +
+                  encodeURIComponent(`${view.name} ${view.place?.name || ""} Fatih İstanbul`)
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              style={sx(
+                "display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--color-primary);font-size:12px;font-weight:700;text-decoration:none",
+              )}
+            >
+              {googleBridge?.rating != null
+                ? `★ ${googleBridge.rating.toFixed(1)} (${googleBridge.reviewCount ?? 0}) · Google Haritalar ↗`
+                : pk(
+                    {
+                      tr: "🔍 Google Haritalar'da Yorumlara Bak ↗",
+                      en: "🔍 View Reviews on Google Maps ↗",
+                      ru: "🔍 Отзывы в Google Картах ↗",
+                      ar: "🔍 عرض التقييمات على خرائط Google ↗",
+                    },
+                    lang,
+                  )}
+            </a>
           </div>
 
           {/* ── right now ────────────────────────────────────────────── */}

@@ -19,6 +19,7 @@
     "flows": "node --env-file-if-exists=.env.local scripts/flows.mjs",
     "saha": "node scripts/saha-e2e.mjs",
     "ai-test": "node scripts/ai-contract.mjs",
+    "external-test": "node scripts/external-data.mjs",
     "backup": "node --env-file-if-exists=.env.local scripts/backup-db.mjs"
   },
   "dependencies": {

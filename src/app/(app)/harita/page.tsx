@@ -62,13 +62,14 @@ function MapScreen() {
   const [box, setBox] = useState<string[] | null>(null);
   const [mobileTab, setMobileTab] = useState<"map" | "list">("map");
   const [geofenceHan, setGeofenceHan] = useState<{ id: string; name: string; dist: number } | null>(null);
-  const [poiFilter, setPoiFilter] = useState<"all" | SC.ServicePoiKind | null>(() => {
+  const [poiFilter, setPoiFilter] = useState<"all" | SC.ServicePoiKind | "eczane" | null>(() => {
     if (
       initialPoiParam === "wc" ||
       initialPoiParam === "atm" ||
       initialPoiParam === "mola" ||
       initialPoiParam === "kargo" ||
-      initialPoiParam === "ulasim"
+      initialPoiParam === "ulasim" ||
+      initialPoiParam === "eczane"
     ) {
       return initialPoiParam;
     }
@@ -76,10 +77,60 @@ function MapScreen() {
     return null;
   });
   const [activePoiId, setActivePoiId] = useState<string | null>(null);
+  const [livePois, setLivePois] = useState<
+    Array<{
+      id: string;
+      kind: string;
+      source?: string;
+      lat: number;
+      lng: number;
+      hours: string;
+      title: Record<string, string>;
+      sub: Record<string, string>;
+      tip: Record<string, string>;
+    }>
+  >([]);
+  const [isparkLots, setIsparkLots] = useState<
+    Array<{
+      id: string;
+      name: string;
+      capacity: number;
+      emptyCapacity: number;
+      occupancyPct: number;
+      status: "open" | "busy" | "full";
+      lat: number;
+      lng: number;
+      distanceMeters: number;
+      workHours: string;
+    }>
+  >([]);
+  const [isparkSource, setIsparkSource] = useState<string>("fallback");
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/external/pois")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && d?.ok && Array.isArray(d.pois)) setLivePois(d.pois);
+      })
+      .catch(() => {});
+    fetch("/api/external/parking")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && d?.ok && Array.isArray(d.lots)) {
+          setIsparkLots(d.lots);
+          setIsparkSource(d.source || "fallback");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const p = sp.get("poi");
-    if (p === "wc" || p === "atm" || p === "mola" || p === "kargo" || p === "ulasim") {
+    if (p === "wc" || p === "atm" || p === "mola" || p === "kargo" || p === "ulasim" || p === "eczane") {
       setPoiFilter(p);
     } else if (p === "all") {
       setPoiFilter("all");
@@ -88,9 +139,10 @@ function MapScreen() {
 
   const filteredPois = useMemo(() => {
     if (!poiFilter) return [];
-    if (poiFilter === "all") return SC.SERVICE_POIS;
-    return SC.SERVICE_POIS.filter((item) => item.kind === poiFilter);
-  }, [poiFilter]);
+    const pool = livePois.length > 0 ? livePois : SC.SERVICE_POIS;
+    if (poiFilter === "all") return pool;
+    return pool.filter((item) => item.kind === poiFilter);
+  }, [poiFilter, livePois]);
 
   const post = useCallback((msg: Record<string, unknown>) => {
     frame.current?.contentWindow?.postMessage({ source: "han-web", ...msg }, "*");
@@ -376,7 +428,8 @@ function MapScreen() {
               ["atm", pk({ tr: "🏧 ATM & Döviz", en: "🏧 ATM & Exchange" }, lang)],
               ["mola", pk({ tr: "☕ Kahve & Mola", en: "☕ Coffee & Break" }, lang)],
               ["kargo", pk({ tr: "📦 Kargo & Emanet", en: "📦 Cargo & Bag Drop" }, lang)],
-              ["ulasim", pk({ tr: "🚊 Tramvay & Otopark", en: "🚊 Tram & Parking" }, lang)],
+              ["ulasim", pk({ tr: "🚊 Tramvay & İSPARK", en: "🚊 Tram & İSPARK" }, lang)],
+              ["eczane", pk({ tr: "💊 Eczane (OSM)", en: "💊 Pharmacy (OSM)" }, lang)],
             ] as const
           ).map(([id, label]) => {
             const on = poiFilter === id;
@@ -466,6 +519,49 @@ function MapScreen() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {poiFilter === "ulasim" && isparkLots.length > 0 && (
+          <div style={sx("margin-top:6px;padding-top:10px;border-top:1px solid var(--border-default)")}>
+            <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px")}>
+              <span style={sx("font-size:12px;font-weight:800;color:var(--text-heading)")}>
+                🅿️ {pk({ tr: "İBB İSPARK Canlı Otopark Doluluğu", en: "İBB İSPARK Live Parking Capacity" }, lang)}
+              </span>
+              <span style={sx("font-size:11px;font-weight:700;color:var(--text-muted)")}>
+                {isparkSource === "ibb-ispark-live" ? "🟢 Canlı İBB Verisi" : "○ Referans Otopark Listesi"} · © OpenStreetMap
+              </span>
+            </div>
+            <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:8px")}>
+              {isparkLots.slice(0, 6).map((lot) => {
+                const badgeTone =
+                  lot.status === "open"
+                    ? "var(--color-success-soft);color:var(--color-success)"
+                    : lot.status === "busy"
+                      ? "var(--color-warning-soft);color:var(--color-warning)"
+                      : "var(--color-danger-soft);color:var(--color-danger)";
+                const dot = lot.status === "open" ? "🟢" : lot.status === "busy" ? "🟡" : "🔴";
+                return (
+                  <a
+                    key={lot.id}
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${lot.lat},${lot.lng}&travelmode=driving`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={sx(
+                      "display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-card);text-decoration:none",
+                    )}
+                  >
+                    <div style={sx("font-size:12.5px;font-weight:800;color:var(--text-heading)")}>{lot.name}</div>
+                    <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:6px")}>
+                      <span style={sx("font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:" + badgeTone)}>
+                        {dot} {lot.emptyCapacity}/{lot.capacity} {pk({ tr: "Boş", en: "Free" }, lang)}
+                      </span>
+                      <span style={sx("font-size:11px;color:var(--text-muted)")}>{lot.distanceMeters} m · ↗</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>
