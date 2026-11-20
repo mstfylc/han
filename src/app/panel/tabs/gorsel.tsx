@@ -18,12 +18,17 @@ import { useEffect, useState } from "react";
 import * as AD from "@/data/han-admin";
 import * as SC from "@/data/han-scale";
 import { Alert, Button, Select } from "@/ds";
+import { compressImageFile } from "@/lib/media-compress";
 import { sx } from "@/lib/sx";
 
 import { H1, Pill, SUB, num, type PanelTabProps } from "./shared";
 
 /** public/assets içindeki yerleşik görsel havuzu. */
 const ASSETS: { value: string; label: string }[] = [
+  { value: "/assets/editorial-han.jpg", label: "★ Editoryal · Tarihi Han Avlusu" },
+  { value: "/assets/editorial-bijuteri.jpg", label: "★ Editoryal · Bijuteri & Takı" },
+  { value: "/assets/editorial-tekstil.jpg", label: "★ Editoryal · Tekstil & Çeyiz" },
+  { value: "/assets/editorial-baharat.jpg", label: "★ Editoryal · Baharat & Hediyelik" },
   { value: "/assets/ph-shop.png", label: "Dükkân vitrini" },
   { value: "/assets/ph-han.png", label: "Han içi" },
   { value: "/assets/ph-gate.png", label: "Kapı · giriş" },
@@ -90,8 +95,9 @@ export default function Gorsel(props: PanelTabProps) {
     if (!canEdit || !rec) return;
     setUploading(true);
     try {
+      const optimized = await compressImageFile(file, { maxEdge: 1600, quality: 0.82 });
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", optimized);
       fd.append("recordId", recId);
       fd.append("slug", rec.name || recId);
       const res = await fetch("/api/media/upload", { method: "POST", body: fd });

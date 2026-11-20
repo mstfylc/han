@@ -10,6 +10,8 @@ export type TelemetryEvent =
   | "whatsapp_share"
   | "zero_result_query"
   | "ai_visual_search"
+  | "ai_voice_search"
+  | "ai_voice_catalog"
   | "ai_plan_intent"
   | "ai_scan_shop"
   | "ai_translate_trade"

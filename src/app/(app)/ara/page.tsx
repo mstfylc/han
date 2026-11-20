@@ -21,6 +21,7 @@ import { F, W } from "@/lib/copy";
 import { convert, money, num, tx } from "@/lib/i18n";
 import { CARD_BOX, STICKY_TOP, areaOn, breaks, searchGrid } from "@/lib/layout";
 import { PARAM, getList, getNum, getPanel, getStr, href, panelParam, withParams } from "@/lib/routes";
+import { compressForAiLens } from "@/lib/media-compress";
 import { floorLabel, medStyle } from "@/lib/shop";
 import { sx } from "@/lib/sx";
 import { trackEvent } from "@/lib/telemetry";
@@ -86,18 +87,27 @@ function SearchScreen() {
   const panel = getPanel(sp);
   const hanFloor = getNum(sp, PARAM.floor, 0);
   const visualParam = getStr(sp, "visual") === "1";
+  const voiceParam = getStr(sp, "voice") === "1";
 
   // The text box is local so typing stays smooth; the URL updates on submit.
-  //
-  // Resetting it to follow the URL is done DURING render, not in an effect.
-  // `useEffect(() => setDraft(q), [q])` renders once with the stale text and
-  // then immediately renders again — a visible flash of the previous query on
-  // every back/forward, and a cascading render the compiler flags.
   const [draft, setDraft] = useState(q);
   const [syncedQ, setSyncedQ] = useState(q);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [visualPanelOpen, setVisualPanelOpen] = useState(visualParam);
   const [syncedVisualParam, setSyncedVisualParam] = useState(visualParam);
+  const [voicePanelOpen, setVoicePanelOpen] = useState(voiceParam);
+  const [syncedVoiceParam, setSyncedVoiceParam] = useState(voiceParam);
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [voiceText, setVoiceText] = useState("");
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceResult, setVoiceResult] = useState<{
+    provider: string;
+    intent: { transcript: string; query: string; qty: number | null; replyTr: string };
+    matches: VisualSearchMatch[];
+  } | null>(null);
+  const voiceRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
   const [visualLoading, setVisualLoading] = useState(false);
   const [visualError, setVisualError] = useState<string | null>(null);
   const [visualPreview, setVisualPreview] = useState<string | null>(null);
@@ -111,6 +121,10 @@ function SearchScreen() {
   if (visualParam !== syncedVisualParam) {
     setSyncedVisualParam(visualParam);
     if (visualParam) setVisualPanelOpen(true);
+  }
+  if (voiceParam !== syncedVoiceParam) {
+    setSyncedVoiceParam(voiceParam);
+    if (voiceParam) setVoicePanelOpen(true);
   }
 
   useEffect(() => {
@@ -131,8 +145,9 @@ function SearchScreen() {
     setVisualError(null);
 
     try {
+      const compactFile = await compressForAiLens(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compactFile);
       fd.append("lang", lang);
       fd.append("mode", mode);
       if (draft.trim()) fd.append("hint", draft.trim());
@@ -174,6 +189,76 @@ function SearchScreen() {
       setVisualError(pk({ tr: "Bağlantı hatası oluştu. Lütfen tekrar deneyin.", en: "Connection error. Please try again." }, lang));
     } finally {
       setVisualLoading(false);
+    }
+  };
+
+  const runVoiceSearch = async (opts: { audioBlob?: Blob; text?: string }) => {
+    setVoicePanelOpen(true);
+    setVoiceLoading(true);
+    setVoiceError(null);
+    try {
+      let r: Response;
+      if (opts.audioBlob) {
+        const fd = new FormData();
+        fd.append("audio", new File([opts.audioBlob], "voice.webm", { type: opts.audioBlob.type || "audio/webm" }));
+        fd.append("lang", lang);
+        fd.append("mode", mode);
+        if (opts.text?.trim()) fd.append("transcript", opts.text.trim());
+        r = await fetch("/api/ai/voice-search", { method: "POST", body: fd });
+      } else {
+        r = await fetch("/api/ai/voice-search", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ transcript: opts.text || "", lang, mode }),
+        });
+      }
+      const d = await r.json();
+      if (!r.ok || !d.ok || !d.intent) {
+        setVoiceError(d?.error || pk({ tr: "Sesli arama tamamlanamadı.", en: "Voice search failed." }, lang));
+        return;
+      }
+      setVoiceResult({ provider: d.provider || "fallback", intent: d.intent, matches: d.matches || [] });
+      setDraft(d.intent.query || "");
+      trackEvent("ai_voice_search", { meta: { provider: d.provider || "fallback", matches: d.matches?.length || 0 } });
+      toast(d.intent.replyTr || pk({ tr: "Sesli arama tamamlandı", en: "Voice search ready" }, lang));
+    } catch {
+      setVoiceError(pk({ tr: "Bağlantı hatası oluştu.", en: "Connection error." }, lang));
+    } finally {
+      setVoiceLoading(false);
+    }
+  };
+
+  const toggleVoiceRecording = async () => {
+    if (voiceRecording && voiceRecorderRef.current) {
+      voiceRecorderRef.current.stop();
+      setVoiceRecording(false);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setVoicePanelOpen(true);
+      setVoiceError(pk({ tr: "Bu tarayıcıda mikrofon kaydı desteklenmiyor — aşağıya doğal cümleyle yazabilirsiniz.", en: "Microphone recording unavailable — type naturally below." }, lang));
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      voiceChunksRef.current = [];
+      rec.ondataavailable = (ev) => {
+        if (ev.data.size > 0) voiceChunksRef.current.push(ev.data);
+      };
+      rec.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(voiceChunksRef.current, { type: rec.mimeType || "audio/webm" });
+        if (blob.size > 0) void runVoiceSearch({ audioBlob: blob, text: voiceText });
+      };
+      voiceRecorderRef.current = rec;
+      rec.start();
+      setVoicePanelOpen(true);
+      setVoiceRecording(true);
+      setVoiceError(null);
+    } catch {
+      setVoicePanelOpen(true);
+      setVoiceError(pk({ tr: "Mikrofon izni alınamadı — aşağıya doğal cümleyle yazabilirsiniz.", en: "Microphone permission denied — type naturally below." }, lang));
     }
   };
 
@@ -441,6 +526,16 @@ function SearchScreen() {
               </Button>
               <Button
                 type="button"
+                color="accent"
+                variant={voicePanelOpen || voiceRecording ? "solid" : "outline"}
+                size="md"
+                disabled={voiceLoading}
+                onClick={() => (voicePanelOpen ? void toggleVoiceRecording() : setVoicePanelOpen(true))}
+              >
+                {pk({ tr: "🎤 Sesli", en: "🎤 Voice" }, lang)}
+              </Button>
+              <Button
+                type="button"
                 color="primary"
                 variant="outline"
                 size="md"
@@ -514,6 +609,18 @@ function SearchScreen() {
             <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
               <Button
                 type="button"
+                color="accent"
+                variant={voicePanelOpen || voiceRecording ? "solid" : "outline"}
+                size="sm"
+                disabled={voiceLoading}
+                onClick={() => (voicePanelOpen ? void toggleVoiceRecording() : setVoicePanelOpen(true))}
+              >
+                {voiceRecording
+                  ? pk({ tr: "⏹ Kaydı Durdur", en: "⏹ Stop Recording" }, lang)
+                  : pk({ tr: "🎤 Sesle Sor", en: "🎤 Voice Search" }, lang)}
+              </Button>
+              <Button
+                type="button"
                 color="primary"
                 variant={visualPanelOpen ? "solid" : "outline"}
                 size="sm"
@@ -527,6 +634,115 @@ function SearchScreen() {
             </div>
           )}
         </div>
+
+        {/* Voice Search Push-to-Talk & Natural Query Panel (?voice=1 or active) */}
+        {(voicePanelOpen || voiceRecording || voiceLoading || voiceResult) && (
+          <section
+            data-voice-search="1"
+            style={sx(
+              "margin-top:12px;padding:14px 16px;border-radius:14px;border:2px solid var(--color-accent);background:var(--surface-card);min-width:0;max-width:100%;box-sizing:border-box",
+            )}
+          >
+            <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap")}>
+              <div>
+                <div style={sx("font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--color-accent)")}>
+                  {pk({ tr: "🎤 Bas-Konuş · Gerçek Kapı Bul", en: "🎤 Push-to-Talk · Find Verified Doors" }, lang)}
+                </div>
+                <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:2px")}>
+                  {pk({ tr: "Örn: \"Tahtakale'de 200 adet 316L çelik kolye toptan arıyorum\"", en: "e.g. \"200 pcs 316L steel necklaces wholesale in Tahtakale\"" }, lang)}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setVoicePanelOpen(false);
+                  setVoiceResult(null);
+                  setVoiceError(null);
+                  if (voiceParam) nav({ voice: null }, true);
+                }}
+                style={sx("height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--text-muted);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer")}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={sx("display:flex;gap:8px;flex-wrap:wrap;margin-top:10px")}>
+              <Button
+                type="button"
+                size="sm"
+                color={voiceRecording ? "danger" : "accent"}
+                disabled={voiceLoading}
+                onClick={() => void toggleVoiceRecording()}
+              >
+                {voiceRecording
+                  ? pk({ tr: "⏹ Durdur ve Ara", en: "⏹ Stop & Search" }, lang)
+                  : pk({ tr: "🎙️ Mikrofonu Başlat", en: "🎙️ Start Mic" }, lang)}
+              </Button>
+              <input
+                type="text"
+                value={voiceText}
+                onChange={(e) => setVoiceText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && voiceText.trim()) void runVoiceSearch({ text: voiceText });
+                }}
+                placeholder={pk({ tr: "Veya konuşur gibi yazın…", en: "Or type naturally…" }, lang)}
+                className="mtinput mtinput--sm"
+                style={sx("flex:1 1 200px;min-width:0")}
+              />
+              <Button
+                type="button"
+                size="sm"
+                color="primary"
+                disabled={voiceLoading || !voiceText.trim()}
+                onClick={() => void runVoiceSearch({ text: voiceText })}
+              >
+                {voiceLoading ? "⏳..." : pk({ tr: "Kapıları Bul", en: "Find Doors" }, lang)}
+              </Button>
+            </div>
+
+            {voiceError && (
+              <div style={sx("margin-top:10px")}>
+                <Alert color="warning" variant="light">{voiceError}</Alert>
+              </div>
+            )}
+
+            {voiceResult && (
+              <div style={sx("margin-top:12px;display:flex;flex-direction:column;gap:8px")}>
+                <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap")}>
+                  <span style={sx("font-size:13px;font-weight:700;color:var(--text-heading)")}>
+                    ✓ {voiceResult.intent.replyTr}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    color="primary"
+                    onClick={() => nav({ [PARAM.q]: voiceResult.intent.query, adet: voiceResult.intent.qty ? String(voiceResult.intent.qty) : null, [PARAM.page]: null })}
+                  >
+                    {pk({ tr: "Listeye Uygula ➔", en: "Apply to List ➔" }, lang)}
+                  </Button>
+                </div>
+                {voiceResult.matches.length > 0 && (
+                  <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:8px")}>
+                    {voiceResult.matches.slice(0, 6).map((m) => (
+                      <button
+                        key={m.recordId}
+                        type="button"
+                        onClick={() => router.push(href.store(m.curated || m.recordId))}
+                        style={sx("display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-muted);font-family:inherit;text-align:start;cursor:pointer")}
+                      >
+                        <span style={sx("font-size:13px;font-weight:800;color:var(--text-heading)")}>{m.name}</span>
+                        <span style={sx("font-size:11.5px;font-weight:700;color:var(--color-primary)")}>
+                          {m.placeName} · {floorLabel(m.floor, lang, m.placeId)} · No: {m.door}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Visual Search Highlighted Drop / Upload Panel (?visual=1 or active) */}
         {(visualPanelOpen || visualLoading || visualError || visualResult) && (

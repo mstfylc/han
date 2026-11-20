@@ -32,6 +32,7 @@ import { F } from "@/lib/copy";
 import { money, tonePair, upper } from "@/lib/i18n";
 import { CARD_BOX, STICKY_TOP, areaOn, breaks, searchGrid } from "@/lib/layout";
 import { PARAM, getStr, href } from "@/lib/routes";
+import { compressForAiLens, compressImageFile } from "@/lib/media-compress";
 import { floorLabel as shopFloorLabel, recordName } from "@/lib/shop";
 import { sx } from "@/lib/sx";
 import { allRequests, useApp } from "@/state/AppState";
@@ -177,6 +178,9 @@ function TraderScreen() {
   const [scanBusy, setScanBusy] = useState(false);
   const [scanText, setScanText] = useState("");
   const [scanDraft, setScanDraft] = useState<ShopScanDraft | null>(null);
+  const [voiceCatRec, setVoiceCatRec] = useState(false);
+  const voiceCatRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceCatChunksRef = useRef<Blob[]>([]);
 
   const requestLoginOtp = async () => {
     const want = digits(loginTel);
@@ -240,8 +244,9 @@ function TraderScreen() {
   const handleRealPhotoUpload = async (file: File, targetRec: ShopRecord | null) => {
     setUploadBusy(true);
     try {
+      const optimized = await compressImageFile(file, { maxEdge: 1600, quality: 0.82 });
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", optimized);
       fd.append("slug", targetRec?.name || targetRec?.id || "esnaf-vitrin");
       if (targetRec?.id) fd.append("recordId", targetRec.id);
       const res = await fetch("/api/media/upload", { method: "POST", body: fd });
@@ -278,8 +283,9 @@ function TraderScreen() {
     try {
       let res: Response;
       if (opts.file) {
+        const compact = await compressForAiLens(opts.file);
         const fd = new FormData();
-        fd.append("file", opts.file);
+        fd.append("file", compact);
         if (opts.text) fd.append("text", opts.text);
         res = await fetch("/api/ai/scan-shop", { method: "POST", body: fd });
       } else {
@@ -317,6 +323,85 @@ function TraderScreen() {
       toast(t({ tr: "AI tarama servisine ulaşılamadı", en: "AI scan service unreachable" }));
     } finally {
       setScanBusy(false);
+    }
+  };
+
+  const handleVoiceCatalog = async (audioBlob?: Blob, modeTab: "bul" | "yonet" = "yonet") => {
+    setScanBusy(true);
+    try {
+      let res: Response;
+      if (audioBlob) {
+        const fd = new FormData();
+        fd.append("audio", new File([audioBlob], "catalog.webm", { type: audioBlob.type || "audio/webm" }));
+        if (scanText.trim()) fd.append("text", scanText.trim());
+        res = await fetch("/api/ai/voice-catalog", { method: "POST", body: fd });
+      } else {
+        res = await fetch("/api/ai/voice-catalog", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text: scanText.trim() || "316L çelik kolye 120 TL en az 20 adet" }),
+        });
+      }
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.draft) {
+        return toast(data?.error || t({ tr: "Sesli vitrin taslağı oluşturulamadı", en: "Voice catalog failed" }));
+      }
+      const d = data.draft;
+      setScanDraft({
+        name: d.productName,
+        tel: "",
+        door: "",
+        category: d.category,
+        tags: d.tags || [],
+        moq: d.moq || 12,
+        descTr: d.descTr,
+        descEn: d.descEn,
+        descRu: d.descRu,
+        descAr: d.descAr,
+      });
+      if (modeTab === "yonet") {
+        setMf((s) => ({
+          ...s,
+          moq: d.moq ? String(d.moq) : s.moq,
+          lo: d.priceMin ? String(d.priceMin) : s.lo,
+          hi: d.priceMax ? String(d.priceMax) : s.hi,
+          groups: Array.from(new Set([...s.groups, ...(d.tags || [])])),
+        }));
+      }
+      toast(t({ tr: `🎙️ 4 Dilli vitrin taslağı hazır: ${d.productName} (Onayınızı bekliyor)`, en: `🎙️ 4-language catalog draft ready: ${d.productName}` }));
+    } catch {
+      toast(t({ tr: "Sesli vitrin servisine ulaşılamadı", en: "Voice catalog service unreachable" }));
+    } finally {
+      setScanBusy(false);
+    }
+  };
+
+  const toggleVoiceCatalogMic = async (modeTab: "bul" | "yonet") => {
+    if (voiceCatRec && voiceCatRecorderRef.current) {
+      voiceCatRecorderRef.current.stop();
+      setVoiceCatRec(false);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      return void handleVoiceCatalog(undefined, modeTab);
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      voiceCatChunksRef.current = [];
+      rec.ondataavailable = (ev) => {
+        if (ev.data.size > 0) voiceCatChunksRef.current.push(ev.data);
+      };
+      rec.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(voiceCatChunksRef.current, { type: rec.mimeType || "audio/webm" });
+        if (blob.size > 0) void handleVoiceCatalog(blob, modeTab);
+      };
+      voiceCatRecorderRef.current = rec;
+      rec.start();
+      setVoiceCatRec(true);
+    } catch {
+      void handleVoiceCatalog(undefined, modeTab);
     }
   };
 
@@ -1178,6 +1263,16 @@ function TraderScreen() {
                           }}
                         />
                       </label>
+                      <Button
+                        color={voiceCatRec ? "danger" : "accent"}
+                        size="sm"
+                        disabled={scanBusy}
+                        onClick={() => void toggleVoiceCatalogMic("yonet")}
+                      >
+                        {voiceCatRec
+                          ? t({ tr: "⏹ Ses Kaydını Bitir", en: "⏹ Finish Voice Note" })
+                          : t({ tr: "🎙️ 10 Sn Sesle 4 Dilli Vitrin Aç", en: "🎙️ 10s Voice-to-Catalog (4 Lang)" })}
+                      </Button>
                       <Button
                         color="primary"
                         size="sm"

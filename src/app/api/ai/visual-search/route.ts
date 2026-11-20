@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import * as SC from "@/data/han-scale";
 import * as SE from "@/data/han-search";
 import type { Lang, Mode } from "@/data/types";
-import { callGeminiJson, checkAiRateLimit, clientIp } from "@/server/ai";
+import { callGeminiJson, checkAiRateLimit, clientIp, validateAiCards } from "@/server/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -179,26 +179,15 @@ export async function POST(request: Request) {
   const pickedItems = catFiltered.length ? catFiltered : baseRes.items;
   const fallbackRes = { total: catFiltered.length || baseRes.total, items: pickedItems };
 
-  const matches = fallbackRes.items.slice(0, 8).map((item) => {
-    const rec = item.rec;
-    const place = SC.PLACES.find((p) => p.id === rec.place);
-    return {
-      recordId: rec.id,
-      curated: rec.curated || null,
-      name: rec.name,
-      placeId: rec.place,
-      placeName: place?.name || rec.place,
-      floor: rec.floor,
-      door: String(rec.door),
-      cat: rec.cat,
-      band: rec.band || null,
-      status: rec.status,
-    };
-  });
+  const matches = validateAiCards(
+    fallbackRes.items.slice(0, 12).map((item) => ({ recordId: item.rec.id })),
+    8,
+  );
 
   return NextResponse.json({
     ok: true,
     provider,
+    firewallVerified: true,
     extracted,
     totalMatches: fallbackRes.total,
     matches,
