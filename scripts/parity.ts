@@ -10,7 +10,6 @@
 import {
   PLACES,
   RECORDS,
-  SANTRAL_REAL_DOORS,
   SCALE_TOTALS,
   SERVICE_POIS,
   UNIT_INDEX,
@@ -38,7 +37,7 @@ async function main() {
   check("curated records merged", RECORDS.filter((r) => r.curated).length, STORES.length);
   check("unit index covers every place", Object.keys(UNIT_INDEX).length, PLACES.length);
   check("Santral Han exists", Boolean(PLACES.find((p) => p.id === "santral")), true);
-  check("Santral Han real doors >= 190", SANTRAL_REAL_DOORS.length >= 190, true);
+  check("Santral Han real doors >= 190", RECORDS.filter((r) => r.place === "santral").length >= 190, true);
   check("Service POIs >= 10 (WC/ATM/Mola/Kargo/Ulaşım)", SERVICE_POIS.length >= 10, true);
 
   console.log("\n── place kinds and hours ──────────────────────────────────");
