@@ -1,9 +1,9 @@
-import { createHash, createHmac } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 
 import { recordMediaAsset } from "@/server/db";
+import { getR2Config, putR2Object, sha256Hex } from "@/server/r2";
 
 export const dynamic = "force-dynamic";
 
@@ -25,66 +25,6 @@ function slugify(raw: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 40) || "han-media";
-}
-
-function sha256Hex(data: Buffer | string): string {
-  return createHash("sha256").update(data).digest("hex");
-}
-
-function hmac(key: Buffer | string, data: string): Buffer {
-  return createHmac("sha256", key).update(data).digest();
-}
-
-/** Minimal zero-dependency AWS SigV4 PUT to Cloudflare R2. */
-async function uploadToR2(objectKey: string, body: Buffer, contentType: string): Promise<string> {
-  const accountId = process.env.R2_ACCOUNT_ID || "29fe42720b1693ecc26d6619339d031f";
-  const bucket = process.env.R2_BUCKET || "branchsound-assets";
-  const accessKey = process.env.R2_ACCESS_KEY_ID || "";
-  const secretKey = process.env.R2_SECRET_ACCESS_KEY || "";
-  const publicBase = (process.env.R2_PUBLIC_URL || "").replace(/\/+$/, "");
-
-  const host = `${accountId}.r2.cloudflarestorage.com`;
-  const canonicalUri = `/${bucket}/${objectKey}`;
-  const now = new Date();
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
-  const dateStamp = amzDate.slice(0, 8);
-  const payloadHash = sha256Hex(body);
-
-  const canonicalHeaders =
-    `cache-control:public, max-age=31536000, immutable\n` +
-    `content-type:${contentType}\n` +
-    `host:${host}\n` +
-    `x-amz-content-sha256:${payloadHash}\n` +
-    `x-amz-date:${amzDate}\n`;
-  const signedHeaders = "cache-control;content-type;host;x-amz-content-sha256;x-amz-date";
-  const canonicalRequest = ["PUT", canonicalUri, "", canonicalHeaders, signedHeaders, payloadHash].join("\n");
-
-  const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, credentialScope, sha256Hex(canonicalRequest)].join("\n");
-
-  const kDate = hmac("AWS4" + secretKey, dateStamp);
-  const kRegion = hmac(kDate, "auto");
-  const kService = hmac(kRegion, "s3");
-  const kSigning = hmac(kService, "aws4_request");
-  const signature = createHmac("sha256", kSigning).update(stringToSign).digest("hex");
-
-  const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  const res = await fetch(`https://${host}${canonicalUri}`, {
-    method: "PUT",
-    headers: {
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "Content-Type": contentType,
-      "x-amz-content-sha256": payloadHash,
-      "x-amz-date": amzDate,
-      Authorization: authHeader,
-    },
-    body: new Uint8Array(body),
-  });
-  if (!res.ok) {
-    throw new Error(`R2 upload failed with HTTP ${res.status}`);
-  }
-  return publicBase ? `${publicBase}/${objectKey}` : `https://${host}${canonicalUri}`;
 }
 
 export async function POST(request: Request) {
@@ -121,8 +61,8 @@ export async function POST(request: Request) {
     let url = "";
     let storage: "r2" | "local" = "local";
 
-    if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY) {
-      url = await uploadToR2(r2Key, buf, mime);
+    if (getR2Config()) {
+      url = await putR2Object(r2Key, buf, mime);
       storage = "r2";
     } else {
       const uploadDir = path.join(process.cwd(), "public", "uploads");

@@ -95,10 +95,19 @@ export type AiModelTier = "fast" | "agent";
 
 export function resolveModel(tier: AiModelTier = "agent"): string {
   if (tier === "fast") {
-    return process.env.HAN_AI_FAST_MODEL || "gemini-2.5-flash-lite";
+    return process.env.HAN_AI_FAST_MODEL || "gemini-flash-lite-latest";
   }
-  return process.env.HAN_AI_MODEL || "gemini-2.5-flash";
+  return process.env.HAN_AI_MODEL || "gemini-3.5-flash-lite";
 }
+
+function getGeminiKeys(): string[] {
+  return String(process.env.GEMINI_API_KEY || "")
+    .split(/[,;\s]+/)
+    .map((k) => k.trim())
+    .filter((k) => k.length >= 20);
+}
+
+let keyRotationIdx = 0;
 
 /**
  * Hallucination Firewall: verifies every AI-returned shop match against live SC.RECORDS.
@@ -154,7 +163,7 @@ export function validateAiCards(
   return out;
 }
 
-/** Call Gemini returning strict JSON. Supports text, image, and MediaRecorder audio inline data. */
+/** Call Gemini returning strict JSON. Supports key-pool rotation, model fallback, image, and MediaRecorder audio. */
 export async function callGeminiJson<T>(opts: {
   prompt: string;
   tier?: AiModelTier;
@@ -163,11 +172,16 @@ export async function callGeminiJson<T>(opts: {
   audioBase64?: string;
   audioMime?: string;
 }): Promise<T | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  const keys = getGeminiKeys();
+  if (!keys.length) return null;
   if (!consumeGlobalAiBudget()) return null;
 
-  const model = resolveModel(opts.tier || "agent");
+  const primaryModel = resolveModel(opts.tier || "agent");
+  const modelCandidates =
+    primaryModel === "gemini-flash-lite-latest"
+      ? [primaryModel]
+      : [primaryModel, "gemini-flash-lite-latest"];
+
   const parts: Record<string, unknown>[] = [{ text: opts.prompt }];
   if (opts.imageBase64 && opts.imageMime) {
     parts.push({
@@ -186,33 +200,46 @@ export async function callGeminiJson<T>(opts: {
     });
   }
 
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 14_000);
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        signal: ctrl.signal,
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.15,
-            responseMimeType: "application/json",
+  const startOffset = keyRotationIdx % keys.length;
+  keyRotationIdx = (keyRotationIdx + 1) % keys.length;
+
+  for (const model of modelCandidates) {
+    for (let attempt = 0; attempt < keys.length; attempt += 1) {
+      const apiKey = keys[(startOffset + attempt) % keys.length];
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 11_000);
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            signal: ctrl.signal,
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: {
+                temperature: 0.15,
+                responseMimeType: "application/json",
+              },
+            }),
           },
-        }),
-      },
-    );
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return null;
-    return JSON.parse(rawText) as T;
-  } catch {
-    return null;
+        );
+        clearTimeout(timer);
+        if (!res.ok) {
+          // Rotate to next key on 402/429/503; try fallback model on 404
+          if (res.status === 404) break;
+          continue;
+        }
+        const data = (await res.json()) as {
+          candidates?: { content?: { parts?: { text?: string }[] } }[];
+        };
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) continue;
+        return JSON.parse(rawText) as T;
+      } catch {
+        continue;
+      }
+    }
   }
+  return null;
 }
