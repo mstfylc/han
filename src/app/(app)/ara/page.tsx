@@ -21,10 +21,38 @@ import { F, W } from "@/lib/copy";
 import { convert, money, num, tx } from "@/lib/i18n";
 import { CARD_BOX, STICKY_TOP, areaOn, breaks, searchGrid } from "@/lib/layout";
 import { PARAM, getList, getNum, getPanel, getStr, href, panelParam, withParams } from "@/lib/routes";
-import { medStyle } from "@/lib/shop";
+import { floorLabel, medStyle } from "@/lib/shop";
 import { sx } from "@/lib/sx";
 import { useApp } from "@/state/AppState";
 import type { Panel, SavedSearch } from "@/state/types";
+
+interface VisualSearchExtracted {
+  query: string;
+  category: string;
+  labelTr: string;
+  tags: string[];
+  confidence: number;
+}
+
+interface VisualSearchMatch {
+  recordId: string;
+  curated: string | null;
+  name: string;
+  placeId: string;
+  placeName: string;
+  floor: number;
+  door: string;
+  cat: string;
+  band: [number, number] | null;
+  status: string;
+}
+
+interface VisualSearchResult {
+  provider: "gemini" | "fallback";
+  extracted: VisualSearchExtracted;
+  totalMatches: number;
+  matches: VisualSearchMatch[];
+}
 
 const PER_PAGE = 40;
 const pk = (o: Record<string, string>, lang: Lang) => o[lang] || o.tr;
@@ -56,6 +84,7 @@ function SearchScreen() {
   const qtyParam = getStr(sp, "adet", state.qty || "");
   const panel = getPanel(sp);
   const hanFloor = getNum(sp, PARAM.floor, 0);
+  const visualParam = getStr(sp, "visual") === "1";
 
   // The text box is local so typing stays smooth; the URL updates on submit.
   //
@@ -66,10 +95,83 @@ function SearchScreen() {
   const [draft, setDraft] = useState(q);
   const [syncedQ, setSyncedQ] = useState(q);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [visualPanelOpen, setVisualPanelOpen] = useState(visualParam);
+  const [syncedVisualParam, setSyncedVisualParam] = useState(visualParam);
+  const [visualLoading, setVisualLoading] = useState(false);
+  const [visualError, setVisualError] = useState<string | null>(null);
+  const [visualPreview, setVisualPreview] = useState<string | null>(null);
+  const [visualResult, setVisualResult] = useState<VisualSearchResult | null>(null);
+  const visualFileRef = useRef<HTMLInputElement | null>(null);
+
   if (q !== syncedQ) {
     setSyncedQ(q);
     setDraft(q);
   }
+  if (visualParam !== syncedVisualParam) {
+    setSyncedVisualParam(visualParam);
+    if (visualParam) setVisualPanelOpen(true);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (visualPreview) URL.revokeObjectURL(visualPreview);
+    };
+  }, [visualPreview]);
+
+  const handleVisualFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (visualPreview) URL.revokeObjectURL(visualPreview);
+    const previewUrl = URL.createObjectURL(file);
+    setVisualPreview(previewUrl);
+    setVisualPanelOpen(true);
+    setVisualLoading(true);
+    setVisualError(null);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("lang", lang);
+      fd.append("mode", mode);
+      if (draft.trim()) fd.append("hint", draft.trim());
+
+      const r = await fetch("/api/ai/visual-search", { method: "POST", body: fd });
+      const data = (await r.json()) as {
+        ok?: boolean;
+        error?: string;
+        provider?: "gemini" | "fallback";
+        extracted?: VisualSearchExtracted;
+        totalMatches?: number;
+        matches?: VisualSearchMatch[];
+      };
+
+      if (!r.ok || !data.ok || !data.extracted) {
+        setVisualError(data.error || pk({ tr: "Fotoğraf analiz edilemedi. Lütfen tekrar deneyin.", en: "Could not analyze image. Please try again." }, lang));
+        return;
+      }
+
+      setVisualResult({
+        provider: data.provider || "fallback",
+        extracted: data.extracted,
+        totalMatches: data.totalMatches ?? (data.matches?.length || 0),
+        matches: data.matches || [],
+      });
+      toast(
+        pk(
+          {
+            tr: `📸 ${data.extracted.labelTr} tespit edildi (${data.matches?.length || 0} eşleşme)`,
+            en: `📸 Detected ${data.extracted.labelTr} (${data.matches?.length || 0} matches)`,
+          },
+          lang,
+        ),
+      );
+    } catch {
+      setVisualError(pk({ tr: "Bağlantı hatası oluştu. Lütfen tekrar deneyin.", en: "Connection error. Please try again." }, lang));
+    } finally {
+      setVisualLoading(false);
+    }
+  };
 
   const nav = useCallback(
     (patch: Record<string, string | number | string[] | null | undefined>, replace = false) => {
@@ -300,16 +402,27 @@ function SearchScreen() {
       )}
 
       {/* ── results ─────────────────────────────────────────────────────── */}
-      <main style={sx(areaOn("l"))} id="han-sonuclar">
+      <main style={sx(areaOn("l") + ";min-width:0;max-width:100%")} id="han-sonuclar">
+        {/* Hidden camera/gallery file picker for Visual Search */}
+        <input
+          ref={visualFileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          onChange={handleVisualFile}
+          style={{ display: "none" }}
+          aria-label={pk({ tr: "Fotoğraf yükle veya çek", en: "Upload or take a photo" }, lang)}
+        />
+
         {/* Compact Mobile Search & Filter Bar (< 1040px) */}
         {b.single && (
-          <div style={sx("background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 3px 8px rgba(0,0,0,.04)")}>
+          <div style={sx("background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 3px 8px rgba(0,0,0,.04);min-width:0;max-width:100%;box-sizing:border-box")}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 nav({ [PARAM.q]: draft || null, [PARAM.page]: null });
               }}
-              style={sx("display:flex;gap:8px")}
+              style={sx("display:flex;gap:8px;flex-wrap:wrap;min-width:0;max-width:100%")}
             >
               <input
                 type="search"
@@ -317,13 +430,23 @@ function SearchScreen() {
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={(D.L[lang] || D.L.tr).searchPlaceholder as string}
                 className="mtinput mtinput--md"
-                style={sx("flex:1;min-width:0;height:42px")}
+                style={sx("flex:1 1 160px;min-width:0;height:42px")}
               />
               <Button type="submit" color="accent" variant="solid" size="md" iconStart="magnifier">
                 {W(lang, "secSearch")}
               </Button>
+              <Button
+                type="button"
+                color="primary"
+                variant="outline"
+                size="md"
+                disabled={visualLoading}
+                onClick={() => visualFileRef.current?.click()}
+              >
+                {pk({ tr: "📷 Fotoğrafla Bul", en: "📷 Visual Search" }, lang)}
+              </Button>
             </form>
-            <div style={sx("display:flex;align-items:center;gap:8px;margin-top:9px;overflow-x:auto")}>
+            <div style={sx("display:flex;align-items:center;gap:8px;margin-top:9px;overflow-x:auto;min-width:0;max-width:100%")}>
               <button
                 type="button"
                 onClick={() => setFilterDrawerOpen(true)}
@@ -366,8 +489,8 @@ function SearchScreen() {
             </div>
           </div>
         )}
-        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap")}>
-          <div>
+        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;min-width:0;max-width:100%")}>
+          <div style={sx("min-width:0")}>
             <div style={sx("font-size:15px;color:var(--text-body)")}>
               <b style={sx("font-size:19px;color:var(--text-heading);letter-spacing:-.01em")}>{num(res.total, lang)}</b>{" "}
               {W(lang, "shopsWord")}
@@ -383,7 +506,197 @@ function SearchScreen() {
               }, lang)}
             </div>
           </div>
+          {!b.single && (
+            <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <Button
+                type="button"
+                color="primary"
+                variant={visualPanelOpen ? "solid" : "outline"}
+                size="sm"
+                disabled={visualLoading}
+                onClick={() => visualFileRef.current?.click()}
+              >
+                {visualLoading
+                  ? pk({ tr: "⏳ Analiz ediliyor...", en: "⏳ Analyzing..." }, lang)
+                  : pk({ tr: "📷 Fotoğrafla Bul", en: "📷 Visual Search" }, lang)}
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Visual Search Highlighted Drop / Upload Panel (?visual=1 or active) */}
+        {(visualPanelOpen || visualLoading || visualError || visualResult) && (
+          <section
+            data-visual-search="1"
+            style={sx(
+              "margin-top:12px;padding:14px 16px;border-radius:14px;border:2px solid var(--color-primary);background:linear-gradient(180deg,var(--color-primary-soft) 0%,var(--surface-card) 100%);min-width:0;max-width:100%;box-sizing:border-box",
+            )}
+          >
+            <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;min-width:0")}>
+              <div style={sx("min-width:0;flex:1 1 200px")}>
+                <div style={sx("font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--color-primary)")}>
+                  {visualResult
+                    ? pk({ tr: "📸 Görsel Analiz Sonucu", en: "📸 Visual Search Result" }, lang)
+                    : pk({ tr: "📷 Fotoğrafla Ürün Bul (Görsel Arama)", en: "📷 Find Product by Photo (Visual Search)" }, lang)}
+                </div>
+                {!visualResult && (
+                  <p style={sx("font-size:13px;color:var(--text-body);margin:4px 0 0;line-height:1.45")}>
+                    {pk(
+                      {
+                        tr: "Aradığınız ürünün fotoğrafını çekin veya galeriden seçin; kategori ve etiketler çıkarılsın, gerçek han/kat/kapı eşleşmeleri anında listelensin.",
+                        en: "Take or upload a photo of the product; we extract its category and list verified han, floor, and door matches.",
+                      },
+                      lang,
+                    )}
+                  </p>
+                )}
+              </div>
+              <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+                <Button
+                  type="button"
+                  size="sm"
+                  color="primary"
+                  variant="solid"
+                  disabled={visualLoading}
+                  onClick={() => visualFileRef.current?.click()}
+                >
+                  {visualLoading
+                    ? pk({ tr: "⏳ Analiz Ediliyor...", en: "⏳ Analyzing..." }, lang)
+                    : visualResult
+                      ? pk({ tr: "📷 Yeni Fotoğraf", en: "📷 New Photo" }, lang)
+                      : pk({ tr: "📷 Fotoğraf Seç / Çek", en: "📷 Choose / Take Photo" }, lang)}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVisualPanelOpen(false);
+                    setVisualResult(null);
+                    setVisualError(null);
+                    if (visualParam) nav({ visual: null }, true);
+                  }}
+                  aria-label={pk({ tr: "Görsel aramayı kapat", en: "Close visual search" }, lang)}
+                  style={sx("height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-muted);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer")}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {visualError && (
+              <div style={sx("margin-top:10px")}>
+                <Alert color="danger" variant="light">{visualError}</Alert>
+              </div>
+            )}
+
+            {visualResult && (
+              <div style={sx("margin-top:12px;display:flex;flex-direction:column;gap:12px;min-width:0;max-width:100%")}>
+                <div style={sx("display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:12px;border-radius:12px;background:var(--surface-card);border:1px solid var(--border-default);min-width:0")}>
+                  {visualPreview && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={visualPreview}
+                      alt={visualResult.extracted.labelTr}
+                      style={sx("width:64px;height:64px;border-radius:10px;object-fit:cover;flex:none;border:1px solid var(--border-strong)")}
+                    />
+                  )}
+                  <div style={sx("flex:1 1 180px;min-width:0")}>
+                    <div style={sx("display:flex;align-items:center;gap:6px;flex-wrap:wrap")}>
+                      <span style={sx("font-size:15.5px;font-weight:800;color:var(--text-heading)")}>
+                        {visualResult.extracted.labelTr}
+                      </span>
+                      <span style={sx("font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--color-success-soft);color:var(--color-success)")}>
+                        %{Math.round((visualResult.extracted.confidence || 0.85) * 100)} {pk({ tr: "uyum", en: "match" }, lang)}
+                      </span>
+                    </div>
+                    {visualResult.extracted.tags.length > 0 && (
+                      <div style={sx("display:flex;flex-wrap:wrap;gap:6px;margin-top:7px")}>
+                        {visualResult.extracted.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            style={sx("font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--surface-muted);border:1px solid var(--border-default);color:var(--text-body)")}
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div style={sx("margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        color="primary"
+                        variant="solid"
+                        iconStart="magnifier"
+                        onClick={() => {
+                          setDraft(visualResult.extracted.query);
+                          nav({ [PARAM.q]: visualResult.extracted.query, [PARAM.page]: null, visual: null });
+                        }}
+                      >
+                        {pk(
+                          {
+                            tr: `Aramaya Uygula: "${visualResult.extracted.query}"`,
+                            en: `Apply Query: "${visualResult.extracted.query}"`,
+                          },
+                          lang,
+                        )}
+                      </Button>
+                      <span style={sx("font-size:12px;color:var(--text-muted);font-weight:600")}>
+                        {pk(
+                          {
+                            tr: `${visualResult.totalMatches} doğrulanmış katalog eşleşmesi`,
+                            en: `${visualResult.totalMatches} verified catalog matches`,
+                          },
+                          lang,
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {visualResult.matches.length > 0 && (
+                  <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:8px;min-width:0;max-width:100%")}>
+                    {visualResult.matches.slice(0, 6).map((m) => {
+                      const targetId = m.curated || m.recordId;
+                      return (
+                        <div
+                          key={m.recordId}
+                          style={sx("padding:10px 12px;border-radius:11px;background:var(--surface-card);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:6px;min-width:0;box-sizing:border-box")}
+                        >
+                          <div style={sx("font-size:13.5px;font-weight:800;color:var(--text-heading);overflow:hidden;text-overflow:ellipsis;white-space:nowrap")}>
+                            {m.name}
+                          </div>
+                          <div style={sx("font-size:12px;color:var(--text-muted);font-weight:600")}>
+                            🏛️ {m.placeName} · {floorLabel(m.floor, lang, m.placeId)} · Kapı No: {m.door}
+                          </div>
+                          <div style={sx("display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap")}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              color="primary"
+                              variant="outline"
+                              onClick={() => router.push(href.directions(targetId))}
+                            >
+                              {pk({ tr: "🧭 Tarif Al", en: "🧭 Directions" }, lang)}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              color="primary"
+                              variant="light"
+                              onClick={() => router.push(href.store(targetId))}
+                            >
+                              {pk({ tr: "🏪 Dükkâna Git", en: "🏪 Open Shop" }, lang)}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {placeChips.length > 1 && (
           <div style={sx("margin-top:12px")}>

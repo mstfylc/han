@@ -35,6 +35,14 @@ import { useApp } from "@/state/AppState";
 
 const pk = (o: Record<string, string>, lang: Lang) => o[lang] || o.tr;
 
+function normWaTel(raw?: string | null): string {
+  const d = String(raw || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("0") && d.length === 11) return "90" + d.slice(1);
+  if (d.length === 10 && d.startsWith("5")) return "90" + d;
+  return d;
+}
+
 const KICKER = "font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)";
 const CARD = "background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:18px 20px;box-shadow:0 3px 4px rgba(0,0,0,.03)";
 
@@ -87,9 +95,17 @@ function WorkScreen() {
   ];
 
   return (
-    <div style={sx(searchGrid(b))}>
-      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : ""))}>
-        <nav style={sx("display:flex;flex-direction:column;gap:3px")} aria-label={F(lang, "secWork")}>
+    <div style={sx(searchGrid(b) + "min-width:0;width:100%;max-width:min(1480px,100%);")}>
+      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : b.single ? "padding:10px 12px;max-width:100%;" : ""))}>
+        <nav
+          data-han-nav="1"
+          style={sx(
+            b.single
+              ? "position:sticky;top:60px;z-index:15;background:var(--surface-card);display:flex;flex-direction:row;overflow-x:auto;gap:6px;padding:2px 0"
+              : "display:flex;flex-direction:column;gap:3px",
+          )}
+          aria-label={F(lang, "secWork")}
+        >
           {tabs.map((t) => {
             const on = t.id === view;
             return (
@@ -99,16 +115,19 @@ function WorkScreen() {
                 onClick={() => router.push(href.work(t.id))}
                 aria-current={on ? "page" : undefined}
                 style={sx(
-                  "display:flex;align-items:center;gap:10px;width:100%;background:" +
+                  (b.single
+                    ? "display:flex;align-items:center;gap:8px;width:auto;white-space:nowrap;flex:none;padding:9px 12px;"
+                    : "display:flex;align-items:center;gap:10px;width:100%;padding:11px 11px;") +
+                    "background:" +
                     (on ? "var(--color-primary-soft)" : "none") +
-                    ";border:none;padding:11px 11px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:" +
+                    ";border:none;border-radius:9px;font-family:inherit;font-size:14px;font-weight:" +
                     (on ? "700" : "500") +
                     ";color:" + (on ? "var(--color-primary-accent)" : "var(--text-body)") +
                     ";text-align:start;cursor:pointer",
                 )}
               >
                 <Icon name={t.icon} size={17} />
-                <span style={sx("flex:1;min-width:0")}>{t.label}</span>
+                <span style={sx(b.single ? "white-space:nowrap" : "flex:1;min-width:0")}>{t.label}</span>
                 {!!t.count && (
                   <span style={sx("flex:none;font-size:12px;font-weight:700;color:" + (on ? "var(--color-primary)" : "var(--text-muted)"))}>
                     {t.count}
@@ -416,6 +435,36 @@ function RequestDetail({ lang, req, reqs, offersOf, ctx, state, save, toast, rou
   const real = offers.filter((o) => o.real);
   const acc = state.acceptedOffers[req.id];
   const dist = useMemo(() => SE.distribute(req, ctx), [req, ctx]);
+  const [trBusy, setTrBusy] = useState(false);
+  const [trOut, setTrOut] = useState<{ reqId: string; translated: string; summary: string } | null>(null);
+
+  const handleTranslateReq = async () => {
+    const text = [req.urun, req.adet ? req.adet + " " + (req.birim || "") : "", req.aciklama].filter(Boolean).join(" · ");
+    if (!text) return;
+    setTrBusy(true);
+    try {
+      const r = await fetch("/api/ai/translate-trade", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text, targetLang: lang }),
+      });
+      const data = (await r.json()) as { ok?: boolean; result?: { translated?: string; summary?: string }; error?: string };
+      if (data.ok && data.result?.translated) {
+        setTrOut({ reqId: req.id, translated: data.result.translated, summary: data.result.summary || "" });
+      } else {
+        toast(data.error || pk({ tr: "Çeviri alınamadı", en: "Translation failed", ru: "Ошибка перевода", ar: "تعذرت الترجمة" }, lang));
+      }
+    } catch {
+      toast(pk({ tr: "Çeviri servisine ulaşılamadı", en: "Translation service unreachable", ru: "Сервис недоступен", ar: "تعذر الاتصال بخدمة الترجمة" }, lang));
+    } finally {
+      setTrBusy(false);
+    }
+  };
+  const reqTr = trOut && trOut.reqId === req.id ? trOut : null;
+  const approvedMatched = useMemo(
+    () => (dist?.sent || []).filter((r) => r.status === "aktif" || r.status === "onayli").slice(0, 6),
+    [dist],
+  );
 
   // `state.now` rather than Date.now(): a render that reads the wall clock is
   // not a function of its inputs, so the server's HTML and the client's first
@@ -488,15 +537,36 @@ function RequestDetail({ lang, req, reqs, offersOf, ctx, state, save, toast, rou
               {[req.adet ? req.adet + " " + (req.birim || "") : "", req.aciklama].filter(Boolean).join(" · ")}
             </div>
           </div>
-          <span
-            style={sx(
-              "display:inline-flex;align-items:center;height:25px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:700;background:" +
-                tonePair(toneName).bg + ";color:" + tonePair(toneName).fg,
-            )}
-          >
-            {stateLabel}
-          </span>
+          <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+            <button
+              type="button"
+              disabled={trBusy}
+              onClick={handleTranslateReq}
+              style={sx("height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--text-heading);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap")}
+            >
+              {trBusy
+                ? pk({ tr: "⏳ Çevriliyor...", en: "⏳ Translating...", ru: "⏳ Перевод...", ar: "⏳ جارٍ الترجمة..." }, lang)
+                : pk({ tr: "🌍 AI Çevir", en: "🌍 AI Translate", ru: "🌍 AI Перевод", ar: "🌍 ترجمة AI" }, lang)}
+            </button>
+            <span
+              style={sx(
+                "display:inline-flex;align-items:center;height:25px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:700;background:" +
+                  tonePair(toneName).bg + ";color:" + tonePair(toneName).fg,
+              )}
+            >
+              {stateLabel}
+            </span>
+          </div>
         </div>
+
+        {reqTr && (
+          <div style={sx("margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--color-info-soft);border:1px solid var(--border-default)")}>
+            <div style={sx("font-size:13px;font-weight:600;color:var(--text-heading)")}>{reqTr.translated}</div>
+            {reqTr.summary && (
+              <div style={sx("font-size:12px;color:var(--text-muted);margin-top:3px")}>{reqTr.summary}</div>
+            )}
+          </div>
+        )}
 
         {left != null && (
           <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:8px")}>
@@ -540,6 +610,56 @@ function RequestDetail({ lang, req, reqs, offersOf, ctx, state, save, toast, rou
                   <div style={sx("font-size:12px;color:var(--text-body);margin-top:2px")}>{label}</div>
                 </div>
               ))}
+          </div>
+        )}
+
+        {approvedMatched.length > 0 && (
+          <div style={sx("margin-top:14px;padding-top:12px;border-top:1px solid var(--border-default)")}>
+            <div style={sx(KICKER)}>
+              {pk({
+                tr: "Eşleşen onaylı dükkânlar · WhatsApp hızlı teklif",
+                en: "Matched approved shops · WhatsApp quick quote",
+                ru: "Подходящие проверенные лавки · WhatsApp",
+                ar: "المتاجر المعتمدة المطابقة · طلب عرض عبر واتساب",
+              }, lang)}
+            </div>
+            <div style={sx("display:flex;flex-direction:column;gap:8px;margin-top:8px")}>
+              {approvedMatched.map((shop) => {
+                const pl = SC.PLACES.find((p) => p.id === shop.place);
+                const waTel = normWaTel(shop.tel);
+                const reqLink = `/esnaf/talep?r=${req.id}`;
+                const waMsg = `Merhaba ${shop.name}, HAN üzerinden "${req.urun}" (${req.adet || 1} ${req.birim || "adet"}) talebim için teklifinizi buradan iletebilirsiniz: ${reqLink}`;
+                const waHref = `https://wa.me/${waTel}?text=${encodeURIComponent(waMsg)}`;
+                return (
+                  <div
+                    key={shop.id}
+                    style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 11px;border-radius:10px;border:1px solid var(--border-default);background:var(--surface-muted)")}
+                  >
+                    <div style={sx("min-width:0;flex:1")}>
+                      <div style={sx("font-size:13.5px;font-weight:700;color:var(--text-heading);overflow:hidden;text-overflow:ellipsis;white-space:nowrap")}>
+                        {recordName(shop, lang)}
+                      </div>
+                      <div style={sx("font-size:12px;color:var(--text-muted)")}>
+                        {[pl?.name || shop.place, shop.door ? W(lang, "doorNo") + " " + shop.door : ""].filter(Boolean).join(" · ")}
+                      </div>
+                    </div>
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={sx("display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:8px;background:var(--color-success-soft);color:var(--color-success);border:1px solid var(--color-success);font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap")}
+                    >
+                      {pk({
+                        tr: "📲 WhatsApp'tan Teklif İste",
+                        en: "📲 Ask Quote on WhatsApp",
+                        ru: "📲 Запросить цену в WhatsApp",
+                        ar: "📲 اطلب عرضًا عبر واتساب",
+                      }, lang)}
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>
@@ -672,6 +792,33 @@ function OffersPanel({ lang, req, offers, cv }: any) {
   // K9 · "best price" is only ever sought among real offers. An estimate
   // cannot be the best of anything.
   const bestRaw = real.length ? Math.min(...real.map((o: Offer) => o.raw)) : null;
+  const [trMap, setTrMap] = useState<Record<string, { loading?: boolean; translated?: string; summary?: string }>>({});
+
+  const handleTranslateOffer = async (o: Offer) => {
+    const key = req.id + ":" + o.recordId;
+    const text = [o.name, o.note, `${o.qty} ${req.birim || "adet"}`, `${o.raw} TL`, `${o.gun} gün`].filter(Boolean).join(" · ");
+    setTrMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: true } }));
+    try {
+      const r = await fetch("/api/ai/translate-trade", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text, targetLang: lang }),
+      });
+      const data = (await r.json()) as { ok?: boolean; result?: { translated?: string; summary?: string }; error?: string };
+      if (data.ok && data.result?.translated) {
+        setTrMap((prev) => ({
+          ...prev,
+          [key]: { loading: false, translated: data.result?.translated, summary: data.result?.summary || "" },
+        }));
+      } else {
+        setTrMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: false } }));
+        toast(data.error || pk({ tr: "Çeviri alınamadı", en: "Translation failed", ru: "Ошибка перевода", ar: "تعذرت الترجمة" }, lang));
+      }
+    } catch {
+      setTrMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: false } }));
+      toast(pk({ tr: "Çeviri servisine ulaşılamadı", en: "Translation service unreachable", ru: "Сервис недоступен", ar: "تعذر الاتصال بخدمة الترجمة" }, lang));
+    }
+  };
 
   if (!offers.length) {
     return (
@@ -743,10 +890,35 @@ function OffersPanel({ lang, req, offers, cv }: any) {
 
               {o.note && <div style={sx("font-size:13px;color:var(--text-body);margin-top:6px;text-wrap:pretty")}>{o.note}</div>}
 
-              <div style={sx("display:flex;align-items:baseline;gap:9px;margin-top:8px")}>
-                <span style={sx("font-size:18px;font-weight:700;color:var(--color-primary);letter-spacing:-.01em")}>{money(o.raw)}</span>
-                <span style={sx("font-size:12.5px;color:var(--text-muted)")}>{cv(o.raw)}</span>
+              <div style={sx("display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px")}>
+                <div style={sx("display:flex;align-items:baseline;gap:9px")}>
+                  <span style={sx("font-size:18px;font-weight:700;color:var(--color-primary);letter-spacing:-.01em")}>{money(o.raw)}</span>
+                  <span style={sx("font-size:12.5px;color:var(--text-muted)")}>{cv(o.raw)}</span>
+                </div>
+                <button
+                  type="button"
+                  disabled={!!trMap[req.id + ":" + o.recordId]?.loading}
+                  onClick={() => handleTranslateOffer(o)}
+                  style={sx("height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--text-heading);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap")}
+                >
+                  {trMap[req.id + ":" + o.recordId]?.loading
+                    ? pk({ tr: "⏳ Çevriliyor...", en: "⏳ Translating...", ru: "⏳ Перевод...", ar: "⏳ جارٍ الترجمة..." }, lang)
+                    : pk({ tr: "🌍 AI Çevir", en: "🌍 AI Translate", ru: "🌍 AI Перевод", ar: "🌍 ترجمة AI" }, lang)}
+                </button>
               </div>
+
+              {trMap[req.id + ":" + o.recordId]?.translated && (
+                <div style={sx("margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--color-info-soft);border:1px solid var(--border-default)")}>
+                  <div style={sx("font-size:12.5px;font-weight:600;color:var(--text-heading)")}>
+                    {trMap[req.id + ":" + o.recordId]?.translated}
+                  </div>
+                  {trMap[req.id + ":" + o.recordId]?.summary && (
+                    <div style={sx("font-size:11.5px;color:var(--text-muted);margin-top:2px")}>
+                      {trMap[req.id + ":" + o.recordId]?.summary}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Three-week-old price is not a price: a real offer is valid for
                   seven days, counted from its own age. */}

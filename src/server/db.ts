@@ -102,13 +102,145 @@ export interface DocumentRow {
   revision: string;
 }
 
-export async function readScope(scope: string): Promise<DocumentRow[]> {
+export async function readScope(scope: string, sinceRevision = 0): Promise<DocumentRow[]> {
   await ready();
+  const hasSince = Number.isFinite(sinceRevision) && sinceRevision > 0;
   const { rows } = await pool().query<DocumentRow>(
-    "SELECT key, value, revision FROM documents WHERE scope = $1",
-    [scope],
+    hasSince
+      ? "SELECT key, value, revision FROM documents WHERE scope = $1 AND revision > $2"
+      : "SELECT key, value, revision FROM documents WHERE scope = $1",
+    hasSince ? [scope, sinceRevision] : [scope],
   );
   return rows;
+}
+
+export async function pingDb(): Promise<{ ok: boolean; documents: number; decisions: number; analytics: number }> {
+  await ready();
+  const { rows } = await pool().query<{ documents: string; decisions: string; analytics: string }>(
+    `SELECT
+       (SELECT COUNT(*)::text FROM documents) AS documents,
+       (SELECT COUNT(*)::text FROM decisions) AS decisions,
+       (SELECT COUNT(*)::text FROM analytics_events) AS analytics`,
+  );
+  const r = rows[0] || { documents: "0", decisions: "0", analytics: "0" };
+  return {
+    ok: true,
+    documents: Number(r.documents) || 0,
+    decisions: Number(r.decisions) || 0,
+    analytics: Number(r.analytics) || 0,
+  };
+}
+
+/** Dual-write key market documents into normalized row-level tables without breaking JSONB parity. */
+export async function dualWriteNormalized(key: string, value: unknown): Promise<void> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return;
+  try {
+    await ready();
+    const map = value as Record<string, unknown>;
+    if (key === "han-requests-v1") {
+      const entries = Object.entries(map).slice(-200);
+      for (const [id, raw] of entries) {
+        if (!raw || typeof raw !== "object") continue;
+        const r = raw as Record<string, unknown>;
+        await pool().query(
+          `INSERT INTO market_requests (id, product, qty, payload, updated_at)
+                VALUES ($1, $2, $3, $4, now())
+           ON CONFLICT (id) DO UPDATE
+                  SET product = EXCLUDED.product, qty = EXCLUDED.qty, payload = EXCLUDED.payload, updated_at = now()`,
+          [id, String(r.urun || r.product || ""), String(r.adet || r.qty || ""), JSON.stringify(raw)],
+        );
+      }
+    } else if (key === "han-offers-v1") {
+      const entries = Object.entries(map).slice(-200);
+      for (const [reqId, list] of entries) {
+        if (!Array.isArray(list)) continue;
+        for (const raw of list) {
+          if (!raw || typeof raw !== "object") continue;
+          const o = raw as Record<string, unknown>;
+          const recId = String(o.recordId || o.curated || "");
+          if (!recId) continue;
+          const unit = Number(o.unit);
+          await pool().query(
+            `INSERT INTO market_offers (request_id, record_id, unit_price, payload, updated_at)
+                  VALUES ($1, $2, $3, $4, now())
+             ON CONFLICT (request_id, record_id) DO UPDATE
+                    SET unit_price = EXCLUDED.unit_price, payload = EXCLUDED.payload, updated_at = now()`,
+            [reqId, recId, Number.isFinite(unit) ? unit : null, JSON.stringify(raw)],
+          );
+        }
+      }
+    }
+  } catch {
+    // Non-blocking projection: never fail the primary JSONB write.
+  }
+}
+
+export async function recordMediaAsset(row: {
+  hash: string;
+  recordId?: string | null;
+  slug: string;
+  url: string;
+  mime: string;
+  bytes: number;
+  storage: string;
+}): Promise<void> {
+  await ready();
+  await pool().query(
+    `INSERT INTO media_assets (hash, record_id, slug, url, mime, bytes, storage)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (hash) DO NOTHING`,
+    [row.hash, row.recordId || null, row.slug, row.url, row.mime, row.bytes, row.storage],
+  );
+}
+
+export async function recordAnalyticsEvent(ev: {
+  eventName: string;
+  route?: string;
+  placeId?: string | null;
+  recordId?: string | null;
+  meta?: Record<string, unknown>;
+}): Promise<void> {
+  await ready();
+  await pool().query(
+    `INSERT INTO analytics_events (event_name, route, place_id, record_id, meta)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [ev.eventName, ev.route || "", ev.placeId || null, ev.recordId || null, JSON.stringify(ev.meta || {})],
+  );
+}
+
+export async function readAnalyticsSummary(): Promise<{ event_name: string; count: number }[]> {
+  await ready();
+  const { rows } = await pool().query<{ event_name: string; count: string }>(
+    `SELECT event_name, COUNT(*)::text AS count
+       FROM analytics_events
+      WHERE created_at >= now() - interval '30 days'
+      GROUP BY event_name
+      ORDER BY COUNT(*) DESC
+      LIMIT 30`,
+  );
+  return rows.map((r) => ({ event_name: r.event_name, count: Number(r.count) || 0 }));
+}
+
+export async function saveTraderOtp(tel: string, codeHash: string, ttlMinutes = 10): Promise<void> {
+  await ready();
+  await pool().query(
+    `INSERT INTO trader_otps (tel, code_hash, expires_at)
+          VALUES ($1, $2, now() + ($3 || ' minutes')::interval)
+     ON CONFLICT (tel, code_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at, used_at = NULL`,
+    [tel, codeHash, String(ttlMinutes)],
+  );
+}
+
+export async function consumeTraderOtp(tel: string, codeHash: string): Promise<boolean> {
+  await ready();
+  const { rows } = await pool().query<{ tel: string }>(
+    `UPDATE trader_otps
+        SET used_at = now()
+      WHERE tel = $1 AND code_hash = $2 AND used_at IS NULL AND expires_at > now()
+      RETURNING tel`,
+    [tel, codeHash],
+  );
+  return rows.length > 0;
 }
 
 /**

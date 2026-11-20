@@ -16,6 +16,7 @@ interface IndoorWayfinderProps {
   corridor?: string;
   lang: Lang;
   defaultCameraMode?: boolean;
+  onCalibrateDoor?: (door: string) => void;
 }
 
 interface WayStep {
@@ -39,6 +40,7 @@ export default function IndoorWayfinder({
   corridor = "Orta",
   lang,
   defaultCameraMode = false,
+  onCalibrateDoor,
 }: IndoorWayfinderProps) {
   const [mode, setMode] = useState<"hud" | "camera">(defaultCameraMode ? "camera" : "hud");
   const [currentDoorInput, setCurrentDoorInput] = useState<string>("");
@@ -370,6 +372,7 @@ export default function IndoorWayfinder({
     if (!clean) return;
     setAnchorPoint("door");
     setAnchorDoor(clean);
+    onCalibrateDoor?.(clean);
     setStepsWalked(0);
     const num = parseInt(clean.replace(/\D/g, ""), 10);
     if (num === targetNum) {

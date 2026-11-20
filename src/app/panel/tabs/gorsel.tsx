@@ -63,6 +63,7 @@ export default function Gorsel(props: PanelTabProps) {
   useEffect(() => setReady(true), []);
 
   const [mdRec, setMdRec] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const locked = props.readOnly;
   // Fotoğrafsız kayıtlar önce: iş listesi buradan başlar.
@@ -85,6 +86,30 @@ export default function Gorsel(props: PanelTabProps) {
     props.say(msg);
   };
 
+  const handleUpload = async (file: File) => {
+    if (!canEdit || !rec) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("recordId", recId);
+      fd.append("slug", rec.name || recId);
+      const res = await fetch("/api/media/upload", { method: "POST", body: fd });
+      const data = (await res.json()) as { ok?: boolean; url?: string; storage?: string; error?: string };
+      if (!res.ok || !data.ok || !data.url) {
+        return props.say(data.error || "Fotoğraf yüklenemedi");
+      }
+      act(
+        () => AD.addMedia(recId, { slot: data.url!, kind: "vitrin", caption: file.name }),
+        `Fotoğraf ${data.storage === "r2" ? "R2 CDN" : "sunucu"} üzerine yüklendi — onay bekliyor`,
+      );
+    } catch {
+      props.say("Fotoğraf yükleme servisine ulaşılamadı");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
       <h1 style={sx(H1)}>Mağaza Görselleri</h1>
@@ -104,7 +129,26 @@ export default function Gorsel(props: PanelTabProps) {
           {rec ? list.length + " yuva · " + list.filter((x) => x.status === "onayli").length + " yayında" : ""}
         </div>
         {canEdit && (
-          <span style={sx("margin-left:auto")}>
+          <span style={sx("margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+            <label
+              style={sx(
+                "display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary);font-size:12.5px;font-weight:700;cursor:pointer",
+              )}
+            >
+              <span>{uploading ? "⏳ Yükleniyor..." : "📷 Gerçek Fotoğraf Yükle (R2 / CDN)"}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                disabled={uploading}
+                style={sx("display:none")}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleUpload(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
             <Button
               color="accent"
               size="sm"
@@ -136,7 +180,9 @@ export default function Gorsel(props: PanelTabProps) {
       <div style={sx("margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr));gap:16px")}>
         {list.map((p, i) => {
           const st = AD.MEDIA_STATES[p.status];
-          const src = p.slot && p.slot.startsWith("/") ? p.slot : defaultAsset;
+          const isRealUrl = !!(p.slot && (p.slot.startsWith("/") || p.slot.startsWith("https://") || p.slot.startsWith("http://")));
+          const src = isRealUrl ? p.slot : defaultAsset;
+          const isCustomUploaded = !ASSETS.some((a) => a.value === src);
           return (
             <div key={p.id} style={sx(mediaCardStyle(p.cover ? "accent" : p.status === "onayli" ? "success" : p.status === "red" ? "danger" : null))}>
               <div
@@ -158,6 +204,9 @@ export default function Gorsel(props: PanelTabProps) {
                   disabled={locked}
                   onChange={(e) => act(() => AD.setMedia(recId, p.id, { slot: e.target.value }), "Görsel kaynağı değişti")}
                 >
+                  {isCustomUploaded && (
+                    <option value={src}>Yüklenen R2/CDN ({src.split("/").pop() || "gorsel"})</option>
+                  )}
                   {ASSETS.map((a) => (
                     <option key={a.value} value={a.value}>{a.label}</option>
                   ))}

@@ -49,9 +49,18 @@ const HOLLOW = "background:var(--surface-card);border:1px dashed var(--border-st
 type Tab = "bul" | "talep" | "durum" | "yonet";
 const TABS: Tab[] = ["bul", "talep", "durum", "yonet"];
 
-/** The demo code. Real verification is an SMS the panel surface owns; here the
- *  point being demonstrated is that a number gates the record, not a device. */
-const DEMO_CODE = "1234";
+interface ShopScanDraft {
+  name: string;
+  tel: string;
+  door: string;
+  category: string;
+  tags: string[];
+  moq: number;
+  descTr: string;
+  descEn: string;
+  descRu: string;
+  descAr: string;
+}
 
 export default function TraderPage() {
   return (
@@ -160,15 +169,155 @@ function TraderScreen() {
 
   const [loginTel, setLoginTel] = useState("");
   const [loginCode, setLoginCode] = useState("");
-  const doLogin = () => {
+  const [authBusy, setAuthBusy] = useState(false);
+  const [otpNote, setOtpNote] = useState("");
+
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<{ url: string; storage: string; filename: string }[]>([]);
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanText, setScanText] = useState("");
+  const [scanDraft, setScanDraft] = useState<ShopScanDraft | null>(null);
+
+  const requestLoginOtp = async () => {
+    const want = digits(loginTel);
+    if (want.length < 10) {
+      return toast(t({ tr: "Geçerli bir telefon numarası girin", en: "Enter a valid phone number", ru: "Введите номер телефона", ar: "أدخل رقم هاتف صالحًا" }));
+    }
+    setAuthBusy(true);
+    setOtpNote("");
+    try {
+      const res = await fetch("/api/trader-auth", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "request", tel: want }),
+      });
+      const data = (await res.json()) as { ok?: boolean; masked?: string; devCode?: string; error?: string };
+      if (!res.ok || !data.ok) {
+        return toast(data.error || t({ tr: "SMS kodu gönderilemedi", en: "Could not send SMS code", ru: "Не удалось отправить код", ar: "تعذر إرسال الرمز" }));
+      }
+      const msg = data.devCode
+        ? t({ tr: `SMS kodu gönderildi (${data.masked}) · Geliştirme kodu: ${data.devCode}`, en: `SMS code sent (${data.masked}) · Dev code: ${data.devCode}` })
+        : t({ tr: `SMS doğrulama kodu ${data.masked || want} numarasına gönderildi.`, en: `Verification code sent to ${data.masked || want}.` });
+      setOtpNote(msg);
+      toast(msg);
+    } catch {
+      toast(t({ tr: "Doğrulama sunucusuna ulaşılamadı", en: "Auth server unreachable", ru: "Сервер недоступен", ar: "تعذر الاتصال بالخادم" }));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const doLogin = async () => {
     const want = digits(loginTel);
     const match = ownedIds.find((id) => digits(claims[id]?.tel) === want);
     if (!match) return toast(t({ tr: "Bu numaraya bağlı onaylı kayıt yok", en: "No approved record on this number", ru: "Нет записи по этому номеру", ar: "لا سجل معتمد لهذا الرقم" }));
-    if (loginCode.trim() !== DEMO_CODE) return toast(t({ tr: "Kod hatalı (demo: 1234)", en: "Wrong code (demo: 1234)", ru: "Неверный код (демо: 1234)", ar: "رمز خطأ (تجريبي: 1234)" }));
-    save({ esSession: { tel: want, at: Date.now() } });
-    setLoginTel(""); setLoginCode("");
-    router.replace(href.trader("yonet", { record: match }));
-    toast(t({ tr: "Giriş yapıldı", en: "Signed in", ru: "Вы вошли", ar: "تم الدخول" }));
+    const code = loginCode.trim();
+    if (!code) return toast(t({ tr: "Doğrulama kodunu girin", en: "Enter the verification code", ru: "Введите код", ar: "أدخل رمز التحقق" }));
+    setAuthBusy(true);
+    try {
+      const res = await fetch("/api/trader-auth", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "verify", tel: want, code }),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        return toast(data.error || t({ tr: "Doğrulama kodu geçersiz", en: "Invalid verification code", ru: "Неверный код", ar: "رمز التحقق غير صحيح" }));
+      }
+      save({ esSession: { tel: want, at: Date.now() } });
+      setLoginTel("");
+      setLoginCode("");
+      setOtpNote("");
+      router.replace(href.trader("yonet", { record: match }));
+      toast(t({ tr: "Giriş yapıldı", en: "Signed in", ru: "Вы вошли", ar: "تم الدخول" }));
+    } catch {
+      toast(t({ tr: "Doğrulama sunucusuna ulaşılamadı — tekrar deneyin", en: "Verification server unreachable — try again", ru: "Ошибка связи с сервером", ar: "تعذر الاتصال بخادم التحقق" }));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleRealPhotoUpload = async (file: File, targetRec: ShopRecord | null) => {
+    setUploadBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("slug", targetRec?.name || targetRec?.id || "esnaf-vitrin");
+      if (targetRec?.id) fd.append("recordId", targetRec.id);
+      const res = await fetch("/api/media/upload", { method: "POST", body: fd });
+      const data = (await res.json()) as { ok?: boolean; url?: string; filename?: string; storage?: string; error?: string };
+      if (!res.ok || !data.ok || !data.url) {
+        return toast(data.error || t({ tr: "Fotoğraf yüklenemedi", en: "Photo upload failed", ru: "Ошибка загрузки фото", ar: "فشل رفع الصورة" }));
+      }
+      setUploadedMedia((prev) => [{ url: data.url!, storage: data.storage || "local", filename: data.filename || file.name }, ...prev].slice(0, 8));
+      if (targetRec) {
+        AD.addMedia(targetRec.id, { slot: data.url, kind: "vitrin", caption: file.name });
+        const nextPhotos = Math.min(9, (Number(mf.photos) || targetRec.photos || 0) + 1);
+        setMf((s) => ({ ...s, photos: String(nextPhotos) }));
+        const nextOv = { ...(state.overrides || {}), [targetRec.id]: { ...(state.overrides || {})[targetRec.id], photos: nextPhotos } };
+        save({ overrides: nextOv, offersRev: (state.offersRev || 0) + 1 });
+      }
+      toast(
+        t({
+          tr: `Fotoğraf kaydedildi (${data.storage === "r2" ? "Cloudflare R2" : "Sunucu"}): ${data.filename || file.name}`,
+          en: `Photo uploaded (${data.storage === "r2" ? "Cloudflare R2" : "Server"}): ${data.filename || file.name}`,
+        }),
+      );
+    } catch {
+      toast(t({ tr: "Yükleme sunucusuna ulaşılamadı", en: "Upload server unreachable" }));
+    } finally {
+      setUploadBusy(false);
+    }
+  };
+
+  const handleAiShopScan = async (opts: { file?: File; text?: string }, modeTab: "bul" | "yonet") => {
+    if (!opts.file && !String(opts.text || "").trim()) {
+      return toast(t({ tr: "Kartvizit/tabela fotoğrafı seçin veya kısa bir mağaza notu yazın", en: "Select a storefront/card photo or enter a short note" }));
+    }
+    setScanBusy(true);
+    try {
+      let res: Response;
+      if (opts.file) {
+        const fd = new FormData();
+        fd.append("file", opts.file);
+        if (opts.text) fd.append("text", opts.text);
+        res = await fetch("/api/ai/scan-shop", { method: "POST", body: fd });
+      } else {
+        res = await fetch("/api/ai/scan-shop", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text: opts.text }),
+        });
+      }
+      const data = (await res.json()) as { ok?: boolean; draft?: ShopScanDraft; error?: string };
+      if (!res.ok || !data.ok || !data.draft) {
+        return toast(data.error || t({ tr: "AI tarama başarısız oldu", en: "AI scan failed" }));
+      }
+      const d = data.draft;
+      setScanDraft(d);
+      if (modeTab === "bul") {
+        if (d.name) setQ(d.name);
+        if (d.tel) setTel(d.tel);
+        if (d.door) router.replace(href.trader("bul", { place: place === "all" ? undefined : place, door: d.door }));
+      } else {
+        setMf((s) => ({
+          ...s,
+          tel: d.tel || s.tel,
+          moq: d.moq ? String(d.moq) : s.moq,
+          groups: Array.from(new Set([...s.groups, ...(d.tags || [])])),
+        }));
+      }
+      void fetch("/api/analytics", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ eventName: "ai_scan_shop", route: "/esnaf/" + modeTab, recordId: mRec?.id || null }),
+      }).catch(() => {});
+      toast(t({ tr: `AI tarama tamamlandı: ${d.name} · 4 dil açıklama hazır`, en: `AI scan ready: ${d.name} · 4-language descriptions generated` }));
+    } catch {
+      toast(t({ tr: "AI tarama servisine ulaşılamadı", en: "AI scan service unreachable" }));
+    } finally {
+      setScanBusy(false);
+    }
   };
 
   // ── this record's inbox ──────────────────────────────────────────────────
@@ -309,10 +458,11 @@ function TraderScreen() {
   const groupOpts = mRec ? SC.GROUP_WORDS_FOR(mRec.cat, lang) : [];
 
   return (
-    <div style={sx(searchGrid(b))}>
+    <div style={sx(searchGrid(b) + "min-width:0;width:100%;max-width:min(1480px,100%);")}>
       {/* ── tabs ─────────────────────────────────────────────────────── */}
-      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : "") + (b.single ? ";padding:8px 10px" : ""))}>
+      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : "") + (b.single ? ";padding:8px 10px;max-width:100%" : ""))}>
         <nav
+          data-han-nav="1"
           style={sx(
             b.single
               ? "display:flex;flex-direction:row;gap:6px;overflow-x:auto"
@@ -391,6 +541,98 @@ function TraderScreen() {
               <p style={sx("font-size:13px;color:var(--text-muted);margin-top:11px;text-wrap:pretty")}>
                 {t({ tr: "Kaydınızı bulamazsanız yeni kayıt açılır — ama o da aynı onay hattından geçer.", en: "If your record is not there a new one is opened — it goes through the same approval line.", ru: "Если записи нет, откроется новая — она пройдёт ту же проверку.", ar: "إن لم تجد سجلك يُفتح سجل جديد — ويمر بالمسار نفسه." })}
               </p>
+            </div>
+
+            {/* 📷 Gerçek Fotoğraf Yükle + ⚡ AI Kartvizit & Vitrin Tarama (bul sekmesi) */}
+            <div style={sx("margin-top:14px;" + CARD)}>
+              <div style={sx(KICKER)}>
+                {t({ tr: "⚡ AI Kartvizit & Vitrin Tarama · 📷 Gerçek Fotoğraf Yükle", en: "⚡ AI Card & Storefront Scan · 📷 Upload Real Photo", ru: "⚡ AI-сканирование визитки · 📷 Загрузить фото", ar: "⚡ مسح البطاقة بالذكاء الاصطناعي · 📷 رفع صورة" })}
+              </div>
+              <p style={sx("font-size:13px;color:var(--text-muted);margin-top:4px;text-wrap:pretty")}>
+                {t({
+                  tr: "Tabela veya kartvizit fotoğrafı yükleyin ya da kısa bir not yazın; yapay zeka dükkân adı, telefon, kapı no, etiketler ve 4 dil açıklamayı otomatik doldursun.",
+                  en: "Upload a storefront/business card photo or paste a quick note; AI extracts name, phone, door no, tags and 4-language descriptions.",
+                })}
+              </p>
+              <div style={sx("margin-top:10px;display:flex;flex-direction:column;gap:10px")}>
+                <Textarea
+                  rows={2}
+                  placeholder={t({ tr: "Örn: Roza Bijuteri Santral Han No 8 0532 111 22 33 çelik takı toptan", en: "e.g. Roza Bijuteri Santral Han No 8 0532 111 22 33" })}
+                  value={scanText}
+                  onChange={(e) => setScanText(e.target.value)}
+                />
+                <div style={sx("display:flex;gap:8px;flex-wrap:wrap;align-items:center")}>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    disabled={scanBusy}
+                    onClick={() => handleAiShopScan({ text: scanText }, "bul")}
+                  >
+                    {scanBusy
+                      ? t({ tr: "⏳ Taranıyor...", en: "⏳ Scanning..." })
+                      : t({ tr: "⚡ AI Kartvizit & Vitrin Tara", en: "⚡ AI Scan Card & Shop" })}
+                  </Button>
+                  <label style={sx("display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--color-primary);background:var(--surface-card);color:var(--color-primary);font-size:12.5px;font-weight:700;cursor:pointer")}>
+                    <span>{scanBusy ? "⏳..." : t({ tr: "⚡ Fotoğraftan AI Tara", en: "⚡ AI Scan Photo" })}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      capture="environment"
+                      style={sx("display:none")}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void handleAiShopScan({ file: f, text: scanText }, "bul");
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <label style={sx("display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--text-heading);font-size:12.5px;font-weight:700;cursor:pointer")}>
+                    <span>{uploadBusy ? t({ tr: "⏳ Yükleniyor...", en: "⏳ Uploading..." }) : t({ tr: "📷 Gerçek Fotoğraf Yükle", en: "📷 Upload Real Photo" })}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      capture="environment"
+                      style={sx("display:none")}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void handleRealPhotoUpload(f, null);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {scanDraft && (
+                  <div style={sx("padding:12px;border-radius:10px;border:1px solid var(--color-primary);background:var(--color-primary-soft);display:flex;flex-direction:column;gap:5px")}>
+                    <div style={sx("font-size:14px;font-weight:700;color:var(--text-heading)")}>
+                      {scanDraft.name} {scanDraft.door ? `· Kapı No: ${scanDraft.door}` : ""} {scanDraft.tel ? `· ${scanDraft.tel}` : ""}
+                    </div>
+                    <div style={sx("display:flex;flex-wrap:wrap;gap:5px")}>
+                      {(scanDraft.tags || []).map((tg) => (
+                        <span key={tg} style={sx("font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-card);color:var(--color-primary)")}>{tg}</span>
+                      ))}
+                    </div>
+                    <div style={sx("font-size:12px;color:var(--text-body)")}><b>TR:</b> {scanDraft.descTr}</div>
+                    <div style={sx("font-size:12px;color:var(--text-body)")}><b>EN:</b> {scanDraft.descEn}</div>
+                    <div style={sx("font-size:12px;color:var(--text-body)")}><b>RU:</b> {scanDraft.descRu}</div>
+                    <div style={sx("font-size:12px;color:var(--text-body)")}><b>AR:</b> {scanDraft.descAr}</div>
+                  </div>
+                )}
+                {uploadedMedia.length > 0 && (
+                  <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+                    {uploadedMedia.map((m) => (
+                      <a
+                        key={m.url}
+                        href={m.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={sx("display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid var(--color-success);background:var(--color-success-soft);color:var(--color-success);font-size:12px;font-weight:700;text-decoration:none")}
+                      >
+                        ✓ {m.filename} ({m.storage.toUpperCase()})
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div style={sx("display:flex;flex-direction:column;gap:10px;margin-top:16px")}>
@@ -721,8 +963,13 @@ function TraderScreen() {
                   />
                 </div>
                 <div style={sx("margin-top:14px;display:flex;gap:10px;flex-wrap:wrap")}>
-                  <Button color="accent" size="lg" onClick={doLogin}>
-                    {t({ tr: "Giriş yap", en: "Sign in", ru: "Войти", ar: "دخول" })}
+                  <Button color="accent" size="lg" disabled={authBusy} onClick={() => void doLogin()}>
+                    {authBusy
+                      ? t({ tr: "Doğrulanıyor...", en: "Verifying...", ru: "Проверка...", ar: "جارٍ التحقق..." })
+                      : t({ tr: "Giriş yap", en: "Sign in", ru: "Войти", ar: "دخول" })}
+                  </Button>
+                  <Button variant="outline" color="primary" size="lg" disabled={authBusy} onClick={() => void requestLoginOtp()}>
+                    {t({ tr: "SMS Kodu Gönder", en: "Send SMS Code", ru: "Отправить SMS-код", ar: "أرسل رمز SMS" })}
                   </Button>
                   <Button
                     variant="outline"
@@ -768,6 +1015,11 @@ function TraderScreen() {
                     ⚡ {t({ tr: "Demo Esnaf Girişi (Santral Han & Şark Han Mağazaları)", en: "Demo Trader Login (Santral Han & Şark Han)" })}
                   </Button>
                 </div>
+                {otpNote && (
+                  <div style={sx("margin-top:10px;padding:9px 11px;border-radius:9px;background:var(--color-info-soft);color:var(--text-heading);font-size:12.5px;font-weight:600")}>
+                    {otpNote}
+                  </div>
+                )}
               </div>
             )}
 
@@ -890,6 +1142,98 @@ function TraderScreen() {
                     >
                       {t({ tr: "Canlı Mağaza Sayfamı Gör", en: "View My Live Shop Page" })}
                     </Button>
+                  </div>
+                </div>
+
+                {/* 📷 Gerçek Fotoğraf Yükle (R2) + ⚡ AI Kartvizit & Vitrin Tarama (yonet sekmesi) */}
+                <div style={sx("margin-top:16px;" + CARD)}>
+                  <div style={sx(KICKER)}>
+                    {t({ tr: "📷 Gerçek Mağaza Fotoğrafı (R2 / CDN) · ⚡ AI Kartvizit & Vitrin Tarama", en: "📷 Real Shop Photo (R2 / CDN) · ⚡ AI Card & Storefront Scan" })}
+                  </div>
+                  <p style={sx("font-size:13px;color:var(--text-muted);margin-top:4px;text-wrap:pretty")}>
+                    {t({
+                      tr: "Vitrin veya ürün fotoğrafınızı doğrudan R2/CDN'e yükleyin; ya da kartvizit/tabela tarayarak telefon, MOQ, etiket ve 4 dil açıklamayı otomatik doldurun.",
+                      en: "Upload storefront/product photos straight to R2/CDN, or scan a business card/sign to auto-fill phone, MOQ, tags and 4-language descriptions.",
+                    })}
+                  </p>
+                  <div style={sx("margin-top:10px;display:flex;flex-direction:column;gap:10px")}>
+                    <Textarea
+                      rows={2}
+                      placeholder={t({ tr: "Tabela/kartvizit notu (örn: Roza Bijuteri Santral Han No 8 0532 111 22 33)", en: "Storefront or business card note" })}
+                      value={scanText}
+                      onChange={(e) => setScanText(e.target.value)}
+                    />
+                    <div style={sx("display:flex;gap:8px;flex-wrap:wrap;align-items:center")}>
+                      <label style={sx("display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;border-radius:8px;border:1px solid var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary);font-size:12.5px;font-weight:700;cursor:pointer")}>
+                        <span>{uploadBusy ? t({ tr: "⏳ Yükleniyor...", en: "⏳ Uploading..." }) : t({ tr: "📷 Gerçek Fotoğraf Yükle", en: "📷 Upload Real Photo" })}</span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          style={sx("display:none")}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleRealPhotoUpload(f, mRec);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      <Button
+                        color="primary"
+                        size="sm"
+                        disabled={scanBusy}
+                        onClick={() => void handleAiShopScan({ text: scanText }, "yonet")}
+                      >
+                        {scanBusy
+                          ? t({ tr: "⏳ Taranıyor...", en: "⏳ Scanning..." })
+                          : t({ tr: "⚡ AI Kartvizit & Vitrin Tara", en: "⚡ AI Scan Card & Shop" })}
+                      </Button>
+                      <label style={sx("display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-heading);font-size:12.5px;font-weight:700;cursor:pointer")}>
+                        <span>{scanBusy ? "⏳..." : t({ tr: "⚡ Tabela Fotoğrafından Tara", en: "⚡ AI Scan from Photo" })}</span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          style={sx("display:none")}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleAiShopScan({ file: f, text: scanText }, "yonet");
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                    {uploadedMedia.length > 0 && (
+                      <div style={sx("display:flex;gap:8px;flex-wrap:wrap")}>
+                        {uploadedMedia.map((m) => (
+                          <a
+                            key={m.url}
+                            href={m.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={sx("display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid var(--color-success);background:var(--color-success-soft);color:var(--color-success);font-size:12px;font-weight:700;text-decoration:none")}
+                          >
+                            ✓ {m.filename} ({m.storage.toUpperCase()})
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {scanDraft && (
+                      <div style={sx("padding:12px;border-radius:10px;border:1px solid var(--color-primary);background:var(--color-primary-soft);display:flex;flex-direction:column;gap:5px")}>
+                        <div style={sx("font-size:14px;font-weight:700;color:var(--text-heading)")}>
+                          {scanDraft.name} {scanDraft.door ? `· Kapı No: ${scanDraft.door}` : ""} {scanDraft.tel ? `· ${scanDraft.tel}` : ""}
+                        </div>
+                        <div style={sx("display:flex;flex-wrap:wrap;gap:5px")}>
+                          {(scanDraft.tags || []).map((tg) => (
+                            <span key={tg} style={sx("font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-card);color:var(--color-primary)")}>{tg}</span>
+                          ))}
+                        </div>
+                        <div style={sx("font-size:12px;color:var(--text-body)")}><b>TR:</b> {scanDraft.descTr}</div>
+                        <div style={sx("font-size:12px;color:var(--text-body)")}><b>EN:</b> {scanDraft.descEn}</div>
+                        <div style={sx("font-size:12px;color:var(--text-body)")}><b>RU:</b> {scanDraft.descRu}</div>
+                        <div style={sx("font-size:12px;color:var(--text-body)")}><b>AR:</b> {scanDraft.descAr}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -106,3 +106,54 @@ CREATE TABLE IF NOT EXISTS ops_resets (
   expires_at  TIMESTAMPTZ NOT NULL,
   used_at     TIMESTAMPTZ
 );
+
+-- ── normalized market projections (dual-write strangler tables) ───────────
+CREATE TABLE IF NOT EXISTS market_requests (
+  id          TEXT        PRIMARY KEY,
+  product     TEXT        NOT NULL DEFAULT '',
+  qty         TEXT        NOT NULL DEFAULT '',
+  payload     JSONB       NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS market_offers (
+  request_id  TEXT        NOT NULL,
+  record_id   TEXT        NOT NULL,
+  unit_price  NUMERIC,
+  payload     JSONB       NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (request_id, record_id)
+);
+
+CREATE TABLE IF NOT EXISTS media_assets (
+  hash        TEXT        PRIMARY KEY,
+  record_id   TEXT,
+  slug        TEXT        NOT NULL,
+  url         TEXT        NOT NULL,
+  mime        TEXT        NOT NULL,
+  bytes       INTEGER     NOT NULL DEFAULT 0,
+  storage     TEXT        NOT NULL DEFAULT 'local',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id          BIGSERIAL   PRIMARY KEY,
+  event_name  TEXT        NOT NULL,
+  route       TEXT        NOT NULL DEFAULT '',
+  place_id    TEXT,
+  record_id   TEXT,
+  meta        JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS analytics_events_name_idx
+  ON analytics_events (event_name, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS trader_otps (
+  tel         TEXT        NOT NULL,
+  code_hash   TEXT        NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  PRIMARY KEY (tel, code_hash)
+);

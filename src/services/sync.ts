@@ -40,6 +40,9 @@ export function deviceScope(): string {
 
 /** Revisions we last saw, so a write can say what it is building on. */
 const revisions = new Map<string, string>();
+/** Highest revision observed across scopes, enabling low-bandwidth delta sync (?since=). */
+let lastMaxRev = 0;
+let hasFullPull = false;
 /** Keys written locally and not yet accepted by the server. */
 const dirty = new Set<string>();
 let pushing = false;
@@ -151,18 +154,24 @@ async function push(): Promise<void> {
   }
 }
 
-/** Pull everything in our scopes and republish anything that actually moved. */
+/** Pull everything on first load, then delta-pull only revisions > lastMaxRev. */
 export async function pull(): Promise<void> {
   const scope = deviceScope();
   try {
+    const sinceParam = hasFullPull && lastMaxRev > 0 ? `&since=${lastMaxRev}` : "";
     const res = await fetch(
-      "/api/state?scope=shared&scope=" + encodeURIComponent(scope),
+      "/api/state?scope=shared&scope=" + encodeURIComponent(scope) + sinceParam,
       { cache: "no-store" },
     );
     if (!res.ok) return;
     const body = (await res.json()) as {
       scopes: Record<string, Record<string, { value: unknown; revision: string }>>;
+      maxRevision?: number;
     };
+    hasFullPull = true;
+    if (typeof body.maxRevision === "number" && body.maxRevision > lastMaxRev) {
+      lastMaxRev = body.maxRevision;
+    }
 
     Object.keys(body.scopes || {}).forEach((s) => {
       const bucket = body.scopes[s];
@@ -170,6 +179,8 @@ export async function pull(): Promise<void> {
         if (!SYNCED_KEYS.includes(key)) return;
         const id = s + "/" + key;
         const incoming = bucket[key];
+        const rv = Number(incoming.revision);
+        if (Number.isFinite(rv) && rv > lastMaxRev) lastMaxRev = rv;
         if (revisions.get(id) === incoming.revision) return;
         revisions.set(id, incoming.revision);
 

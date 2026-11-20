@@ -45,6 +45,7 @@ function DirectionsPageInner() {
   const qAr = searchParams.get("ar") === "1";
   const [askTraderOpen, setAskTraderOpen] = useState(false);
   const [qrSignOpen, setQrSignOpen] = useState(false);
+  const [calibratedDoor, setCalibratedDoor] = useState<string | null>(null);
 
   const target = useMemo(() => {
     const normalizedId = rawId === "santral-han" ? "santral" : rawId;
@@ -373,6 +374,7 @@ function DirectionsPageInner() {
             corridor={corridor}
             lang={lang}
             defaultCameraMode={qAr}
+            onCalibrateDoor={setCalibratedDoor}
           />
         </section>
 
@@ -395,6 +397,7 @@ function DirectionsPageInner() {
             initialFloor={floor}
             highlightDoor={door}
             highlightRecordId={target.recId}
+            startDoor={calibratedDoor}
             lang={lang}
             onSelectRecord={(rid) => router.push(href.store(rid))}
           />
@@ -465,8 +468,10 @@ function DirectionsPageInner() {
         onClose={() => setQrSignOpen(false)}
         title={pk({ tr: "🖨️ Vitrin / Giriş QR Tabelası", en: "🖨️ Printable Shopfront / Gate QR Sign" }, lang)}
       >
+        <style>{`@media print { body * { visibility: hidden; } [data-qr-poster="1"], [data-qr-poster="1"] * { visibility: visible; } [data-qr-poster="1"] { position: fixed; inset: 0; padding: 24px; background: #fff; } }`}</style>
         <div style={sx("padding:16px;display:flex;flex-direction:column;gap:14px")}>
           <div
+            data-qr-poster="1"
             style={sx(
               "padding:22px 20px;border-radius:16px;border:3px solid var(--color-primary);background:#fff;color:#0f172a;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.08)",
             )}

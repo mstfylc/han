@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import * as D from "@/data/han-data";
 import * as SC from "@/data/han-scale";
+import { computeCorridorPolyline, getFloorBlueprint } from "@/data/floorplans";
 import type { Lang, ShopRecord } from "@/data/types";
 import { Badge, Button, Drawer, Icon, Input } from "@/ds";
 import { tx } from "@/lib/i18n";
@@ -16,6 +17,7 @@ export interface SantralFloorMapProps {
   initialDoor?: string | null;
   highlightDoor?: string | null;
   highlightRecordId?: string | null;
+  startDoor?: string | null;
   lang?: Lang;
   onSelectRecord?: (recordId: string) => void;
   adminMode?: boolean;
@@ -175,6 +177,7 @@ export function SantralFloorMap({
   initialDoor = null,
   highlightDoor = null,
   highlightRecordId = null,
+  startDoor: propStartDoor = null,
   lang = "tr",
   onSelectRecord,
   adminMode = false,
@@ -205,7 +208,12 @@ export function SantralFloorMap({
   const [floor, setFloor] = useState<number>(resolvedInitialFloor);
   const [viewMode, setViewMode] = useState<"interactive" | "official" | "split">("interactive");
   const [anchor, setAnchor] = useState<AnchorKey>("giris");
-  const [startDoor, setStartDoor] = useState<string | null>(null);
+  const [startDoor, setStartDoor] = useState<string | null>(propStartDoor);
+  const [syncedPropStartDoor, setSyncedPropStartDoor] = useState<string | null>(propStartDoor);
+  if (propStartDoor !== syncedPropStartDoor) {
+    setSyncedPropStartDoor(propStartDoor);
+    setStartDoor(propStartDoor);
+  }
   const [entryFloor, setEntryFloor] = useState<number>(place.id === "santral" && place.floors.includes(1) ? 1 : (place.floors[0] ?? 0));
   const [radarCat, setRadarCat] = useState<string>("all");
   const [zoom, setZoom] = useState<number>(1);
@@ -354,7 +362,7 @@ export function SantralFloorMap({
   }, [activeCell, floor, zoom, fullScreen]);
 
   const startCell = useMemo(
-    () => (startDoor ? cells.find((c) => c.door === startDoor) || null : null),
+    () => (startDoor ? cells.find((c) => String(c.door) === String(startDoor)) || null : null),
     [cells, startDoor],
   );
 
@@ -418,34 +426,33 @@ export function SantralFloorMap({
   const entryFloorLabel = floorLabel(entryFloor, lang, place);
   const floorDiff = floor - entryFloor;
 
+  // Manhattan corridor-axis walking route & metrics
+  const route = useMemo(() => {
+    if (!activeCell) return null;
+    const blueprint = getFloorBlueprint(place.id);
+    return computeCorridorPolyline(
+      { x: startPoint.x, y: startPoint.y },
+      { x: activeCell.x + activeCell.w / 2, y: activeCell.y + activeCell.h / 2 },
+      blueprint,
+    );
+  }, [activeCell, startPoint.x, startPoint.y, place.id]);
+
   // Approximate indoor walking distance in meters & seconds
   const routeMetrics = useMemo(() => {
-    if (!activeCell) return { meters: 0, secs: 0, midX: 450, midY: 200, pathD: "" };
-    const txCoord = activeCell.x + activeCell.w / 2;
-    const tyCoord = activeCell.y + activeCell.h / 2;
-    const targetCorrY = activeCell.corridor === "Üst" ? 130 : activeCell.corridor === "Alt" ? 274 : 200;
-    const startCorrY = startCell
-      ? startCell.corridor === "Üst"
-        ? 130
-        : startCell.corridor === "Alt"
-          ? 274
-          : 200
-      : targetCorrY;
-
-    const dx = Math.abs(txCoord - startPoint.x);
-    const dy = Math.abs(tyCoord - startPoint.y);
+    if (!activeCell || !route) return { meters: 0, secs: 0, steps: 0, midX: 450, midY: 205, points: "" };
     const floorPenaltyMeters = Math.abs(floorDiff) * 18;
-    const meters = Math.max(8, Math.round((dx + dy) * 0.085 + floorPenaltyMeters));
+    const meters = route.meters + floorPenaltyMeters;
+    const steps = Math.round(meters * 1.35);
     const secs = Math.max(15, Math.round(meters * 1.1 + Math.abs(floorDiff) * 25));
-
-    const pathD = startCell && startCorrY !== targetCorrY
-      ? `M ${startPoint.x} ${startPoint.y} L ${startPoint.x} ${startCorrY} L 450 ${startCorrY} L 450 ${targetCorrY} L ${txCoord} ${targetCorrY} L ${txCoord} ${tyCoord}`
-      : `M ${startPoint.x} ${startPoint.y} L ${startPoint.x} ${targetCorrY} L ${txCoord} ${targetCorrY} L ${txCoord} ${tyCoord}`;
-
-    const midX = Math.round((startPoint.x + txCoord) / 2);
-    const midY = targetCorrY;
-    return { meters, secs, midX, midY, pathD };
-  }, [activeCell, startCell, startPoint, floorDiff]);
+    return {
+      meters,
+      secs,
+      steps,
+      midX: route.mid.x,
+      midY: route.mid.y,
+      points: route.points,
+    };
+  }, [activeCell, route, floorDiff]);
   const specialty = useMemo(() => {
     if (isSantral && SANTRAL_FLOOR_SPECIALTY[floor]) {
       return tx(SANTRAL_FLOOR_SPECIALTY[floor], lang);
@@ -1238,56 +1245,57 @@ export function SantralFloorMap({
               })}
 
               {/* Animated Indoor Walking Route from Start Point (Anchor or Start Door) to Selected Target Door */}
-              {activeCell && routeMetrics && (
+              {activeCell && route && (
                 <g pointerEvents="none">
-                  {/* Glowing background path */}
-                  <path
-                    d={routeMetrics.pathD}
+                  {/* Soft glow underlay */}
+                  <polyline
+                    points={route.points}
                     fill="none"
-                    stroke="var(--color-accent)"
-                    strokeWidth="7"
+                    stroke="#f97316"
+                    strokeWidth="8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    opacity="0.28"
+                    opacity="0.22"
                   />
-                  {/* Animated marching ants foreground path */}
-                  <path
-                    d={routeMetrics.pathD}
+                  {/* Manhattan corridor-axis polyline */}
+                  <polyline
+                    data-corridor-route="1"
+                    points={route.points}
                     fill="none"
-                    stroke="var(--color-primary)"
-                    strokeWidth="3.5"
+                    stroke="#f97316"
+                    strokeWidth="4.5"
+                    strokeDasharray="10 6"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeDasharray="8 6"
                   >
                     <animate
                       attributeName="stroke-dashoffset"
-                      from="28"
+                      from="32"
                       to="0"
                       dur="0.9s"
                       repeatCount="indefinite"
                     />
-                  </path>
+                  </polyline>
 
                   {/* Start Point Marker */}
                   <circle
                     cx={startPoint.x}
                     cy={startPoint.y}
                     r="8"
-                    fill="var(--color-success)"
+                    fill="#16a34a"
                     stroke="#fff"
                     strokeWidth="2.5"
                   />
 
-                  {/* Distance & Walking Time Pill on Route Midpoint */}
-                  <g transform={`translate(${Math.min(820, Math.max(80, routeMetrics.midX))}, ${routeMetrics.midY})`}>
+                  {/* Distance & Step Count Pill on Route Midpoint */}
+                  <g transform={`translate(${Math.min(810, Math.max(90, route.mid.x))}, ${Math.min(365, Math.max(20, route.mid.y))})`}>
                     <rect
-                      x="-54"
+                      x="-62"
                       y="-12"
-                      width="108"
+                      width="124"
                       height="22"
                       rx="11"
-                      fill="var(--color-primary)"
+                      fill="#0f172a"
                       stroke="#fff"
                       strokeWidth="1.5"
                     />
@@ -1299,7 +1307,7 @@ export function SantralFloorMap({
                       fontSize="9.5"
                       fontWeight="800"
                     >
-                      🚶 ~{routeMetrics.meters}m · {routeMetrics.secs} sn
+                      ~{route.meters}m · {route.steps} adım
                     </text>
                   </g>
 
@@ -1309,7 +1317,7 @@ export function SantralFloorMap({
                     cy={activeCell.y + activeCell.h / 2}
                     r="14"
                     fill="none"
-                    stroke="var(--color-accent)"
+                    stroke="#f97316"
                     strokeWidth="3"
                   >
                     <animate attributeName="r" values="11;18;11" dur="1.5s" repeatCount="indefinite" />

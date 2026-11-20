@@ -231,6 +231,10 @@ export default function PlanPage() {
   const [selectedShopTarget, setSelectedShopTarget] = useState<{ placeId: string; floor: number; door: string } | null>(null);
   const [showLiveMap, setShowLiveMap] = useState<boolean>(true);
   const [mobilePlanTab, setMobilePlanTab] = useState<"route" | "list">("route");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const isStacked = state.vw < 1180;
 
   const trip: Trip | null = (state.trips || []).find((t) => t.id === state.tripId) || (state.trips || [])[0] || null;
@@ -307,6 +311,78 @@ export default function PlanPage() {
         lang,
       ),
     );
+  };
+
+  const AI_EXAMPLE_PROMPTS = [
+    "Yarın 11'de 3 saatim var, 150 kişilik nişan için kutu, gelin tacı ve havlu alacağım, 15 bin TL bütçe",
+    "Bugün 10'da 4 saat toptan kılıf, şarj ve bijuteri bakacağım, kargo ile göndereceğim, 25 bin TL bütçe",
+  ];
+
+  const runAiPlanIntent = async (overridePrompt?: string) => {
+    const text = (overridePrompt ?? aiPrompt).trim();
+    if (!text) {
+      setAiError(pk({ tr: "Lütfen gününüzü anlatan kısa bir cümle yazın.", en: "Please enter a short description of your day." }, lang));
+      return;
+    }
+    if (overridePrompt !== undefined) setAiPrompt(overridePrompt);
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const r = await fetch("/api/ai/plan-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text }),
+      });
+      const data = (await r.json()) as {
+        ok?: boolean;
+        error?: string;
+        parsed?: {
+          day: "today" | "tomorrow" | "weekend";
+          start: number;
+          hours: number;
+          intent: "gez" | "is" | "etkinlik";
+          occasion?: "dugun" | "mevlut" | "butik" | "kultur";
+          guestCount?: number;
+          budgetLimit?: number;
+          carry: "el" | "araba" | "kargo";
+          items: { name: string; qty: string; target: string }[];
+          explanationTr: string;
+        };
+      };
+      if (!r.ok || !data.ok || !data.parsed) {
+        setAiError(data.error || pk({ tr: "Rota oluşturulamadı. Lütfen tekrar deneyin.", en: "Could not build route. Please try again." }, lang));
+        return;
+      }
+      const parsed = data.parsed;
+      const items = (parsed.items || []).map((it, idx) => ({
+        id: `ai_${Date.now()}_${idx}`,
+        name: it.name,
+        qty: String(it.qty || "1"),
+        target: String(it.target || ""),
+      }));
+      patchTrip({
+        day: parsed.day,
+        start: parsed.start,
+        hours: parsed.hours,
+        intent: parsed.intent,
+        occasion: parsed.occasion,
+        guestCount: parsed.guestCount,
+        budgetLimit: parsed.budgetLimit,
+        carry: parsed.carry,
+        items,
+        done: [],
+        order: null,
+        phase: "rota",
+      });
+      save({ buyList: items });
+      setAiExplanation(parsed.explanationTr);
+      setOpenFloorPlaceId("santral");
+      toast(parsed.explanationTr);
+    } catch {
+      setAiError(pk({ tr: "Bağlantı hatası oluştu. Lütfen tekrar deneyin.", en: "Connection error. Please try again." }, lang));
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const shareOnWhatsApp = () => {
@@ -461,7 +537,101 @@ export default function PlanPage() {
       )}
 
       <div className="han-plan-grid" style={sx(planGrid(state.vw))}>
-        <main style={sx(isStacked && mobilePlanTab === "list" ? "display:none" : "min-width:0")}>
+        <main style={sx(isStacked && mobilePlanTab === "list" ? "display:none" : "min-width:0;max-width:100%")}>
+          {/* ── ✨ Tek Cümleyle / Sesle Gününü Planla (AI -> Deterministik Rota) ── */}
+          <section
+            data-ai-planner="1"
+            style={sx(
+              CARD +
+                ";margin-bottom:16px;border:2px solid var(--color-primary);background:linear-gradient(180deg,var(--color-primary-soft) 0%,var(--surface-card) 100%);min-width:0;max-width:100%;box-sizing:border-box",
+            )}
+          >
+            <div style={sx(KICKER + ";color:var(--color-primary);display:inline-flex;align-items:center;gap:6px")}>
+              {pk(
+                {
+                  tr: "✨ Tek Cümleyle / Sesle Gününü Planla (AI -> Deterministik Rota)",
+                  en: "✨ Plan Your Day in One Sentence / Voice (AI -> Deterministic Route)",
+                },
+                lang,
+              )}
+            </div>
+            <p style={sx("font-size:13px;color:var(--text-body);margin:5px 0 0;line-height:1.45")}>
+              {pk(
+                {
+                  tr: "Gününüzü, saatinizi, kişi sayınızı ve bütçenizi tek cümleyle yazın; yapay zekâ niyetinizi çözsün, han ve kapı sıranızı deterministik motorla anında kursun.",
+                  en: "Describe your time window, items, guest count and budget in one sentence to auto-build your deterministic bazaar route.",
+                },
+                lang,
+              )}
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void runAiPlanIntent();
+              }}
+              style={sx("display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;min-width:0;max-width:100%")}
+            >
+              <div style={sx("flex:1 1 240px;min-width:0")}>
+                <Input
+                  size="md"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder={'Örn: "Yarın 11\'de 3 saatim var, 150 kişilik nişan için kutu, gelin tacı ve havlu alacağım, 15 bin TL bütçe"'}
+                  aria-label={pk({ tr: "Tek cümleyle gününü planla", en: "Plan your day in one sentence" }, lang)}
+                />
+              </div>
+              <Button
+                type="submit"
+                size="md"
+                color="primary"
+                variant="solid"
+                disabled={aiLoading}
+              >
+                {aiLoading
+                  ? pk({ tr: "⏳ Rota Kuruluyor...", en: "⏳ Building Route..." }, lang)
+                  : pk({ tr: "✨ Rotayı Otomatik Kur", en: "✨ Auto-Build Route" }, lang)}
+              </Button>
+            </form>
+
+            {/* 2 hazır örnek cümle çipi (tek tıkla doldurup çalıştırır) */}
+            <div style={sx("display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;min-width:0;max-width:100%")}>
+              <span style={sx("font-size:11.5px;font-weight:700;color:var(--text-muted);align-self:center")}>
+                {pk({ tr: "Örnekler:", en: "Examples:" }, lang)}
+              </span>
+              {AI_EXAMPLE_PROMPTS.map((sample, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={aiLoading}
+                  onClick={() => void runAiPlanIntent(sample)}
+                  style={sx(
+                    "max-width:100%;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-body);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:start;line-height:1.35;white-space:normal",
+                  )}
+                >
+                  ✨ {idx === 0 ? "150 kişilik nişan · 15 bin TL · Yarın 11:00" : "Toptan kılıf & bijuteri · 25 bin TL · Kargo"}
+                </button>
+              ))}
+            </div>
+
+            {aiError && (
+              <div style={sx("margin-top:10px")}>
+                <Alert color="danger" variant="light">{aiError}</Alert>
+              </div>
+            )}
+
+            {aiExplanation && (
+              <div style={sx("margin-top:10px")}>
+                <Alert
+                  color="success"
+                  variant="light"
+                  title={pk({ tr: "✨ Akıllı Rota Uygulandı", en: "✨ Smart Route Applied" }, lang)}
+                >
+                  {aiExplanation}
+                </Alert>
+              </div>
+            )}
+          </section>
+
           {/* ── 💍 Özel Gün & Etkinlik Alışveriş Sihirbazı (Davetli Sayısı + Bütçe + Fire Hesaplayıcı) ── */}
           <section
             style={sx(

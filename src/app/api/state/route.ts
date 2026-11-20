@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { readScope, writeDocument, deleteDocument } from "@/server/db";
+import { readScope, writeDocument, deleteDocument, dualWriteNormalized } from "@/server/db";
 import { COOKIE, sessionUser } from "@/server/auth";
 import { can } from "@/data/han-scale";
 import { PUBLIC_WRITE_KEYS, SYNCED_KEYS, isSharedKey, permForWrite } from "@/services/scopes";
@@ -33,16 +33,23 @@ export async function GET(request: Request) {
   if (!scopes.length) {
     return NextResponse.json({ error: "no valid scope requested" }, { status: 400 });
   }
+  const sinceRaw = Number(url.searchParams.get("since") || "0");
+  const sinceRev = Number.isFinite(sinceRaw) && sinceRaw > 0 ? Math.floor(sinceRaw) : 0;
 
   try {
     const out: Record<string, Record<string, { value: unknown; revision: string }>> = {};
+    let maxRevision = sinceRev;
     for (const scope of scopes) {
-      const rows = await readScope(scope);
+      const rows = await readScope(scope, sinceRev);
       const bucket: Record<string, { value: unknown; revision: string }> = {};
-      rows.forEach((r) => { bucket[r.key] = { value: r.value, revision: r.revision }; });
+      rows.forEach((r) => {
+        bucket[r.key] = { value: r.value, revision: r.revision };
+        const rv = Number(r.revision);
+        if (Number.isFinite(rv) && rv > maxRevision) maxRevision = rv;
+      });
       out[scope] = bucket;
     }
-    return NextResponse.json({ scopes: out });
+    return NextResponse.json({ scopes: out, maxRevision, delta: sinceRev > 0 });
   } catch (e) {
     return NextResponse.json({ error: String((e as Error).message || e) }, { status: 500 });
   }
@@ -127,6 +134,9 @@ export async function PUT(request: Request) {
       }
 
       const res = await writeDocument(scope, key, w.value, w.revision);
+      if (res.ok && scope === "shared") {
+        void dualWriteNormalized(key, w.value);
+      }
       results[scope + "/" + key] = res.ok
         ? { ok: true, revision: res.revision }
         : { ok: false, conflict: res.current };

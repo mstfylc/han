@@ -56,9 +56,17 @@ function ToolsScreen() {
   };
 
   return (
-    <div style={sx(searchGrid(b))}>
-      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : ""))}>
-        <nav style={sx("display:flex;flex-direction:column;gap:3px")} aria-label={F(lang, "secTools")}>
+    <div style={sx(searchGrid(b) + "min-width:0;width:100%;max-width:min(1480px,100%);")}>
+      <aside style={sx(areaOn("f") + CARD_BOX + (b.three ? STICKY_TOP : b.single ? "position:sticky;top:60px;z-index:15;padding:10px 12px;max-width:100%;" : ""))}>
+        <nav
+          data-han-nav="1"
+          style={sx(
+            b.single
+              ? "display:flex;flex-direction:row;overflow-x:auto;gap:6px"
+              : "display:flex;flex-direction:column;gap:3px",
+          )}
+          aria-label={F(lang, "secTools")}
+        >
           {TOOLS.map((t) => {
             const on = t === tool;
             return (
@@ -68,23 +76,26 @@ function ToolsScreen() {
                 onClick={() => router.push(href.tool(t))}
                 aria-current={on ? "page" : undefined}
                 style={sx(
-                  "display:flex;align-items:center;gap:10px;width:100%;background:" +
+                  (b.single
+                    ? "display:flex;align-items:center;gap:8px;width:auto;white-space:nowrap;flex:none;padding:9px 12px;"
+                    : "display:flex;align-items:center;gap:10px;width:100%;padding:11px;") +
+                    "background:" +
                     (on ? "var(--color-primary-soft)" : "none") +
-                    ";border:none;padding:11px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:" +
+                    ";border:none;border-radius:9px;font-family:inherit;font-size:14px;font-weight:" +
                     (on ? "700" : "500") +
                     ";color:" + (on ? "var(--color-primary-accent)" : "var(--text-body)") +
                     ";text-align:start;cursor:pointer",
                 )}
               >
                 <Icon name={labels[t].icon} size={17} />
-                <span style={sx("flex:1;min-width:0")}>{labels[t].label}</span>
+                <span style={sx(b.single ? "white-space:nowrap" : "flex:1;min-width:0")}>{labels[t].label}</span>
               </button>
             );
           })}
         </nav>
       </aside>
 
-      <main style={sx(areaOn("l") + areaOn("d").replace("grid-area:d;", ""))}>
+      <main style={sx(areaOn("l") + areaOn("d").replace("grid-area:d;", "") + "max-width:100%;")}>
         {tool === "doviz" && <Converter lang={lang} />}
         {tool === "rehber" && <Guides lang={lang} />}
         {tool === "taxfree" && <TaxFree lang={lang} />}

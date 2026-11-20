@@ -393,10 +393,10 @@ export default function DiscoverPage() {
           </p>
 
           <form
-            style={sx("display:flex;gap:10px;margin-top:22px;max-width:620px")}
+            style={sx("display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;max-width:740px;min-width:0;width:100%")}
             onSubmit={(e) => { e.preventDefault(); goSearch(); }}
           >
-            <div style={sx("flex:1;min-width:0")}>
+            <div style={sx("flex:1 1 220px;min-width:0")}>
               <Input
                 size="lg"
                 iconLead="magnifier"
@@ -409,6 +409,13 @@ export default function DiscoverPage() {
             <Button color="accent" size="lg" type="submit">
               {W(lang, "search")}
             </Button>
+            <button
+              type="button"
+              onClick={() => router.push("/ara?visual=1")}
+              style={sx("height:48px;padding:0 15px;border-radius:11px;border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px")}
+            >
+              {pk({ tr: "📷 Fotoğrafla Ara", en: "📷 Visual Search", ru: "📷 Поиск по фото", ar: "📷 بحث بالصورة" }, lang)}
+            </button>
           </form>
 
           <div style={sx("display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px")}>

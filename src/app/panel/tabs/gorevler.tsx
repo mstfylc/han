@@ -229,9 +229,44 @@ type TaskFilter = "acik" | "tamam" | "all";
 export default function Gorevler({ role, readOnly, refresh, say }: PanelTabProps) {
   const [filter, setFilter] = useState<TaskFilter>("acik");
   const [formOpen, setFormOpen] = useState(false);
+  const [verifiedMap, setVerifiedMap] = useState<Record<string, number>>({});
+  const [verifyBusyId, setVerifyBusyId] = useState<string | null>(null);
 
   const ST = AD.TASK_STATES;
   const KD = AD.TASK_KINDS;
+
+  const staleAll = SC.RECORDS.filter((r) => !verifiedMap[r.id] && (r.updatedDays || 0) > 90);
+  const freshCount = SC.RECORDS.length - staleAll.length;
+  const freshPct = SC.RECORDS.length ? Math.round((freshCount / SC.RECORDS.length) * 100) : 100;
+  const quickDoors = staleAll
+    .slice()
+    .sort((a, b) => (b.updatedDays || 0) - (a.updatedDays || 0))
+    .slice(0, 5);
+
+  const verifyDoorNow = async (rec: (typeof SC.RECORDS)[number]) => {
+    if (readOnly) return say("Salt okuma rolü kapı doğrulayamaz");
+    setVerifyBusyId(rec.id);
+    try {
+      const prevDays = rec.updatedDays;
+      rec.updatedDays = 0;
+      setVerifiedMap((prev) => ({ ...prev, [rec.id]: Date.now() }));
+      await fetch("/api/analytics", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          eventName: "wayfinder_door_calibrate",
+          route: "/panel/gorevler",
+          placeId: rec.place,
+          recordId: rec.id,
+          meta: { action: "field_door_verified", door: rec.door, floor: rec.floor, prevUpdatedDays: prevDays },
+        }),
+      }).catch(() => {});
+      refresh();
+      say(`${rec.name || rec.id} · Kapı No ${rec.door} kapıda doğrulandı (90 gün tazelik yenilendi)`);
+    } finally {
+      setVerifyBusyId(null);
+    }
+  };
 
   let tasks = AD.allTasks();
   // Saha yetkilisi kendi görevlerini görür — başkasının turu onun listesini kirletmez.
@@ -276,6 +311,54 @@ export default function Gorevler({ role, readOnly, refresh, say }: PanelTabProps
       <p style={sx(SUB)}>
         Kapsama tek tek dükkânla değil kat kat turla kapanır — görev bir yetkiliye ve bir yere atılır.
       </p>
+
+      {/* ⚡ Hızlı Saha Kapı Doğrulama & 90 Gün Tazelik İzleyici */}
+      <div style={sx("margin-top:16px;" + toneCard(staleAll.length > 0 ? "warning" : "success"))}>
+        <div style={sx("display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap")}>
+          <div>
+            <div style={sx("font-size:15px;font-weight:700;color:var(--text-heading)")}>
+              ⚡ Hızlı Saha Kapı Doğrulama &amp; 90 Gün Tazelik İzleyici
+            </div>
+            <div style={sx("font-size:12.5px;color:var(--text-muted);margin-top:3px")}>
+              Son 90 günde doğrulanmış kayıt oranı: <b>%{freshPct}</b> ({num(freshCount)} taze · {num(staleAll.length)} kayıt 90 günü geçti)
+            </div>
+          </div>
+          <Pill label={staleAll.length > 0 ? `${num(staleAll.length)} kapı bekliyor` : "Tüm kapılar taze"} t={staleAll.length > 0 ? "warning" : "success"} />
+        </div>
+        <div style={sx("margin-top:10px")}>
+          <ProgressBar value={freshPct} color={freshPct >= 80 ? "success" : freshPct >= 50 ? "primary" : "warning"} />
+        </div>
+        {quickDoors.length > 0 && (
+          <div style={sx("display:flex;flex-direction:column;gap:8px;margin-top:12px")}>
+            {quickDoors.map((rec) => (
+              <div
+                key={rec.id}
+                style={sx("display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 11px;border-radius:10px;background:var(--surface-muted);border:1px solid var(--border-default)")}
+              >
+                <div style={sx("min-width:0;flex:1")}>
+                  <div style={sx("font-size:13.5px;font-weight:700;color:var(--text-heading)")}>
+                    {rec.name || rec.id}
+                  </div>
+                  <div style={sx("font-size:12px;color:var(--text-muted)")}>
+                    {placeName(rec.place)} · Kat {rec.floor} · Kapı No: {rec.door} · {rec.updatedDays} gündür doğrulanmadı
+                  </div>
+                </div>
+                {!readOnly && (
+                  <Button
+                    size="sm"
+                    color="success"
+                    variant="light"
+                    disabled={verifyBusyId === rec.id}
+                    onClick={() => void verifyDoorNow(rec)}
+                  >
+                    {verifyBusyId === rec.id ? "Kaydediliyor..." : "✓ Kapıda Doğrulandı"}
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div style={sx("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:16px;margin-top:18px")}>
         {stats.map((s) => (

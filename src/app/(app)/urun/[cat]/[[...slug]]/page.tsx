@@ -20,6 +20,7 @@ import type { Lang } from "@/data/types";
 import { Button, EmptyState } from "@/ds";
 import { F, W } from "@/lib/copy";
 import { convert, num, tonePair, tx } from "@/lib/i18n";
+import { pagePad } from "@/lib/layout";
 import { href } from "@/lib/routes";
 import { sx } from "@/lib/sx";
 import { useApp } from "@/state/AppState";
@@ -57,7 +58,7 @@ export default function ProductPage() {
 
   if (!cat) {
     return (
-      <div style={sx("max-width:1480px;margin:0 auto;padding:26px 24px 48px")}>
+      <div style={sx("width:100%;max-width:min(1480px,100%);margin:0 auto;min-width:0;" + pagePad(state.vw))}>
         <EmptyState
           icon="magnifier"
           tone="neutral"
@@ -84,7 +85,7 @@ export default function ProductPage() {
   // ── category list ───────────────────────────────────────────────────────
   if (!slug || !detail) {
     return (
-      <div style={sx("max-width:1100px;margin:0 auto;padding:22px 24px 48px")}>
+      <div style={sx("width:100%;max-width:min(1100px,100%);margin:0 auto;min-width:0;" + pagePad(state.vw))}>
         {back}
         <h1 style={sx("font-size:26px;font-weight:700;color:var(--text-heading);letter-spacing:-.02em;margin:12px 0 0")}>
           {pk({ tr: catName + " · ürünler", en: catName + " · products", ru: catName + " · товары", ar: catName + " · المنتجات" }, lang)}
@@ -172,7 +173,7 @@ export default function ProductPage() {
   ];
 
   return (
-    <div style={sx("max-width:1100px;margin:0 auto;padding:22px 24px 48px")}>
+    <div style={sx("width:100%;max-width:min(1100px,100%);margin:0 auto;min-width:0;" + pagePad(state.vw))}>
       {back}
       <h1 style={sx("font-size:30px;font-weight:700;color:var(--text-heading);letter-spacing:-.025em;margin:12px 0 0;line-height:1.15")}>
         {detail.name}

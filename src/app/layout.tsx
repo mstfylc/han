@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   // Absolute URLs for og: images. Set NEXT_PUBLIC_SITE_URL in deployment.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://han.mansis.com.tr"),
   title: "HAN — İstanbul çarşıları firma rehberi, rota ve toptan alım",
   description:
     "Tarihi Yarımada çarşılarında 10 binden fazla dükkân: kim ne satıyor, hangi sokakta, hangi fiyata. Rota kurun, teklif alın, kargo ve tax-free işlerini planlayın.",

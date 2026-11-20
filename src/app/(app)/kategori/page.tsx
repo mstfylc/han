@@ -21,7 +21,7 @@ import { Icon } from "@/ds";
 import { ImageSlot } from "@/components/ImageSlot";
 import { F, W } from "@/lib/copy";
 import { chevron, convert, num, tx } from "@/lib/i18n";
-import { TREE_BOX, areaOn, breaks, categoryGrid } from "@/lib/layout";
+import { TREE_BOX, areaOn, breaks, categoryGrid, pagePad } from "@/lib/layout";
 import { PARAM, getStr, href } from "@/lib/routes";
 import { catPhoto, shopsIn } from "@/lib/shop";
 import { sx } from "@/lib/sx";
@@ -98,9 +98,9 @@ function CategoryScreen() {
   const go = (g: string | null, c: string | null) => router.push(href.category(g, c));
 
   return (
-    <div style={sx(categoryGrid(b))}>
+    <div style={sx(categoryGrid(b) + pagePad(state.vw) + "min-width:0;width:100%;max-width:min(1480px,100%);")}>
       {/* ── group rail + category tree ─────────────────────────────────── */}
-      <aside style={sx(areaOn("c") + TREE_BOX)} aria-label={W(lang, "allCats")}>
+      <aside style={sx(areaOn("c") + TREE_BOX + "max-width:100%;")} aria-label={W(lang, "allCats")}>
         <div style={sx("display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px")} data-han-nav="1">
           {groups.map((g) => {
             const on = g.id === group?.id;
@@ -153,7 +153,7 @@ function CategoryScreen() {
       </aside>
 
       {/* ── the selected category ──────────────────────────────────────── */}
-      <main style={sx(areaOn("s"))}>
+      <main style={sx(areaOn("s") + "max-width:100%;")}>
         {!cat ? (
           <div style={sx("background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:26px")}>
             <div style={sx("font-size:18px;font-weight:700;color:var(--text-heading)")}>{W(lang, "allCats")}</div>
