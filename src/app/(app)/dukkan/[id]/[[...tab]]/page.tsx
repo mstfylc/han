@@ -13,7 +13,7 @@
 // One template, two data sources (see lib/shopView.ts).
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import * as AD from "@/data/han-admin";
 import * as D from "@/data/han-data";
@@ -52,38 +52,42 @@ export default function ShopPage() {
   const tab = ((params.tab?.[0] || "urun") as Tab);
   const [reviewText, setReviewText] = useState("");
   const [stars, setStars] = useState(5);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [googleBridge, setGoogleBridge] = useState<{
     rating: number | null;
     reviewCount: number | null;
     mapsUrl: string;
     attribution: string;
+    checked?: boolean;
   } | null>(null);
 
   const view = useMemo(() => resolveShop(id, lang, mode), [id, lang, mode]);
 
-  useEffect(() => {
-    if (!view?.name) return;
-    let alive = true;
-    const areaHint = [view.place?.name, "Fatih İstanbul"].filter(Boolean).join(" ");
-    fetch(
-      `/api/external/google-place?name=${encodeURIComponent(view.name)}&area=${encodeURIComponent(areaHint)}`,
-    )
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (alive && d?.ok && d.mapsUrl) {
-          setGoogleBridge({
-            rating: typeof d.rating === "number" ? d.rating : null,
-            reviewCount: typeof d.reviewCount === "number" ? d.reviewCount : null,
-            mapsUrl: d.mapsUrl,
-            attribution: d.attribution || "Google Maps",
-          });
-        }
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [view?.name, view?.place?.name]);
+  // On-demand Google Places fetch (zero API calls on passive page loads / bots)
+  const fetchGoogleRating = useCallback(async () => {
+    if (!view?.name || googleBusy) return;
+    setGoogleBusy(true);
+    try {
+      const areaHint = [view.place?.name, "Fatih İstanbul"].filter(Boolean).join(" ");
+      const r = await fetch(
+        `/api/external/google-place?name=${encodeURIComponent(view.name)}&area=${encodeURIComponent(areaHint)}`,
+      );
+      const d = r.ok ? await r.json() : null;
+      if (d?.ok && d.mapsUrl) {
+        setGoogleBridge({
+          rating: typeof d.rating === "number" ? d.rating : null,
+          reviewCount: typeof d.reviewCount === "number" ? d.reviewCount : null,
+          mapsUrl: d.mapsUrl,
+          attribution: d.attribution || "Google Maps",
+          checked: true,
+        });
+      }
+    } catch {
+      /* keep free fallback link */
+    } finally {
+      setGoogleBusy(false);
+    }
+  }, [view?.name, view?.place?.name, googleBusy]);
   const similar = useMemo(() => (view ? similarShops(view) : []), [view]);
 
   // K3 · only a buyer who ACCEPTED an offer from this shop may write a review.
@@ -254,6 +258,20 @@ export default function ShopPage() {
                     lang,
                   )}
             </a>
+            {!googleBridge?.checked && (
+              <button
+                type="button"
+                disabled={googleBusy}
+                onClick={() => void fetchGoogleRating()}
+                style={sx(
+                  "display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-body);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer",
+                )}
+              >
+                {googleBusy
+                  ? "⏳..."
+                  : pk({ tr: "★ Canlı Google Puanı", en: "★ Live Google Rating", ru: "★ Рейтинг Google", ar: "★ تقييم Google" }, lang)}
+              </button>
+            )}
           </div>
 
           {/* ── right now ────────────────────────────────────────────── */}
