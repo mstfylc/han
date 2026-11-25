@@ -508,6 +508,42 @@ export function Shell({ children }: { children: ReactNode }) {
           <div style={sx("display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
             <Button
               size="sm"
+              color="accent"
+              variant="light"
+              iconStart="star"
+              onClick={() => router.push("/kampanyalar")}
+            >
+              {lang === "tr" ? "Kampanyalar" : "Campaigns"}
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="light"
+              iconStart="compass"
+              onClick={() => router.push("/yasam")}
+            >
+              {lang === "tr" ? "Çarşı Yaşam" : "Bazaar Life"}
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="light"
+              iconStart="building"
+              onClick={() => router.push("/han-yonetimi")}
+            >
+              {lang === "tr" ? "Han Yönetimi" : "Han Management"}
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="light"
+              iconStart="smartphone"
+              onClick={() => router.push("/mobil")}
+            >
+              {lang === "tr" ? "Mobil PWA" : "Mobile PWA"}
+            </Button>
+            <Button
+              size="sm"
               color="primary"
               variant="light"
               iconStart="handcart"
@@ -858,6 +894,54 @@ export function Shell({ children }: { children: ReactNode }) {
                 : "Traders, B2B Offers & Bazaar Management"}
             </div>
             <div style={sx("display:grid;grid-template-columns:1fr 1fr;gap:8px")}>
+              <Button
+                color="accent"
+                variant="light"
+                size="sm"
+                iconStart="star"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/kampanyalar");
+                }}
+              >
+                {lang === "tr" ? "Kampanyalar" : "Campaigns"}
+              </Button>
+              <Button
+                color="primary"
+                variant="light"
+                size="sm"
+                iconStart="compass"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/yasam");
+                }}
+              >
+                {lang === "tr" ? "Çarşı Yaşam" : "Bazaar Life"}
+              </Button>
+              <Button
+                color="primary"
+                variant="light"
+                size="sm"
+                iconStart="building"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/han-yonetimi");
+                }}
+              >
+                {lang === "tr" ? "Han Yönetimi" : "Han Office"}
+              </Button>
+              <Button
+                color="primary"
+                variant="light"
+                size="sm"
+                iconStart="smartphone"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/mobil");
+                }}
+              >
+                {lang === "tr" ? "Mobil PWA & Rota" : "Mobile PWA"}
+              </Button>
               <Button
                 color="primary"
                 variant="light"

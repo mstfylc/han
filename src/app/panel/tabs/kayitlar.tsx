@@ -20,6 +20,9 @@ import { CATS } from "@/data/han-data";
 import * as SC from "@/data/han-scale";
 import type { Lang, ShopRecord } from "@/data/types";
 import { Button, Drawer, EmptyState, Input, Select } from "@/ds";
+import { HanModerationQueue } from "@/components/moderation/HanModerationQueue";
+import { ModerationGroupToolbar } from "@/components/moderation/ModerationGroupToolbar";
+import { groupRecordsByHan, type ModerationGroupSort } from "@/lib/moderationGrouping";
 import { KEYS, readKey, writeKey } from "@/services/storage";
 import { sx } from "@/lib/sx";
 
@@ -144,6 +147,9 @@ export default function Kayitlar(props: PanelTabProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "foto", dir: 1 });
   const [page, setPage] = useState(1);
+  const [groupedView, setGroupedView] = useState(false);
+  const [groupSort, setGroupSort] = useState<ModerationGroupSort>("pending");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [detailId, setDetailId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ ...BLANK_FORM });
@@ -298,6 +304,21 @@ export default function Kayitlar(props: PanelTabProps) {
   const det = detailId ? SC.RECORDS.find((r) => r.id === detailId) || null : null;
   const detPlace = det ? SC.PLACES.find((p) => p.id === det.place) : null;
 
+  const hanGroups = useMemo(
+    () => (groupedView ? groupRecordsByHan(rows, groupSort) : []),
+    [groupedView, rows, groupSort],
+  );
+  const allExpanded =
+    hanGroups.length > 0 && hanGroups.every((g) => expandedGroups[g.placeId] === true);
+
+  const toggleExpandAll = () => {
+    const next: Record<string, boolean> = {};
+    hanGroups.forEach((g) => {
+      next[g.placeId] = !allExpanded;
+    });
+    setExpandedGroups(next);
+  };
+
   const th = (label: string, key: SortKey, style: string) => (
     <button
       type="button"
@@ -366,6 +387,37 @@ export default function Kayitlar(props: PanelTabProps) {
         </p>
       )}
 
+      <ModerationGroupToolbar
+        grouped={groupedView}
+        onToggleGrouped={setGroupedView}
+        groupSort={groupSort}
+        onGroupSort={setGroupSort}
+        groupCount={new Set(rows.map((r) => r.place)).size}
+        allExpanded={allExpanded}
+        onToggleExpandAll={toggleExpandAll}
+      />
+
+      {groupedView ? (
+        hanGroups.length === 0 ? (
+          <div style={sx("margin-top:14px;background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;padding:24px")}>
+            <EmptyState
+              icon="magnifier"
+              tone="neutral"
+              title="Kayıt bulunamadı"
+              description="Filtreleri sıfırlayın ya da yeni mağaza ekleyin."
+            />
+          </div>
+        ) : (
+          <HanModerationQueue
+            groups={hanGroups}
+            expandedIds={expandedGroups}
+            onToggleGroup={(pid) =>
+              setExpandedGroups((prev) => ({ ...prev, [pid]: !(prev[pid] ?? (pid === "santral" || hanGroups.length <= 2)) }))
+            }
+            onSelectRecord={setDetailId}
+          />
+        )
+      ) : (
       <div style={sx("margin-top:14px;background:var(--surface-card);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 3px 4px rgba(0,0,0,.03);overflow-x:auto")}>
         <div style={sx("min-width:860px;display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border-strong)")}>
           {th("MAĞAZA", "name", "flex:1;min-width:200px")}
@@ -443,6 +495,7 @@ export default function Kayitlar(props: PanelTabProps) {
           </span>
         </div>
       </div>
+      )}
 
       {/* ── kayıt künyesi ─────────────────────────────────────────────────── */}
       <Drawer

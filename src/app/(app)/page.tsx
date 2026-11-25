@@ -31,6 +31,7 @@ import { chevron, convert, num, tonePair, tx, loc } from "@/lib/i18n";
 import { href } from "@/lib/routes";
 import { catPhoto, medStyle, monoStyle, priceOf, shopsIn, storePhoto, whereOf } from "@/lib/shop";
 import { sx } from "@/lib/sx";
+import { pickIntentText, resolveUniversalIntent } from "@/lib/universalIntent";
 import { useApp } from "@/state/AppState";
 
 const pk = (o: Record<string, string>, lang: Lang) => o[lang] || o.tr;
@@ -53,7 +54,19 @@ export default function DiscoverPage() {
     return s;
   };
 
-  const goSearch = (query?: string) => router.push(href.search(query ?? q));
+  const liveIntent = useMemo(() => (q.trim().length >= 3 ? resolveUniversalIntent(q) : null), [q]);
+
+  const goSearch = (query?: string) => {
+    const raw = (query ?? q).trim();
+    if (!query && raw.length >= 3) {
+      const resolved = resolveUniversalIntent(raw);
+      if (resolved.kind !== "search") {
+        router.push(resolved.href);
+        return;
+      }
+    }
+    router.push(href.search(raw));
+  };
 
   // ── the bazaar right now ────────────────────────────────────────────────
   // Our data knows the bazaar's hours; it does not know whether each of ten
@@ -412,6 +425,20 @@ export default function DiscoverPage() {
             </button>
           </form>
 
+          {liveIntent && liveIntent.kind !== "search" && (
+            <div style={sx("margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap")}>
+              <button
+                type="button"
+                onClick={() => router.push(liveIntent.href)}
+                style={sx("display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--color-accent);background:rgba(255,255,255,.14);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer")}
+              >
+                <Icon name={liveIntent.icon} size={14} />
+                <span>{pickIntentText(liveIntent.badge, lang)}:</span>
+                <span>{pickIntentText(liveIntent.label, lang)} →</span>
+              </button>
+            </div>
+          )}
+
           <div style={sx("display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px")}>
             <span style={sx("font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.65)")}>
               {pk({ tr: "Sık aranan", en: "Popular", ru: "Часто ищут", ar: "الأكثر بحثًا" }, lang)}
@@ -614,7 +641,10 @@ export default function DiscoverPage() {
                 ["/harita?poi=mola", pk({ tr: "☕ Tarihi Han Kahve & Avlu Molası", en: "☕ Historic Courtyard Coffee Break" }, lang)],
                 ["/harita?poi=kargo", pk({ tr: "📦 Kargo & Poşet Emanet", en: "📦 Cargo & Bag Drop" }, lang)],
                 ["/harita?poi=ulasim", pk({ tr: "🚊 Yokuşsuz Tramvay & Otopark", en: "🚊 Flat-Walk Tram & Parking" }, lang)],
-                ["/plan", pk({ tr: "✨ Özel Gün & Çeyiz Sihirbazı", en: "✨ Occasion & Dowry Wizard" }, lang)],
+                ["/kampanyalar", pk({ tr: "⭐ Haftanın Kampanyaları", en: "⭐ Weekly Campaigns" }, lang)],
+                ["/yasam", pk({ tr: "🏛️ Çarşı Yaşam & Avlular", en: "🏛️ Bazaar Life & Courtyards" }, lang)],
+                ["/han-yonetimi", pk({ tr: "🏢 Han Yönetimi", en: "🏢 Han Management" }, lang)],
+                ["/mobil", pk({ tr: "📲 Mobil PWA & 2 Adımda Rota", en: "📲 Mobile PWA & 2-Step Route" }, lang)],
               ] as const
             ).map(([url, label]) => (
               <button

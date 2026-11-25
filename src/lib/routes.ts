@@ -22,6 +22,7 @@ import type { Panel } from "@/state/types";
 export const SECTIONS = [
   "kesfet", "ara", "kategori", "plan", "isler", "esnaf",
   "arac", "harita", "etkinlik", "dukkan", "yer", "urun",
+  "kampanyalar", "yasam", "han-yonetimi", "mobil",
 ] as const;
 
 export type Section = (typeof SECTIONS)[number];
@@ -159,6 +160,10 @@ export const href = {
   tool: (tool = "doviz") => "/arac/" + tool,
   map: (mode?: string) => "/harita" + buildQuery({ [PARAM.mapMode]: mode }, { [PARAM.mapMode]: "route" }),
   events: (kind?: string) => "/etkinlik" + buildQuery({ [PARAM.eventKind]: kind }, { [PARAM.eventKind]: "all" }),
+  campaigns: () => "/kampanyalar",
+  life: () => "/yasam",
+  hanAdmin: (placeId?: string) => "/han-yonetimi" + buildQuery({ [PARAM.place]: placeId }),
+  mobile: () => "/mobil",
   /** The trader's own door into the buyer surface. `place`/`door` pre-fill the
    *  finder so "is it yours?" lands on the right unit instead of a blank form. */
   trader: (tab = "bul", opts?: { place?: string; door?: string | number; record?: string }) =>
